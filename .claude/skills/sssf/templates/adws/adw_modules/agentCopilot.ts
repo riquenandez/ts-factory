@@ -49,7 +49,7 @@ function mapTools(tools: string[]): string[] {
   return mapped;
 }
 
-function shapeUsageFile(raw: unknown): { shaped: Dict; totalTokens: number; totalCost: number } {
+export function shapeUsageFile(raw: unknown): { shaped: Dict; totalTokens: number; totalCost: number } {
   const obj = isDict(raw) ? raw : {};
   const metrics = isDict(obj.modelMetrics) ? obj.modelMetrics : {};
   let input = 0;
@@ -69,7 +69,7 @@ function shapeUsageFile(raw: unknown): { shaped: Dict; totalTokens: number; tota
     const requests = isDict(entry.requests) ? entry.requests : {};
     totalCost += Number(requests.cost ?? 0);
   }
-  const totalTokens = input + output + cacheRead + cacheWrite + reasoning;
+  const totalTokens = input + output + cacheRead + cacheWrite;
   return {
     shaped: { input, output, cacheRead, cacheWrite, reasoning, cost: { total: totalCost } },
     totalTokens,

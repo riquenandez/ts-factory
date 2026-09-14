@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { buildArgv } from "../../templates/adws/adw_modules/agentCopilot.ts";
+import { buildArgv, shapeUsageFile } from "../../templates/adws/adw_modules/agentCopilot.ts";
 import type { PiRequest } from "../../templates/adws/adw_modules/dataTypes.ts";
 import { runSide } from "./runBoth.ts";
 
@@ -362,5 +362,27 @@ describe("buildArgv", () => {
   test("agent name equals sssf-<session_id>", () => {
     const argv = buildArgv(copilotRequest(), agentName, usagePath);
     expect(flagAfter(argv, "--agent")).toBe(`sssf-${sessionId}`);
+  });
+});
+
+describe("shapeUsageFile", () => {
+  test("totalTokens is the four components; reasoning sits inside output", () => {
+    const { shaped, totalTokens } = shapeUsageFile({
+      modelMetrics: {
+        "gpt-5.4": {
+          requests: { count: 1, cost: 0 },
+          usage: {
+            inputTokens: 10,
+            outputTokens: 20,
+            cacheReadTokens: 5,
+            cacheWriteTokens: 5,
+            reasoningTokens: 7,
+          },
+        },
+      },
+    });
+    expect(totalTokens).toBe(40);
+    expect(shaped.reasoning).toBe(7);
+    expect(shaped.output).toBe(20);
   });
 });
