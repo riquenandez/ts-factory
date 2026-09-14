@@ -41,8 +41,8 @@ agents:
 
 | Field | Type | Meaning |
 |---|---|---|
-| `coding_agent` | `pi` \| `claude_code` | Which interface runs the agent. v1 implements `pi` only; `claude_code` is schema-valid and stubbed in `agentCc.ts`. |
-| `model` | string | `provider/model-id`, resolved against pi's catalog. Starter default `google/gemini-3.6-flash`. |
+| `coding_agent` | `pi` \| `claude_code` | Which interface runs the agent. Both are implemented in v1. `claude_code` runs `claude -p` headless and uses the machine's Claude Code login. |
+| `model` | string | For `pi`: `provider/model-id`, resolved against pi's catalog. For `claude_code`: passed to `--model` as written (`opus`, `sonnet`, or a full id; no `provider/` prefix). Starter default `google/gemini-3.6-flash`. |
 | `thinking` | enum | Reasoning effort, see below. Default `medium`. |
 | `color` | hex string | Lane color for agents that do not set their own. Unset means the visualizer's palette. |
 | `harness_engineering` | list of paths | Pi extension files, passed as `pi -e <path>`. Default none. |
@@ -80,7 +80,7 @@ Output types are deliberately absent. Config defines who an agent is; the ADW ca
 off | minimal | low | medium | high | xhigh | max
 ```
 
-Pi's reasoning-effort ladder. It applies only to models registered with `reasoning: true` in `~/.pi/agent/models.json`; on other models it is inert. Rough guidance: `high` or `xhigh` for planners and reviewers, `medium` for builders, `low` for mechanical read-and-report agents.
+Pi's reasoning-effort ladder. It applies only to models registered with `reasoning: true` in `~/.pi/agent/models.json`; on other models it is inert. `claude_code` maps it to `--effort`; `off` and `minimal` become `low`. Rough guidance: `high` or `xhigh` for planners and reviewers, `medium` for builders, `low` for mechanical read-and-report agents.
 
 ## Model resolution
 
@@ -110,9 +110,21 @@ Resolution: the agent's own list wins; an agent that omits the key inherits `def
 
 **Extension tools must be named.** `--tools` filters built-in, extension, and custom tools alike. Once an agent has any `tools` list, its own or inherited, a tool registered by one of its `harness_engineering` extensions is dropped unless it appears by name. Nothing errors; the extension loads and its tool is never offered. Adding a tool-registering extension is therefore a two-part edit: the path under `harness_engineering` and the tool name under `tools`. Extensions that only shape output or add flags need no `tools` change.
 
+`claude_code` maps the roster names onto Claude Code tools and drops `ls` (Bash covers it). Any other name is passed through unchanged, so a roster can name `WebSearch`, `Task`, or an MCP tool directly:
+
+| Roster name | `--allowedTools` |
+|---|---|
+| `read` | `Read` |
+| `bash` | `Bash` |
+| `edit` | `Edit` |
+| `write` | `Write` |
+| `grep` | `Grep` |
+| `find` | `Glob` |
+| `ls` | dropped |
+
 ## Harness engineering
 
-`harness_engineering` entries are pi extension file paths, passed as `pi -e <path>`, one flag per entry, scoped to that agent. The stamped `adws/adw_data/harness_engineering/subagents.ts` registers `subagent_create`, `subagent_continue`, `subagent_list`, and `subagent_remove`, wired to the planner and scout. On Claude Code the field is reserved for v2.
+`harness_engineering` entries are pi extension file paths, passed as `pi -e <path>`, one flag per entry, scoped to that agent. The stamped `adws/adw_data/harness_engineering/subagents.ts` registers `subagent_create`, `subagent_continue`, `subagent_list`, and `subagent_remove`, wired to the planner and scout. For `claude_code`, entries are MCP config JSON files passed as `--mcp-config` (one flag per entry, then `--strict-mcp-config`); a non-`.json` path fails `validate()`.
 
 ## Write permissions
 

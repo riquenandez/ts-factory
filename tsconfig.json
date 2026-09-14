@@ -21,6 +21,7 @@
     ".claude/skills/sssf/templates/harness_engineering/**",
     "**/node_modules/**",
     "**/fixtures/repo_clean/**",
-    "**/fixtures/repo_agent/**"
+    "**/fixtures/repo_agent/**",
+    "**/fixtures/repo_claude/**"
   ]
 }

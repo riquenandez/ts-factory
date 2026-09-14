@@ -13,7 +13,8 @@ It ships as one Claude Code skill, `.claude/skills/sssf/`, that you copy into a 
 | Tool | Why |
 |---|---|
 | [`bun`](https://bun.sh) | runs the ADWs, the installer, and the trace UI |
-| [`pi`](https://github.com/mariozechner/pi-coding-agent) | the coding agent every phase calls (v1 supports pi only) |
+| [`pi`](https://github.com/mariozechner/pi-coding-agent) | needed for `coding_agent: pi` agents |
+| [Claude Code](https://docs.anthropic.com/en/docs/claude-code) (`claude`) | needed for `coding_agent: claude_code` agents |
 | `sqlite3` | reading the trace from the shell |
 | `git` | chains that end in a commit phase need a repo with one commit |
 | [`just`](https://github.com/casey/just) | optional; every recipe is a one-line `bun` or `sqlite3` command |
@@ -132,7 +133,6 @@ Five starter agents ship: `planner`, `builder`, `scout`, `reviewer`, `documenter
 ## Known limits
 
 - Runs on your current branch. No sandbox, no branch per run, no merge step, no approval phase.
-- `coding_agent: claude_code` is schema-valid but stubbed. v1 is pi only.
 - A missing API key fails when that agent runs, not at startup. Validation checks that a model is written `provider/model-id`, not that the provider is reachable.
 - A bare model id like `gemini-3.6-flash` can match several providers and is refused. Always write `provider/model-id`.
 

@@ -62,19 +62,37 @@ function stampCommit(dir: string): void {
   gitCommit(dir, "stamp adws");
 }
 
-export async function runSide(kind: "gold" | "port", c: Case, fixture: string): Promise<Side> {
-  const dir = mkdtempSync(join(tmpdir(), `sssf-${kind}-`));
-  cpSync(fixture, dir, { recursive: true });
-  initRepo(dir);
-  const src = kind === "gold" ? GOLD_ADWS : TS_ADWS;
-  const dest = join(dir, "adws");
-  rmSync(dest, { recursive: true, force: true });
-  cpSync(src, dest, { recursive: true });
-  for (const rel of ["adws/adw_sssf_config", "adws/adw_data"]) {
-    const keep = join(fixture, rel);
-    if (existsSync(keep)) cpSync(keep, join(dir, rel), { recursive: true });
+export interface RunSideOpts {
+  /** Keep the work dir and return it as `dir`. Caller deletes it. */
+  keep?: boolean;
+  /** Reuse an already-stamped dir: skip copy/init/stamp, do not delete. */
+  reuseDir?: string;
+  /** Mutate the stamped dir after copy, before the command. Ignored with reuseDir. */
+  prepare?: (dir: string) => void;
+}
+
+export async function runSide(
+  kind: "gold" | "port",
+  c: Case,
+  fixture: string,
+  opts?: RunSideOpts,
+): Promise<Side & { dir: string }> {
+  const dir = opts?.reuseDir ?? mkdtempSync(join(tmpdir(), `sssf-${kind}-`));
+  if (!opts?.reuseDir) {
+    cpSync(fixture, dir, { recursive: true });
+    initRepo(dir);
+    const src = kind === "gold" ? GOLD_ADWS : TS_ADWS;
+    const dest = join(dir, "adws");
+    rmSync(dest, { recursive: true, force: true });
+    cpSync(src, dest, { recursive: true });
+    for (const rel of ["adws/adw_sssf_config", "adws/adw_data"]) {
+      const keep = join(fixture, rel);
+      if (existsSync(keep)) cpSync(keep, join(dir, rel), { recursive: true });
+    }
+    stampCommit(dir);
+    opts?.prepare?.(dir);
   }
-  stampCommit(dir);
+  const dest = join(dir, "adws");
   const cmd = kind === "gold"
     ? ["uv", "run", "-q", join(dest, c.script.replace(/\.ts$/, ".py")), ...c.args]
     : ["bun", join(dest, c.script), ...c.args];
@@ -96,8 +114,8 @@ export async function runSide(kind: "gold" | "port", c: Case, fixture: string): 
   const porcelain = utf8(
     Bun.spawnSync(["git", "status", "--porcelain"], { cwd: dir, stdout: "pipe" }).stdout,
   );
-  const side: Side = { ...result, dump, jsonl, files, porcelain };
-  rmSync(dir, { recursive: true, force: true });
+  const side: Side & { dir: string } = { ...result, dump, jsonl, files, porcelain, dir };
+  if (!opts?.keep && !opts?.reuseDir) rmSync(dir, { recursive: true, force: true });
   return side;
 }
 

@@ -119,7 +119,7 @@ export function contextWindow(provider: string, modelId: string): number {
   return 0;
 }
 
-function _textOf(container: Dict): string {
+export function _textOf(container: Dict): string {
   const content = Array.isArray(container.content) ? container.content : [];
   let out = "";
   for (const part of content) {
@@ -128,11 +128,11 @@ function _textOf(container: Dict): string {
   return out;
 }
 
-function _clip(text: string, limit: number): string {
+export function _clip(text: string, limit: number): string {
   return pyLen(text) <= limit ? text : pyHead(text, limit).trimEnd() + "…";
 }
 
-function _label(tool: string, args: Dict): string {
+export function _label(tool: string, args: Dict): string {
   let value = "";
   for (const key of PRIMARY_ARGS) {
     const candidate = args[key];

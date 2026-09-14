@@ -8,6 +8,7 @@ const ignores = [
   "**/node_modules/**",
   "**/fixtures/repo_clean/**",
   "**/fixtures/repo_agent/**",
+  "**/fixtures/repo_claude/**",
 ];
 
 const sources = [

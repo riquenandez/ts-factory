@@ -18,7 +18,7 @@ adws/
     runner.ts       Run, PhaseHandle — the phase primitive and finish()
     agents.ts       loadConfig / validate / execute — parse retries, gates, permissions
     agentPi.ts     pi argv, JSONL stream tail, ToolCallTracker, model resolution
-    agentCc.ts     stub: throws
+    agentCc.ts     claude_code argv, stream-json tail, ClaudeToolCallTracker
     tracer.ts       SCHEMA + MIGRATIONS + every INSERT/UPDATE; JSONL append
     console.ts      the narrative — print AND trace, always together
     permissions.ts  git-fingerprint audit: snapshot / enforce / rollback

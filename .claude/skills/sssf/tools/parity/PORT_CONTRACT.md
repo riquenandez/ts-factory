@@ -20,6 +20,7 @@ Python under `python-gold/` is the spec. TypeScript under `templates/` is the pr
 - `protected_files` glob `adws/adw_*.py` becomes `adws/adw_*.ts` because the scripts are `.ts`. That is the only intentional glob change.
 - `makeAdw` emits `return run.finish()` because `run.succeeded` is a compile error.
 - Do not add comments that narrate what the Python already stated. A comment stays only for a non-obvious why.
+- `claude_code` has no Python gold; its contract is pinned by the `fake_claude` cases in `tools/parity/claude.test.ts`.
 
 ## Layout
 

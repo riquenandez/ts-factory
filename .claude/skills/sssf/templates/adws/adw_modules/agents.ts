@@ -1,10 +1,12 @@
 import { existsSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import * as agentCc from "./agentCc.ts";
 import * as agentPi from "./agentPi.ts";
 import { SystemExit } from "./compat/cli.ts";
 import { pyRepr, pyStr, pyTail, removePrefix } from "./compat/format.ts";
 import { pyJson, pyLoads, serdeJson } from "./compat/json.ts";
 import { modelValidate, type Schema } from "./compat/schema.ts";
+import { spawnCaptured } from "./compat/shell.ts";
 import { pyYamlLoad } from "./compat/yaml.ts";
 import {
   DEFAULT_PROTECTED,
@@ -22,7 +24,7 @@ import {
 import { PermissionBreach, enforce, snapshot } from "./permissions.ts";
 import * as prompts from "./prompts.ts";
 import type { Run } from "./runner.ts";
-import { RuntimeError, ValueError, newId } from "./utils.ts";
+import { RuntimeError, ValueError, newId, operatorEnv } from "./utils.ts";
 
 export const JSON_FIX_ATTEMPTS = 2;
 
@@ -145,6 +147,91 @@ function isFile(path: string): boolean {
   }
 }
 
+type Dict = Record<string, unknown>;
+
+interface AgentInterface {
+  run: (
+    request: PiRequest,
+    onEvent?: (event: Dict) => void,
+    onSpawn?: (pid: number) => void,
+    onExit?: (pid: number) => void,
+  ) => Promise<PiResult>;
+  newTracker(): { observe(event: Dict): Dict | null };
+  newSessionId(run: Run, agent: AgentConfig): string;
+  validate(agent: AgentConfig): string[];
+}
+
+function reuseOrMint(run: Run, agent: AgentConfig, mint: () => string): string {
+  const entry = run.agentMap[agent.name];
+  if (entry && entry.model === agent.model) return entry.session_id;
+  return mint();
+}
+
+function validatePi(agent: AgentConfig): string[] {
+  try {
+    agentPi.resolveModel(agent.model);
+    return [];
+  } catch (error) {
+    if (!(error instanceof ValueError)) throw error;
+    return [`agent ${pyRepr(agent.name)}: ${error.message}`];
+  }
+}
+
+let claudeBinary: { ok: boolean; detail: string } | null = null;
+
+function claudeBinaryStatus(): { ok: boolean; detail: string } {
+  if (claudeBinary) return claudeBinary;
+  const captured = spawnCaptured([agentCc.CLAUDE_CODE_PATH, "--version"], {
+    timeoutSeconds: 30,
+    env: operatorEnv(),
+  });
+  claudeBinary = {
+    ok: captured.returncode === 0,
+    detail: captured.stderr.trim() || captured.stdout.trim(),
+  };
+  return claudeBinary;
+}
+
+function validateClaudeCode(agent: AgentConfig): string[] {
+  const problems: string[] = [];
+  if (!agent.model.trim()) {
+    problems.push(`agent ${pyRepr(agent.name)}: model is empty`);
+  }
+  const binary = claudeBinaryStatus();
+  if (!binary.ok) {
+    problems.push(
+      `agent ${pyRepr(agent.name)}: claude_code binary not runnable: ${agentCc.CLAUDE_CODE_PATH} (${pyTail(binary.detail, 200)})`,
+    );
+  }
+  for (const entry of agent.harness_engineering) {
+    if (!entry.endsWith(".json")) {
+      problems.push(
+        `agent ${pyRepr(agent.name)}: harness_engineering entry ${entry} is a pi extension; claude_code takes MCP config JSON files`,
+      );
+    }
+  }
+  return problems;
+}
+
+const PI_INTERFACE: AgentInterface = {
+  run: agentPi.run,
+  newTracker: () => new agentPi.ToolCallTracker(),
+  newSessionId: (run, agent) =>
+    reuseOrMint(run, agent, () => `sssf-${run.adwId}-${agent.name}-${newId(4)}`),
+  validate: validatePi,
+};
+
+const CLAUDE_CODE_INTERFACE: AgentInterface = {
+  run: agentCc.run,
+  newTracker: () => new agentCc.ClaudeToolCallTracker(),
+  newSessionId: (run, agent) => reuseOrMint(run, agent, () => crypto.randomUUID()),
+  validate: validateClaudeCode,
+};
+
+function interfaceFor(agent: AgentConfig): AgentInterface {
+  return agent.coding_agent === "claude_code" ? CLAUDE_CODE_INTERFACE : PI_INTERFACE;
+}
+
 export function validate(cfg: SSSFConfig, required: string[]): void {
   const problems: string[] = [];
   for (const name of required) {
@@ -156,21 +243,10 @@ export function validate(cfg: SSSFConfig, required: string[]): void {
       problems.push(error.message);
       continue;
     }
-    if (agent.coding_agent !== "pi") {
-      problems.push(
-        `agent ${pyRepr(name)}: coding_agent ${pyRepr(agent.coding_agent)} ` +
-          "is not implemented in v1 (pi only)",
-      );
-    }
     for (const [label, ref] of [["system", agent.prompt_engineering.system], ["user", agent.prompt_engineering.user]]) {
       if (!isFile(ref!)) problems.push(`agent ${pyRepr(name)}: ${label} prompt not found: ${ref}`);
     }
-    try {
-      agentPi.resolveModel(agent.model);
-    } catch (error) {
-      if (!(error instanceof ValueError)) throw error;
-      problems.push(`agent ${pyRepr(name)}: ${error.message}`);
-    }
+    problems.push(...interfaceFor(agent).validate(agent));
   }
   if (problems.length) {
     throw new SystemExit("config validation failed:\n- " + problems.join("\n- "));
@@ -183,6 +259,7 @@ type Send = (prompt_text: string) => Promise<PiResult>;
 
 export async function execute(run: Run, phase: Phase, call: AgentCall): Promise<EnvelopeBase> {
   const agent = resolve(run.cfg, phase.params.owner);
+  const iface = interfaceFor(agent);
   const agentDir = join(run.sessionDir, agent.name);
   mkdirSync(agentDir, { recursive: true });
 
@@ -196,7 +273,7 @@ export async function execute(run: Run, phase: Phase, call: AgentCall): Promise<
   prompts.save(join(agentDir, "prompts"), "system.md", systemText);
   prompts.save(join(agentDir, "prompts"), "user.md", userText);
 
-  const sessionId = agentSessionId(run, agent);
+  const sessionId = iface.newSessionId(run, agent);
   run.tracer.event({
     adw_id: run.adwId,
     phase_id: phase.phase_id,
@@ -217,7 +294,7 @@ export async function execute(run: Run, phase: Phase, call: AgentCall): Promise<
 
   let latest: PiResult | null = null;
   const spent = new UsageBreakdown();
-  const forward = eventForwarder(run, phase, agent.name);
+  const forward = eventForwarder(run, phase, agent.name, iface.newTracker());
   // Absolute, like Path.resolve(): the pi subprocess reads these from repoRoot.
   const agentDirAbs = realpathSync(agentDir);
 
@@ -234,7 +311,7 @@ export async function execute(run: Run, phase: Phase, call: AgentCall): Promise<
       extensions: agent.harness_engineering,
       cwd: run.repoRoot,
     };
-    const result = await agentPi.run(
+    const result = await iface.run(
       request,
       forward,
       (pid) =>
@@ -371,14 +448,12 @@ function asReport(result: GateReport | string[] | null | undefined): GateReport 
   return report;
 }
 
-function agentSessionId(run: Run, agent: AgentConfig): string {
-  const entry = run.agentMap[agent.name];
-  if (entry && entry.model === agent.model) return entry.session_id;
-  return `sssf-${run.adwId}-${agent.name}-${newId(4)}`;
-}
-
-function eventForwarder(run: Run, phase: Phase, agentName: string): (event: agentPi.PiEvent) => void {
-  const tracker = new agentPi.ToolCallTracker();
+function eventForwarder(
+  run: Run,
+  phase: Phase,
+  agentName: string,
+  tracker: { observe(event: Dict): Dict | null },
+): (event: Dict) => void {
   return (event) => {
     const record = tracker.observe(event);
     if (record === null) return;
