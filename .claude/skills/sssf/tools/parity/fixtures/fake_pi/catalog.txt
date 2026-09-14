@@ -1,0 +1,4 @@
+Provider  Model  Context
+openrouter  google/gemini-3.6-flash  272K
+openai  gpt-5.6-terra  1.0M
+fireworks  accounts/fireworks/models/kimi-k3  128K

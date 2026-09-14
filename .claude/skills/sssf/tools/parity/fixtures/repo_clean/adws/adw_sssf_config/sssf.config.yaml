@@ -1,0 +1,7 @@
+defaults:
+  data_dir: adws/adw_data
+  protected_files: []
+observability:
+  db: adws/adw_data/sssf.db
+  poll_ms: 500
+agents: []

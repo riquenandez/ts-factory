@@ -1,0 +1,82 @@
+import { existsSync, mkdirSync, readFileSync, statSync } from "node:fs";
+import { join } from "node:path";
+import { pyHead } from "./compat/format.ts";
+
+const PATHSEP = ":";
+
+function utf8(bytes?: Uint8Array | null): string {
+  return Buffer.from(bytes ?? []).toString("utf8");
+}
+
+export function newId(length = 8): string {
+  const bytes = Math.floor(length / 2);
+  const buf = new Uint8Array(bytes);
+  crypto.getRandomValues(buf);
+  return [...buf].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+export function nowIso(): string {
+  return new Date().toISOString().replace("Z", "+00:00");
+}
+
+export function ensureDir(path: string): string {
+  mkdirSync(path, { recursive: true });
+  return path;
+}
+
+export function resolvePrompt(arg: string): string {
+  try {
+    if (existsSync(arg) && statSync(arg).isFile()) return readFileSync(arg, "utf8");
+  } catch {
+    /* OSError → inline */
+  }
+  return arg;
+}
+
+export function operatorEnv(): Record<string, string> {
+  const env: Record<string, string> = {};
+  for (const [k, v] of Object.entries(process.env)) {
+    if (v !== undefined) env[k] = v;
+  }
+  const venv = env.VIRTUAL_ENV;
+  delete env.VIRTUAL_ENV;
+  let parts = (env.PATH ?? "").split(PATHSEP).filter(Boolean);
+  if (venv) {
+    const venv_bin = join(venv, "bin");
+    parts = parts.filter((p) => p !== venv_bin);
+  }
+  parts = parts.filter((p) => !p.endsWith("/node_modules/.bin"));
+  env.PATH = parts.join(PATHSEP);
+  return env;
+}
+
+export function engineerName(): string {
+  const from_env = (process.env.ENGINEER_NAME ?? "").trim();
+  if (from_env) return from_env;
+  try {
+    const out = Bun.spawnSync(["git", "config", "user.name"], { stdout: "pipe", stderr: "pipe" });
+    const name = utf8(out.stdout).trim();
+    if (out.exitCode === 0 && name) return name;
+  } catch {
+    /* git missing */
+  }
+  return process.env.USER ?? "engineer";
+}
+
+export function clipRequest(request: string): string {
+  return pyHead(request, 500);
+}
+
+export class RuntimeError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "RuntimeError";
+  }
+}
+
+export class ValueError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ValueError";
+  }
+}

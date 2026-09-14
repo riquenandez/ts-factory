@@ -1,0 +1,1 @@
+{"type": "message_end", "message": {"role": "assistant", "content": [{"type": "text", "text": "{\"status\": \"success\", \"summary\": \"repo has a README\", \"artifacts\": [], \"notes_for_next_agent\": \"\"}"}], "usage": {"input": 10, "output": 5, "totalTokens": 15, "cost": {"total": 0.001}}, "stopReason": "stop"}}
