@@ -1,6 +1,6 @@
 import { collapseWhitespace, comma, fixed, pyHead, pyLen, pyStr } from "./compat/format.ts";
 import { escape, panel, render } from "./compat/markup.ts";
-import type { EnvelopeBase, GateReport, Phase } from "./data_types.ts";
+import type { EnvelopeBase, GateReport, Phase } from "./dataTypes.ts";
 import type { Tracer } from "./tracer.ts";
 
 const KIND_COLOR: Record<string, string> = { engineer: "cyan", agent: "magenta", code: "yellow" };
@@ -88,10 +88,10 @@ export class Console {
     this._emit(`  [dim]· ${escape(_clip(message))}[/dim]`);
   }
 
-  agentStarted(name: string, model: string, session_id: string): void {
+  agentStarted(name: string, model: string, sessionId: string): void {
     this._emit(
       `  [magenta]▸[/magenta] ${escape(name)} [dim]${escape(model)}[/dim]` +
-        `  [dim]session ${escape(session_id)}[/dim]`,
+        `  [dim]session ${escape(sessionId)}[/dim]`,
     );
   }
 

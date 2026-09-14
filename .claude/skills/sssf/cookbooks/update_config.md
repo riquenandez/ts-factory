@@ -90,7 +90,7 @@ Three steps, all required — skipping any one fails `agents.validate()` at ADW 
 
 1. **Prompts.** Create `adws/adw_data/prompt_engineering/{name}/system.md` (Purpose + Instructions — the agent's static identity, nothing else) and `user.md` (an h3 per incoming datum: `{{prompt}}`, `{{previous_envelope}}`, `{{context_handoff_dir}}`, then the task, then a `## Report` section showing the exact output JSON). Copy an existing pair as the shape.
 2. **Config entry.** Name, purpose, prompt refs, plus anything that differs from `defaults`.
-3. **An output type.** Every agent call parses against a concrete output type in `adw_modules/data_types.ts`. If none of `PlanOutput`, `BuildOutput`, `ScoutOutput`, `ReviewOutput`, `DocumentOutput` fits the new agent's report, add one — see `update_modules.md`. The user prompt's `Report` section must show exactly that JSON shape.
+3. **An output type.** Every agent call parses against a concrete output type in `adw_modules/dataTypes.ts`. If none of `PlanOutput`, `BuildOutput`, `ScoutOutput`, `ReviewOutput`, `DocumentOutput` fits the new agent's report, add one — see `update_modules.md`. The user prompt's `Report` section must show exactly that JSON shape.
 
 Then name the agent in an ADW's `REQUIRED_AGENTS` and call it.
 

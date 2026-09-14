@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import * as agentPi from "./agent_pi.ts";
+import * as agentPi from "./agentPi.ts";
 import { SystemExit } from "./compat/cli.ts";
 import { pyRepr, pyStr, pyTail, removePrefix } from "./compat/format.ts";
 import { pyJson, pyLoads, serdeJson } from "./compat/json.ts";
@@ -18,7 +18,7 @@ import {
   type PiRequest,
   type PiResult,
   type SSSFConfig,
-} from "./data_types.ts";
+} from "./dataTypes.ts";
 import { PermissionBreach, enforce, snapshot } from "./permissions.ts";
 import * as prompts from "./prompts.ts";
 import type { Run } from "./runner.ts";
@@ -183,20 +183,20 @@ type Send = (prompt_text: string) => Promise<PiResult>;
 
 export async function execute(run: Run, phase: Phase, call: AgentCall): Promise<EnvelopeBase> {
   const agent = resolve(run.cfg, phase.params.owner);
-  const agent_dir = join(run.sessionDir, agent.name);
-  mkdirSync(agent_dir, { recursive: true });
+  const agentDir = join(run.sessionDir, agent.name);
+  mkdirSync(agentDir, { recursive: true });
 
   const variables = {
     prompt: call.prompt,
     previous_envelope: call.previous ? serdeJson(call.previous, 2) : "(none)",
     context_handoff_dir: run.contextHandoffDir,
   };
-  const system_text = prompts.render(agent.prompt_engineering.system, variables);
-  const user_text = prompts.render(agent.prompt_engineering.user, variables);
-  prompts.save(join(agent_dir, "prompts"), "system.md", system_text);
-  prompts.save(join(agent_dir, "prompts"), "user.md", user_text);
+  const systemText = prompts.render(agent.prompt_engineering.system, variables);
+  const userText = prompts.render(agent.prompt_engineering.user, variables);
+  prompts.save(join(agentDir, "prompts"), "system.md", systemText);
+  prompts.save(join(agentDir, "prompts"), "user.md", userText);
 
-  const session_id = agentSessionId(run, agent);
+  const sessionId = agentSessionId(run, agent);
   run.tracer.event({
     adw_id: run.adwId,
     phase_id: phase.phase_id,
@@ -206,30 +206,30 @@ export async function execute(run: Run, phase: Phase, call: AgentCall): Promise<
       model: agent.model,
       thinking: agent.thinking,
       color: agent.color,
-      session_id,
+      session_id: sessionId,
       coding_agent: agent.coding_agent,
       purpose: agent.purpose,
       tools: agent.tools,
       harness_engineering: agent.harness_engineering,
     },
   });
-  run.console.agentStarted(agent.name, agent.model, session_id);
+  run.console.agentStarted(agent.name, agent.model, sessionId);
 
   let latest: PiResult | null = null;
   const spent = new UsageBreakdown();
   const forward = eventForwarder(run, phase, agent.name);
   // Absolute, like Path.resolve(): the pi subprocess reads these from repoRoot.
-  const agent_dir_abs = realpathSync(agent_dir);
+  const agentDirAbs = realpathSync(agentDir);
 
-  const send: Send = async (prompt_text) => {
+  const send: Send = async (promptText) => {
     const request: PiRequest = {
-      prompt: prompt_text,
-      system_prompt: system_text,
+      prompt: promptText,
+      system_prompt: systemText,
       model: agent.model,
       thinking: agent.thinking,
-      session_id,
-      session_dir: join(agent_dir_abs, "pi_sessions"),
-      raw_output_path: join(agent_dir_abs, "raw_output.jsonl"),
+      session_id: sessionId,
+      session_dir: join(agentDirAbs, "pi_sessions"),
+      raw_output_path: join(agentDirAbs, "raw_output.jsonl"),
       tools: agent.tools,
       extensions: agent.harness_engineering,
       cwd: run.repoRoot,
@@ -250,25 +250,25 @@ export async function execute(run: Run, phase: Phase, call: AgentCall): Promise<
     return result;
   };
 
-  const tree_before = snapshot(run);
+  const treeBefore = snapshot(run);
 
-  let result = await send(user_text);
+  let result = await send(userText);
   let [envelope, attempt] = await parseWithRetries(run, phase, call, result, send);
 
   const retries = phase.params.retries;
-  for (let gate_attempt = 1; gate_attempt <= Math.max(1, retries + 1); gate_attempt++) {
+  for (let gateAttempt = 1; gateAttempt <= Math.max(1, retries + 1); gateAttempt++) {
     const violations: string[] = [];
     for (const gate of call.gates ?? []) {
       const report = asReport(gate(envelope, run));
       const found = report.violations;
-      run.tracer.gateRow(phase, gate.name, report, gate_attempt);
+      run.tracer.gateRow(phase, gate.name, report, gateAttempt);
       run.tracer.event({
         adw_id: run.adwId,
         phase_id: phase.phase_id,
         type: found.length ? "gate_fail" : "gate_pass",
         name: gate.name,
         payload: {
-          attempt: gate_attempt,
+          attempt: gateAttempt,
           violations: found,
           checks: report.checks.map((c) => ({ item: c.item, ok: c.ok, note: c.note })),
         },
@@ -277,13 +277,13 @@ export async function execute(run: Run, phase: Phase, call: AgentCall): Promise<
       violations.push(...found);
     }
     if (!violations.length) break;
-    if (gate_attempt > retries) {
+    if (gateAttempt > retries) {
       throw new GateFailure(
-        `${agent.name} failed gates after ${gate_attempt} attempt(s):\n- ` + violations.join("\n- "),
+        `${agent.name} failed gates after ${gateAttempt} attempt(s):\n- ` + violations.join("\n- "),
       );
     }
-    phase.attempt = gate_attempt;
-    run.console.retry(agent.name, gate_attempt, retries, `${violations.length} gate violation(s)`);
+    phase.attempt = gateAttempt;
+    run.console.retry(agent.name, gateAttempt, retries, `${violations.length} gate violation(s)`);
     const correction =
       "Your previous response failed validation:\n- " +
       violations.join("\n- ") +
@@ -294,7 +294,7 @@ export async function execute(run: Run, phase: Phase, call: AgentCall): Promise<
 
   let touched: string[];
   try {
-    touched = enforce(run, phase, agent, tree_before);
+    touched = enforce(run, phase, agent, treeBefore);
   } catch (breach) {
     if (breach instanceof PermissionBreach) {
       run.tracer.event({
@@ -325,9 +325,9 @@ export async function execute(run: Run, phase: Phase, call: AgentCall): Promise<
   persistEnvelope(run, phase, agent.name, call, envelope, attempt, true);
   run.console.envelopeSummary(envelope, call.outputType.name);
   const context: PiResult = latest ?? result;
-  run.tracer.agentSessionRow(run.adwId, agent, session_id, context.context_tokens, context.context_window);
+  run.tracer.agentSessionRow(run.adwId, agent, sessionId, context.context_tokens, context.context_window);
   run.saveAgentMap(agent.name, {
-    session_id,
+    session_id: sessionId,
     model: agent.model,
     coding_agent: agent.coding_agent,
   });
@@ -377,7 +377,7 @@ function agentSessionId(run: Run, agent: AgentConfig): string {
   return `sssf-${run.adwId}-${agent.name}-${newId(4)}`;
 }
 
-function eventForwarder(run: Run, phase: Phase, agent_name: string): (event: agentPi.PiEvent) => void {
+function eventForwarder(run: Run, phase: Phase, agentName: string): (event: agentPi.PiEvent) => void {
   const tracker = new agentPi.ToolCallTracker();
   return (event) => {
     const record = tracker.observe(event);
@@ -390,7 +390,7 @@ function eventForwarder(run: Run, phase: Phase, agent_name: string): (event: age
       name: pyStr(label),
       started_at: (started_at as string | undefined) ?? null,
       ended_at: (ended_at as string | undefined) ?? null,
-      payload: { ...rest, agent: agent_name },
+      payload: { ...rest, agent: agentName },
     });
   };
 }
@@ -451,25 +451,25 @@ async function parseWithRetries(
 function persistEnvelope(
   run: Run,
   phase: Phase,
-  agent_name: string,
+  agentName: string,
   call: AgentCall,
   envelope: EnvelopeBase | null,
   attempt: number,
   valid: boolean,
   raw = "",
 ): void {
-  const payload_json = envelope
+  const payloadJson = envelope
     ? call.outputType.dumpJson(envelope, 2)
     : pyJson({ raw: pyTail(raw, 2000) });
-  run.tracer.envelopeRow(phase, agent_name, call.outputType.name, payload_json, valid, attempt);
+  run.tracer.envelopeRow(phase, agentName, call.outputType.name, payloadJson, valid, attempt);
   if (envelope) {
     const record = {
-      agent_name,
-      purpose: resolve(run.cfg, agent_name).purpose,
+      agent_name: agentName,
+      purpose: resolve(run.cfg, agentName).purpose,
       output_type: call.outputType.name,
       attempt,
       ...call.outputType.dump(envelope),
     };
-    writeFileSync(join(run.sessionDir, agent_name, "envelope.json"), pyJson(record, 2));
+    writeFileSync(join(run.sessionDir, agentName, "envelope.json"), pyJson(record, 2));
   }
 }

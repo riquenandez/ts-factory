@@ -417,14 +417,14 @@ export class UsageBreakdown {
   cache_write_cost = 0;
   total_cost = 0;
 
-  addTurn(usage: Record<string, unknown>, total_tokens: number): void {
+  addTurn(usage: Record<string, unknown>, totalTokens: number): void {
     const cost = (usage.cost as Record<string, unknown> | undefined) ?? {};
     this.input_tokens += Number(usage.input ?? 0);
     this.output_tokens += Number(usage.output ?? 0);
     this.cache_read_tokens += Number(usage.cacheRead ?? 0);
     this.cache_write_tokens += Number(usage.cacheWrite ?? 0);
     this.reasoning_tokens += Number(usage.reasoning ?? 0);
-    this.total_tokens += total_tokens;
+    this.total_tokens += totalTokens;
     this.input_cost += Number(cost.input ?? 0);
     this.output_cost += Number(cost.output ?? 0);
     this.cache_read_cost += Number(cost.cacheRead ?? 0);
@@ -474,15 +474,15 @@ export interface PiResult {
   context_window: number;
 }
 
-export function newPiResult(session_id: string, context_window = 0): PiResult {
+export function newPiResult(sessionId: string, contextWindow = 0): PiResult {
   return {
     text: "",
     returncode: 0,
-    session_id,
+    session_id: sessionId,
     tokens: 0,
     cost: 0,
     usage: new UsageBreakdown(),
     context_tokens: 0,
-    context_window,
+    context_window: contextWindow,
   };
 }

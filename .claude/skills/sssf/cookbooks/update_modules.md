@@ -10,18 +10,18 @@ Extend `adws/adw_modules/` with new low-level logic.
 
 | Module | Owns |
 |---|---|
-| `data_types.ts` | Every output type: `AgentCall`, `PhaseParams`, `Phase`, `EnvelopeBase` + one output type per agent call, the config models (`AgentConfig`, `SSSFConfig`), `EventRecord`, and `PiRequest`/`PiResult` |
+| `dataTypes.ts` | Every output type: `AgentCall`, `PhaseParams`, `Phase`, `EnvelopeBase` + one output type per agent call, the config models (`AgentConfig`, `SSSFConfig`), `EventRecord`, and `PiRequest`/`PiResult` |
 | `agents.ts` | `loadConfig`, `validate`, resolving an entry → coding-agent interface + model + thinking + harness extensions |
 | `runner.ts` | the `Run` object; `run.phase(params, body)` callback; `ph.call()` on agent phases |
-| `agent_pi.ts` | the Pi interface (v1) — non-interactive `pi -p --mode json`, JSONL stream tailed live, model resolved against `~/.pi/agent/models.json`; `--session-id` creates-or-continues, so running and continuing an agent are the same call |
-| `agent_cc.ts` | the Claude Code interface — stubbed in v1, lands in v2 |
+| `agentPi.ts` | the Pi interface (v1) — non-interactive `pi -p --mode json`, JSONL stream tailed live, model resolved against `~/.pi/agent/models.json`; `--session-id` creates-or-continues, so running and continuing an agent are the same call |
+| `agentCc.ts` | the Claude Code interface — stubbed in v1, lands in v2 |
 | `gates.ts` | validation gates over envelope claims |
 | `changes.ts` | deterministic change capture: resolve the base ref, `git diff` into `context_handoff/changes.diff`, adapt the `ChangeSet` into an envelope an agent can be handed |
 | `prompts.ts` | load system/user prompt refs from config, render placeholders |
 | `session.ts` | mint or join `adwId`, maintain `agent_map.json`, create session dirs incl. `context_handoff/` |
 | `tracer.ts` | append JSONL **and** insert every event into `sssf.db` as it happens |
 | `console.ts` | the terminal narrative — every line printed also lands in the db as a `log` event, so the UI reads the same story; plain sequential lines, no spinners |
-| `git_helper.ts` | branch, status, diff, commit — the raw plumbing `changes.ts` composes. Import it as `gitHelper`. |
+| `gitHelper.ts` | branch, status, diff, commit — the raw plumbing `changes.ts` composes. Import it as `gitHelper`. |
 | `utils.ts` | safe subprocess env, logging, `resolvePrompt` |
 
 ## Never `console.log`
@@ -30,7 +30,7 @@ Modules report through `run.console` — never a bare `console.log`. Each consol
 
 ## The four-param rule
 
-**Any function taking more than 4 parameters gets them converted into a concrete data type in `data_types.ts`.** `AgentCall` and `PhaseParams` are the pattern — `run.phase()` and `ph.call()` each take exactly one object. This is skill-wide: every module the factory generates obeys it.
+**Any function taking more than 4 parameters gets them converted into a concrete data type in `dataTypes.ts`.** `AgentCall` and `PhaseParams` are the pattern — `run.phase()` and `ph.call()` each take exactly one object. This is skill-wide: every module the factory generates obeys it.
 
 ```ts
 interface ReviewParams {
@@ -73,7 +73,7 @@ Schema `name:` strings are the JSON keys the agent must emit. They stay snake_ca
 
 **The output contract is a synced triad — one change means three edits, always together:**
 
-1. The type in `data_types.ts` (the enforcer).
+1. The type in `dataTypes.ts` (the enforcer).
 2. The agent's `user.md` `## Report` section showing exactly that JSON (the ask).
 3. Every call site passing `outputType:` (the binding) — `grep -rn "ReviewOutput" adws/` to find them all.
 
@@ -84,7 +84,7 @@ If the type and the Report example drift, the agent produces what the prompt ask
 A gate is a callable — `gate(envelope, run) => GateReport`. You record **one check per item you look at**, and the harness derives the verdict: any failed check is a violation, and no failed checks means pass.
 
 ```ts
-import { GateReport, type EnvelopeBase } from "./data_types.ts";
+import { GateReport, type EnvelopeBase } from "./dataTypes.ts";
 
 export function testsDeclaredPassed(envelope: EnvelopeBase, _run: unknown): GateReport {
   const report = new GateReport();

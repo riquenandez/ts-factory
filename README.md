@@ -192,31 +192,33 @@ Config defines who an agent **is**. The ADW call site defines how it is **used**
 
 Every run is a sequence of phases, and every phase is the same context manager no matter who owns it.
 
-```python
-REQUIRED_AGENTS = ["planner", "builder", "reviewer"]   # names, never models
+```ts
+const REQUIRED_AGENTS = ["planner", "builder", "reviewer"];   // names, never models
 
-cfg = agents.load_config(config)
-agents.validate(cfg, REQUIRED_AGENTS)   # a missing agent fails before anything spawns
-run = session.ensure(cfg, adw_id)       # pin-or-create the session
+const cfg = agents.loadConfig(config);
+agents.validate(cfg, REQUIRED_AGENTS);   // a missing agent fails before anything spawns
+const run = session.ensure(cfg, adwId);  // pin-or-create the session
 
-with run.phase(PhaseParams(name="plan", kind="agent", owner="planner",
-                           description="Turn the request into an implementable plan")) as ph:
-    plan = ph.call(AgentCall(output_type=PlanOutput, prompt=prompt,
-                             gates=[gates.artifacts_exist, gates.files_non_empty]))
+const plan = await run.phase({ name: "plan", kind: "agent", owner: "planner",
+  description: "Turn the request into an implementable plan" }, async (ph) => {
+  return await ph.call({ outputType: PlanOutput, prompt,
+    gates: [gates.artifactsExist, gates.filesNonEmpty] }) as PlanOutput;
+});
 
-with run.phase(PhaseParams(name="commit", kind="code", owner="git",
-                           description="Commit the working tree")) as ph:
-    message = build.commit_message or f"sssf({run.adw_id}): {build.summary}"
-    ph.log(sha=git_helper.commit_all(message), message=message)
+await run.phase({ name: "commit", kind: "code", owner: "git",
+  description: "Commit the working tree" }, async (ph) => {
+  const message = build.commit_message || `sssf(${run.adwId}): ${build.summary}`;
+  ph.log({ sha: gitHelper.commitAll(message), message });
+});
 
-return run.finish(accepted=review.approved, reason="the reviewer never approved")
+return run.finish({ accepted: review.approved, reason: "the reviewer never approved" });
 ```
 
 Three kinds, three swim lanes. **engineer** is the human lane. **agent** is `ph.call(...)`: prompt in, typed envelope out, gates verified. **code** is a deterministic step that stands on its own, like a commit or a migration, and it is never buried inside an agent phase, so the trace shows exactly when code ran and when an agent was working.
 
 That commit phase is the whole pattern in miniature. The builder proposes the message as a field on its envelope. Code decides whether to use it, falls back when it is empty, and performs the write. The agent never runs `git commit` itself.
 
-**Success must be earned.** Every phase defaults to `fail`. A clean exit flips it, and an agent phase also needs its envelope to parse and every gate to come back green. `run.finish(accepted=...)` adds the second question, because phases passing is not the same as the run being acceptable: a test phase that ran a red suite did its job perfectly. One call settles the exit code, the session status, and the banner together, so they cannot disagree.
+**Success must be earned.** Every phase defaults to `fail`. A clean exit flips it, and an agent phase also needs its envelope to parse and every gate to come back green. `run.finish({ accepted })` adds the second question, because phases passing is not the same as the run being acceptable: a test phase that ran a red suite did its job perfectly. One call settles the exit code, the session status, and the banner together, so they cannot disagree.
 
 ---
 
@@ -228,16 +230,18 @@ That commit phase is the whole pattern in miniature. The builder proposes the me
 
 An agent has exactly two output channels: reference files written into `context_handoff/`, and a final valid-JSON response parsed against the output type the call declared. Code persists that response as `envelope.json`, records it, and injects it into the next agent's prompt. Context transfers in code, not in conversation.
 
-```python
-class EnvelopeBase(BaseModel):
-    status: Literal["success", "fail"]
-    summary: str = ""
-    artifacts: list[str] = Field(default_factory=list)
-    notes_for_next_agent: str = ""
+```ts
+export interface EnvelopeBase {
+  status: "success" | "fail";
+  summary: string;
+  artifacts: string[];
+  notes_for_next_agent: string;
+}
 
-class BuildOutput(EnvelopeBase):
-    changed_files: list[str] = Field(default_factory=list)
-    commit_message: str = ""        # consumed by the git commit phase
+export interface BuildOutput extends EnvelopeBase {
+  changed_files: string[];
+  commit_message: string;         // consumed by the git commit phase
+}
 ```
 
 Determinism is wired into every step. Agents must return a specific structure, every time. If it does not parse, they get asked again until it does.
@@ -246,7 +250,7 @@ Gates verify claims, never predictions. Nobody knows which files an agent will t
 
 When JSON does not parse or a gate returns violations, **nothing restarts**. The harness re-prompts the same session with a correction naming exactly what was wrong, and the context window stays intact. Pi treats `--session-id` as create-or-continue, so running an agent and continuing it are the same call. A cold restart throws away everything the agent learned. A correction costs one message.
 
-The output contract lives in three places and they are one thing: the type in `data_types.ts`, the JSON example in that agent's `user.md` `## Report` section, and `output_type=` at the call site. **Change one, change all three in the same edit.**
+The output contract lives in three places and they are one thing: the type in `dataTypes.ts`, the JSON example in that agent's `user.md` `## Report` section, and `output_type=` at the call site. **Change one, change all three in the same edit.**
 
 ---
 
@@ -256,7 +260,7 @@ The output contract lives in three places and they are one thing: the type in `d
   <img src="images/06_trace_path.svg" alt="Running agents to tracer.ts to a WAL SQLite db with seven tables, read by a cursor poll query, with no websocket and no ingest endpoint" width="780">
 </p>
 
-One data path, no exceptions: **agents write to SQLite, readers poll SQLite.** `agent_pi.ts` tails the coding agent's JSONL stdout line by line and the tracer inserts each event while the agent is still working, so tool calls are visible mid-run instead of batched at the end.
+One data path, no exceptions: **agents write to SQLite, readers poll SQLite.** `agentPi.ts` tails the coding agent's JSONL stdout line by line and the tracer inserts each event while the agent is still working, so tool calls are visible mid-run instead of batched at the end.
 
 Ten event types land across seven tables: `sessions`, `phases`, `events`, `envelopes`, `gate_results`, `agent_sessions`, and `processes` (adw_id to pid, so a stuck run can be found and stopped). Every event logs against both its `adw_id` and its `phase_id`, and `parent_id` nests spans, so an agent phase expands into its own tool calls.
 
@@ -290,7 +294,7 @@ ts-factory/                             # the deployable factory, and nothing el
     ├── SKILL.md                        # hard rules + request routing table
     ├── cookbooks/                      # 9 orchestrator playbooks, loaded lazily
     ├── references/                     # config / handoff / observability specs
-    ├── scripts/                        # install.ts, make_config.ts, make_adw.ts
+    ├── scripts/                        # install.ts, makeConfig.ts, makeAdw.ts
     ├── apps/visualizer/                # the read-only trace UI (Vue + Vite on Bun)
     └── templates/                      # EXACTLY what install.ts stamps
         ├── sssf.config.yaml            # the starter roster
@@ -359,12 +363,12 @@ Honest edges, because knowing them is cheaper than discovering them.
 | A bare model pattern | The same model sits under several providers, so `gemini-3.6-flash` matches three catalog entries and `agents.validate()` refuses to spawn | Always write `provider/model-id` |
 | `just` is not installed | The stamped `justfile` is a convenience wrapper, nothing depends on it | Every recipe is a one-line `bun` or `sqlite3` command. Open the justfile and run the line yourself |
 | A coding agent hangs silently | No events, no tokens, an empty `raw_output.jsonl`. The trace goes quiet rather than red | Query `processes` for what is alive and kill it children-first. A killed run finalizes its own trace to `fail` |
-| The synced triad drifts | Type, `## Report` example, and `output_type=` disagree, so every call burns correction rounds | Grep the type name and fix all three in one edit |
+| The synced triad drifts | Type, `## Report` example, and `outputType:` disagree, so every call burns correction rounds | Grep the type name and fix all three in one edit |
 | Gates pass, output is bad | Gates check what a predicate can check, not plan quality or code taste | Run the `reviewer`, or read it yourself |
 | An agent edits something it should not | Detected and rolled back after the call, and the phase fails | Expected. Widen that agent's `writes` if the change was legitimate |
-| Commit phase has nothing to commit | `commit_all` raises if the cwd is not a git repo or nothing changed | `git init` with one commit first. A no-op build fails the phase rather than committing nothing |
+| Commit phase has nothing to commit | `commitAll` raises if the cwd is not a git repo or nothing changed | `git init` with one commit first. A no-op build fails the phase rather than committing nothing |
 | `install.ts --force` | Overwrites **all** stamped files, config and prompts included | Commit before you force |
-| `coding_agent: claude_code` | Schema-valid, but `agent_cc.ts` raises | v1 is Pi only |
+| `coding_agent: claude_code` | Schema-valid, but `agentCc.ts` raises | v1 is Pi only |
 
 Also missing on purpose, so you know what to add: this runs on your current branch. For real work you want a branch per run, a sandbox around the agent, and a merge step at the end.
 

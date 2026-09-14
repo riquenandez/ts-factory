@@ -22,7 +22,7 @@ import * as quality from "./adw_modules/quality.ts";
 import * as session from "./adw_modules/session.ts";
 import * as utils from "./adw_modules/utils.ts";
 import { parseArgs, runMain } from "./adw_modules/compat/cli.ts";
-import { BuildOutput, type QualityResult } from "./adw_modules/data_types.ts";
+import { BuildOutput, type QualityResult } from "./adw_modules/dataTypes.ts";
 
 const REQUIRED_AGENTS = ["builder"];
 const MAX_FIX_LOOPS = 3;

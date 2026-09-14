@@ -42,8 +42,8 @@ export function operatorEnv(): Record<string, string> {
   delete env.VIRTUAL_ENV;
   let parts = (env.PATH ?? "").split(PATHSEP).filter(Boolean);
   if (venv) {
-    const venv_bin = join(venv, "bin");
-    parts = parts.filter((p) => p !== venv_bin);
+    const venvBin = join(venv, "bin");
+    parts = parts.filter((p) => p !== venvBin);
   }
   parts = parts.filter((p) => !p.endsWith("/node_modules/.bin"));
   env.PATH = parts.join(PATHSEP);
@@ -51,8 +51,8 @@ export function operatorEnv(): Record<string, string> {
 }
 
 export function engineerName(): string {
-  const from_env = (process.env.ENGINEER_NAME ?? "").trim();
-  if (from_env) return from_env;
+  const fromEnv = (process.env.ENGINEER_NAME ?? "").trim();
+  if (fromEnv) return fromEnv;
   try {
     const out = Bun.spawnSync(["git", "config", "user.name"], { stdout: "pipe", stderr: "pipe" });
     const name = utf8(out.stdout).trim();

@@ -9,11 +9,11 @@ Phases: engineer(request) -> planner -> builder -> git(commit)
 
 import * as agents from "./adw_modules/agents.ts";
 import * as gates from "./adw_modules/gates.ts";
-import * as gitHelper from "./adw_modules/git_helper.ts";
+import * as gitHelper from "./adw_modules/gitHelper.ts";
 import * as session from "./adw_modules/session.ts";
 import * as utils from "./adw_modules/utils.ts";
 import { parseArgs, runMain } from "./adw_modules/compat/cli.ts";
-import { BuildOutput, PlanOutput } from "./adw_modules/data_types.ts";
+import { BuildOutput, PlanOutput } from "./adw_modules/dataTypes.ts";
 
 const REQUIRED_AGENTS = ["planner", "builder"];
 

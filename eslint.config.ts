@@ -26,6 +26,17 @@ export default tseslint.config(
         "error",
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" },
       ],
+      // PORT_CONTRACT: identifiers are camelCase; wire fields (object keys, class fields,
+      // destructured sqlite/JSON columns) keep their Python snake_case spelling.
+      "@typescript-eslint/naming-convention": [
+        "error",
+        { selector: "variable", modifiers: ["destructured"], format: null },
+        {
+          selector: ["variable", "function", "parameter", "classMethod", "typeLike"],
+          format: ["camelCase", "PascalCase", "UPPER_CASE"],
+          leadingUnderscore: "allow",
+        },
+      ],
     },
   },
   {

@@ -1,7 +1,7 @@
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import * as gitHelper from "./git_helper.ts";
-import { baseRef, changeSet, type ChangeCapture, type ChangeSet, type ChangesOutput } from "./data_types.ts";
+import * as gitHelper from "./gitHelper.ts";
+import { baseRef, changeSet, type ChangeCapture, type ChangeSet, type ChangesOutput } from "./dataTypes.ts";
 import type { Run } from "./runner.ts";
 import { RuntimeError } from "./utils.ts";
 import { pyRepr } from "./compat/format.ts";
@@ -62,17 +62,17 @@ export function capture(run: Run, params: ChangeCapture): ChangeSet {
       `${lines.length} — run \`git diff ${base.commit}\` for the rest]`;
   }
 
-  const untracked_block = untracked.length
+  const untrackedBlock = untracked.length
     ? untracked.map((f) => `  ${f}`).join("\n")
     : "  (none)";
-  const diff_path = join(run.contextHandoffDir, DIFF_FILENAME);
+  const diffPath = join(run.contextHandoffDir, DIFF_FILENAME);
   writeFileSync(
-    diff_path,
+    diffPath,
     `# changes since ${base.label} @ ${gitHelper.shortSha(base.commit)}\n` +
       `# ${base.reason}\n` +
       `# +${insertions} -${deletions} across ${files.length} tracked file(s)\n\n` +
       `## stat\n${stat || "  (no tracked changes)"}\n\n` +
-      `## untracked files\n${untracked_block}\n\n` +
+      `## untracked files\n${untrackedBlock}\n\n` +
       `## diff\n${text}\n`,
   );
 
@@ -83,7 +83,7 @@ export function capture(run: Run, params: ChangeCapture): ChangeSet {
     insertions,
     deletions,
     stat,
-    diff_path,
+    diff_path: diffPath,
     truncated,
   });
 }

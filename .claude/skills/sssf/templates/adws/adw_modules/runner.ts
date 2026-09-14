@@ -11,8 +11,8 @@ import {
   type Phase,
   type PhaseParams,
   type SSSFConfig,
-} from "./data_types.ts";
-import { repoRoot } from "./git_helper.ts";
+} from "./dataTypes.ts";
+import { repoRoot } from "./gitHelper.ts";
 import { Tracer } from "./tracer.ts";
 import { pyJson } from "./compat/json.ts";
 import { pyStr } from "./compat/format.ts";
@@ -172,9 +172,9 @@ export class Run {
 
   finish(opts: { accepted?: boolean; reason?: string } = {}): number {
     const accepted = opts.accepted ?? true;
-    const phases_ok = this.phases.length > 0 && this.phases.every((p) => p.status === "success");
-    const ok = phases_ok && accepted;
-    if (phases_ok && !accepted) {
+    const phasesOk = this.phases.length > 0 && this.phases.every((p) => p.status === "success");
+    const ok = phasesOk && accepted;
+    if (phasesOk && !accepted) {
       const note = opts.reason || "the run's acceptance criterion was not met";
       this.tracer.event({
         adw_id: this.adwId,

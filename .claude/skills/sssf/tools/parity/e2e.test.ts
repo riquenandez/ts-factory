@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
-import { run_both } from "./run_both.ts";
+import { runBoth } from "./runBoth.ts";
 
 const FIXTURE = join(import.meta.dir, "fixtures/repo_clean");
 const AGENT_FIXTURE = join(import.meta.dir, "fixtures/repo_agent");
@@ -11,7 +11,7 @@ const JSONL = join(import.meta.dir, "fixtures/fake_pi/generic_ok.jsonl");
 
 describe("gold vs port", () => {
   test("missing prompt is argparse exit 2", async () => {
-    const misses = await run_both(
+    const misses = await runBoth(
       { name: "quality-missing-prompt", script: "adw_quality.ts", args: [] },
       FIXTURE,
     );
@@ -19,7 +19,7 @@ describe("gold vs port", () => {
   }, 60_000);
 
   test("placeholder quality blocks succeed with pinned adw-id", async () => {
-    const misses = await run_both(
+    const misses = await runBoth(
       {
         name: "quality-placeholders",
         script: "adw_quality.ts",
@@ -31,7 +31,7 @@ describe("gold vs port", () => {
   }, 60_000);
 
   test("unknown agent fails validation with no session", async () => {
-    const misses = await run_both(
+    const misses = await runBoth(
       {
         name: "prompt-unknown-agent",
         script: "adw_prompt.ts",
@@ -43,7 +43,7 @@ describe("gold vs port", () => {
   }, 60_000);
 
   test("adw_prompt scout via fake_pi produces matching traces", async () => {
-    const misses = await run_both(
+    const misses = await runBoth(
       {
         name: "prompt-fake-pi",
         script: "adw_prompt.ts",

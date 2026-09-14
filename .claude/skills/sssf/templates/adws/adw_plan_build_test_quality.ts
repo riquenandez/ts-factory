@@ -15,12 +15,12 @@ fails the run.
 
 import * as agents from "./adw_modules/agents.ts";
 import * as gates from "./adw_modules/gates.ts";
-import * as gitHelper from "./adw_modules/git_helper.ts";
+import * as gitHelper from "./adw_modules/gitHelper.ts";
 import * as quality from "./adw_modules/quality.ts";
 import * as session from "./adw_modules/session.ts";
 import * as utils from "./adw_modules/utils.ts";
 import { parseArgs, runMain } from "./adw_modules/compat/cli.ts";
-import { BuildOutput, PlanOutput, type QualityResult } from "./adw_modules/data_types.ts";
+import { BuildOutput, PlanOutput, type QualityResult } from "./adw_modules/dataTypes.ts";
 
 const REQUIRED_AGENTS = ["planner", "builder"];
 const MAX_FIX_LOOPS = 3;
@@ -79,10 +79,10 @@ async function main(
     });
   }
 
-  let test_result: QualityResult | null = null;
-  let quality_result: QualityResult | null = null;
+  let testResult: QualityResult | null = null;
+  let qualityResult: QualityResult | null = null;
   for (let i = 1; i <= MAX_FIX_LOOPS; i++) {
-    quality_result = await run.phase({
+    qualityResult = await run.phase({
       name: `verify_${i}`,
       kind: "code",
       owner: "quality",
@@ -95,9 +95,9 @@ async function main(
 
     // runQuality() already includes the test block; a repo that wants tests
     // in their own phase can split them out the way this comment does.
-    test_result = quality_result;
+    testResult = qualityResult;
 
-    if (quality_result.passed && test_result.passed) {
+    if (qualityResult.passed && testResult.passed) {
       break;
     }
     if (i === MAX_FIX_LOOPS) {
@@ -106,8 +106,8 @@ async function main(
 
     // Whichever block failed becomes the builder's spec — verbatim command
     // output, no parser standing between the failure and the fix.
-    const broken = !quality_result.passed ? quality_result : test_result;
-    const what = !quality_result.passed ? "verification" : "tests";
+    const broken = !qualityResult.passed ? qualityResult : testResult;
+    const what = !qualityResult.passed ? "verification" : "tests";
     previous = await run.phase({
       name: `fix_${i}`,
       kind: "agent",
@@ -125,8 +125,8 @@ async function main(
   }
 
   const verified = (
-    quality_result !== null && quality_result.passed
-    && test_result !== null && test_result.passed
+    qualityResult !== null && qualityResult.passed
+    && testResult !== null && testResult.passed
   );
   if (verified) {
     await run.phase({

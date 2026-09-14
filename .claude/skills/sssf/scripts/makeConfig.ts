@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-/** make_config — generate adws/adw_sssf_config/sssf.config.yaml with great defaults. */
+/** makeConfig — generate adws/adw_sssf_config/sssf.config.yaml with great defaults. */
 
 import { copyFileSync, existsSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";

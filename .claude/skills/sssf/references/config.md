@@ -2,7 +2,7 @@
 
 The full `sssf.config.yaml` spec: every field, how defaults merge, and how model / thinking / tools / extensions map onto the coding agent.
 
-It lives at **`adws/adw_sssf_config/sssf.config.yaml`** — the default path every `adw_*.ts` and the justfile resolve, and where `install.ts` / `make_config.ts` stamp it. Pass `--config <path>` to any ADW (or set `SSSF_CONFIG` for the justfile) to run against a different roster.
+It lives at **`adws/adw_sssf_config/sssf.config.yaml`** — the default path every `adw_*.ts` and the justfile resolve, and where `install.ts` / `makeConfig.ts` stamp it. Pass `--config <path>` to any ADW (or set `SSSF_CONFIG` for the justfile) to run against a different roster.
 
 ## Shape
 
@@ -42,7 +42,7 @@ agents:
 
 | Field | Type | Meaning |
 |---|---|---|
-| `coding_agent` | `pi` \| `claude_code` | Which interface runs the agent. **v1 implements `pi` only**; `claude_code` is specced and stubbed in `agent_cc.ts`, landing in v2. |
+| `coding_agent` | `pi` \| `claude_code` | Which interface runs the agent. **v1 implements `pi` only**; `claude_code` is specced and stubbed in `agentCc.ts`, landing in v2. |
 | `model` | string | Model id. For Pi, any id registered in `~/.pi/agent/models.json`. Default `gemini-3.6-flash`. |
 | `thinking` | enum | Reasoning effort — see below. Default `medium`. |
 | `color` | hex string | Lane color for every agent that does not set its own. Default empty — the visualizer falls back to its own palette. |

@@ -20,13 +20,13 @@ adws/
 ├── adw_document.ts              write up the work just done, from git diff vs main
 ├── adw_simple_sdlc.ts           plan → build → test → review → document; commits each product
 ├── adw_modules/                 ALL low-level logic — ADW scripts stay thin
-│   ├── data_types.ts            AgentCall, PhaseParams, Phase, Envelope + one output type per agent call
+│   ├── dataTypes.ts            AgentCall, PhaseParams, Phase, Envelope + one output type per agent call
 │   ├── agents.ts                loadConfig, validate, resolve entry → interface + model + thinking
 │   ├── runner.ts                the Run object: await run.phase(params, body) → ph.call({ outputType })
-│   ├── agent_pi.ts              Pi interface (v1)   ·   agent_cc.ts  Claude Code (v2, stubbed)
+│   ├── agentPi.ts              Pi interface (v1)   ·   agentCc.ts  Claude Code (v2, stubbed)
 │   ├── gates.ts                 gate(envelope, run) -> GateReport — one check per item verified
 │   ├── changes.ts               git diff vs a resolved base → ChangeSet → envelope for the documenter
-│   ├── prompts.ts, session.ts, tracer.ts, console.ts, git_helper.ts, utils.ts
+│   ├── prompts.ts, session.ts, tracer.ts, console.ts, gitHelper.ts, utils.ts
 └── adw_data/
     ├── prompt_engineering/{agent}/{system.md,user.md}   tracked — edit prompts HERE, never in the skill
     │                                planner · builder · scout · reviewer · documenter
@@ -44,7 +44,7 @@ adws/
 Every ADW run is a sequence of **phases**, each one `await run.phase({...}, async (ph) => { ... })`. Three kinds, three swim lanes:
 
 - **engineer** — the human lane; today the system-input phase (who asked, and for what).
-- **agent** — `ph.call(AgentCall(...))`: prompt in → typed envelope out → gates verified.
+- **agent** — `ph.call({ ... })`: prompt in → typed envelope out → gates verified.
 - **code** — deterministic steps that stand alone (git branch, git commit, migrate). Never buried inside an agent phase.
 
 **Success must be earned — every phase defaults to `fail`.** A clean exit flips it to success; agent phases additionally require the envelope to parse and all gates to come back green. A raise keeps it failed, records an error event, and aborts the run. `retries=N` on an agent phase buys extra gate-correction rounds through the same session before that raise happens.
@@ -53,7 +53,7 @@ Every ADW run is a sequence of **phases**, each one `await run.phase({...}, asyn
 
 Agents have exactly two output channels: reference files written into `context_handoff/`, and a **final valid-JSON response** parsed against the output type the call declared. Code persists it as `envelope.json` and injects it into the next agent's `user.md` via `{{previous_envelope}}`. Bad JSON is never a restart — the harness re-prompts the *same session, context intact*, until it parses (bounded). See `references/handoff.md`.
 
-**The output contract is a synced triad**: the type in `data_types.ts` ↔ the `## Report` JSON example in the agent's `user.md` ↔ `outputType:` at the call site. Editing any one of the three means editing all three in the same change — drift between them taxes every call with correction retries.
+**The output contract is a synced triad**: the type in `dataTypes.ts` ↔ the `## Report` JSON example in the agent's `user.md` ↔ `outputType:` at the call site. Editing any one of the three means editing all three in the same change — drift between them taxes every call with correction retries.
 
 ## Running an ADW
 

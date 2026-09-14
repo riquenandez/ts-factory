@@ -7,7 +7,7 @@ import type {
   QualityCheckSpec,
   QualityResult,
   VerifyOutput,
-} from "./data_types.ts";
+} from "./dataTypes.ts";
 import type { Run } from "./runner.ts";
 import { nowIso, operatorEnv } from "./utils.ts";
 
@@ -30,13 +30,13 @@ function checkDir(run: Run, name: string): string {
 
 function _run(spec: QualityCheckSpec, run: Run): QualityCheckResult {
   const phase = run.phases[run.phases.length - 1]!;
-  const output_dir = checkDir(run, spec.name);
-  const output_artifact = join(output_dir, "command.log");
+  const outputDir = checkDir(run, spec.name);
+  const outputArtifact = join(outputDir, "command.log");
   const command = shlexJoin(spec.argv);
   const env = operatorEnv();
 
   run.console.note(`quality ${spec.name}: ${command}`);
-  const started_at = nowIso();
+  const startedAt = nowIso();
   const clock = performance.now();
   const completed = spawnCaptured(spec.argv, {
     cwd: run.repoRoot,
@@ -49,7 +49,7 @@ function _run(spec: QualityCheckSpec, run: Run): QualityCheckResult {
 
   const duration = (performance.now() - clock) / 1000;
   writeFileSync(
-    output_artifact,
+    outputArtifact,
     `$ ${command}\nexit: ${returncode}\nduration_seconds: ${fixed(duration, 3)}\n` +
       `\n--- stdout ---\n${stdout}\n--- stderr ---\n${stderr}\n`,
   );
@@ -65,9 +65,9 @@ function _run(spec: QualityCheckSpec, run: Run): QualityCheckResult {
       command,
       returncode,
       passed,
-      output_artifact,
+      output_artifact: outputArtifact,
     },
-    started_at,
+    started_at: startedAt,
     ended_at: nowIso(),
   });
   run.console.note(
@@ -82,7 +82,7 @@ function _run(spec: QualityCheckSpec, run: Run): QualityCheckResult {
     returncode,
     passed,
     duration_seconds: duration,
-    output_artifact,
+    output_artifact: outputArtifact,
     output_tail: pyTail(stdout + stderr, TAIL_CHARS),
   };
 }

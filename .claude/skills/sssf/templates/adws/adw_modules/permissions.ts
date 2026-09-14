@@ -2,7 +2,7 @@ import { unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { spawnCaptured } from "./compat/shell.ts";
 import { pySorted, pyStr } from "./compat/format.ts";
-import type { AgentConfig, SSSFConfig } from "./data_types.ts";
+import type { AgentConfig, SSSFConfig } from "./dataTypes.ts";
 import type { Run } from "./runner.ts";
 
 export class PermissionBreach extends Error {
@@ -39,7 +39,7 @@ export function changedPaths(before: Map<string, string>, after: Map<string, str
   return pySorted([...keys].filter((p) => before.get(p) !== after.get(p)));
 }
 
-function _re_escape(char: string): string {
+function _reEscape(char: string): string {
   const named: Record<string, string> = {
     "\t": "\\t",
     "\n": "\\n",
@@ -68,7 +68,7 @@ function _glob(pattern: string): RegExp {
       out.push("[^/]");
       i += 1;
     } else {
-      out.push(_re_escape(char));
+      out.push(_reEscape(char));
       i += 1;
     }
   }
@@ -102,7 +102,7 @@ export function permitted(path: string, agent: AgentConfig, cfg: SSSFConfig): bo
   return agent.writes === null;
 }
 
-function _roll_back(
+function _rollBack(
   run: Run,
   path: string,
   before: Map<string, string>,
@@ -135,7 +135,7 @@ export function enforce(run: Run, _phase: unknown, agent: AgentConfig, before: M
 
   const outcomes = new Map<string, string>();
   for (const p of breaches) {
-    outcomes.set(p, _roll_back(run, p, before, after));
+    outcomes.set(p, _rollBack(run, p, before, after));
   }
   const scope =
     agent.writes !== null && agent.writes.length === 0

@@ -60,8 +60,8 @@ Deep specs, when needed: [references/config.md](references/config.md) · [refere
 ## Hard rules (enforced across everything the factory generates)
 
 1. **Validate before running** — every ADW declares `REQUIRED_AGENTS` and calls `agents.validate()` first; a missing/misnamed agent fails before anything spawns.
-2. **Typed outputs only** — every agent call pairs with a concrete output type in `adw_modules/data_types.ts`; parse failures re-prompt the same session (context intact), never restart.
-   **The output contract is a synced triad**: (a) the type in `data_types.ts`, (b) the JSON example in the agent's `user.md` `## Report` section, (c) `outputType:` at every call site. These are ONE contract — change any one, update all three in the same edit (grep the type name to find every call site).
+2. **Typed outputs only** — every agent call pairs with a concrete output type in `adw_modules/dataTypes.ts`; parse failures re-prompt the same session (context intact), never restart.
+   **The output contract is a synced triad**: (a) the type in `dataTypes.ts`, (b) the JSON example in the agent's `user.md` `## Report` section, (c) `outputType:` at every call site. These are ONE contract — change any one, update all three in the same edit (grep the type name to find every call site).
 3. **Gates validate claims, not guesses** — `gate(envelope, run) -> list[str]` violations; failures return to the same session as corrections.
 4. **Four-param rule** — any function with more than 4 parameters takes one concrete data type instead (`AgentCall`, `PhaseParams` are the pattern).
 5. **One agent, one prompt, one purpose** — identity lives in `system.md`; task shape (user prompt + output type) lives at the call site.

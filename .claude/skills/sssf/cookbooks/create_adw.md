@@ -42,7 +42,7 @@ Answer four questions, in order:
 ## Step 3 — Generate or write it
 
 ```bash
-bun .claude/skills/sssf/scripts/make_adw.ts --name review_docs --agents scout,builder
+bun .claude/skills/sssf/scripts/makeAdw.ts --name review_docs --agents scout,builder
 ```
 
 Writes `adws/adw_review_docs.ts`: one agent phase per name, chained by `previous:`, starter agents mapped to their output types, unknown agents to `GenericOutput`. It does NOT create config entries or prompt files — do that first (`update_config.md`), or `agents.validate()` will stop the run and tell you what's missing.
@@ -57,11 +57,11 @@ const DOC = `ADW Plan Build — plan the request, then implement the plan.`;
 
 import * as agents from "./adw_modules/agents.ts";
 import * as gates from "./adw_modules/gates.ts";
-import * as gitHelper from "./adw_modules/git_helper.ts";
+import * as gitHelper from "./adw_modules/gitHelper.ts";
 import * as session from "./adw_modules/session.ts";
 import * as utils from "./adw_modules/utils.ts";
 import { parseArgs, runMain } from "./adw_modules/compat/cli.ts";
-import { BuildOutput, PlanOutput } from "./adw_modules/data_types.ts";
+import { BuildOutput, PlanOutput } from "./adw_modules/dataTypes.ts";
 
 const REQUIRED_AGENTS = ["planner", "builder"];
 
@@ -139,7 +139,7 @@ await runMain(async () => {
 ## Non-negotiables
 
 - **`REQUIRED_AGENTS` + `agents.validate()`** — declare every agent name the script uses and validate before the first phase.
-- **Every agent call declares a concrete output type** from `data_types.ts`. No untyped handoffs.
+- **Every agent call declares a concrete output type** from `dataTypes.ts`. No untyped handoffs.
 - **`previous:` carries the chain** — the upstream envelope lands in the next agent's `user.md` as `{{previous_envelope}}`; bulky context moves through `context_handoff/` files the envelope references.
 - **The engineer request phase comes first**, always.
 - **Four-param rule** — `run.phase()` and `ph.call()` each take exactly one object; new helpers with >4 params get a data type.

@@ -1,4 +1,4 @@
-import { normalize_text } from "./normalize.ts";
+import { normalizeText } from "./normalize.ts";
 
 export interface Side {
   exit: number;
@@ -10,20 +10,20 @@ export interface Side {
   porcelain: string;
 }
 
-export function diff_sides(gold: Side, port: Side): string[] {
+export function diffSides(gold: Side, port: Side): string[] {
   const misses: string[] = [];
   if (gold.exit !== port.exit) misses.push(`exit ${gold.exit} vs ${port.exit}`);
-  const gs = normalize_text(gold.stdout);
-  const ps = normalize_text(port.stdout);
+  const gs = normalizeText(gold.stdout);
+  const ps = normalizeText(port.stdout);
   if (gs !== ps) misses.push(`stdout\n--- gold ---\n${gs}\n--- port ---\n${ps}`);
-  const ge = normalize_text(gold.stderr);
-  const pe = normalize_text(port.stderr);
+  const ge = normalizeText(gold.stderr);
+  const pe = normalizeText(port.stderr);
   if (ge !== pe) misses.push(`stderr\n--- gold ---\n${ge}\n--- port ---\n${pe}`);
-  const gd = normalize_text(gold.dump);
-  const pd = normalize_text(port.dump);
-  if (gd !== pd) misses.push(`sqlite dump\n${first_diff(gd, pd)}`);
-  const gj = normalize_text(gold.jsonl);
-  const pj = normalize_text(port.jsonl);
+  const gd = normalizeText(gold.dump);
+  const pd = normalizeText(port.dump);
+  if (gd !== pd) misses.push(`sqlite dump\n${firstDiff(gd, pd)}`);
+  const gj = normalizeText(gold.jsonl);
+  const pj = normalizeText(port.jsonl);
   if (gj !== pj) misses.push(`jsonl\n--- gold ---\n${gj}\n--- port ---\n${pj}`);
   const gk = Object.keys(gold.files).sort().join("\n");
   const pk = Object.keys(port.files).sort().join("\n");
@@ -34,7 +34,7 @@ export function diff_sides(gold: Side, port: Side): string[] {
   return misses;
 }
 
-function first_diff(a: string, b: string): string {
+function firstDiff(a: string, b: string): string {
   const aa = a.split("\n");
   const bb = b.split("\n");
   const n = Math.max(aa.length, bb.length);

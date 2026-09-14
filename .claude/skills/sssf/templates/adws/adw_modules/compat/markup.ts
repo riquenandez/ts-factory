@@ -90,31 +90,31 @@ export function panel(
   const color = opts.color ?? stdoutTty();
   const pad = 1;
   const lines = body.split("\n");
-  const title_plain = render(opts.title, false).plain;
-  const rendered_lines = lines.map((line) => render(line, color));
-  const content_width = Math.max(0, ...rendered_lines.map((l) => visibleWidth(l.ansi)));
-  const inner = Math.max(content_width + pad * 2, title_plain.length + 2);
-  const title_shown = render(opts.title, color);
-  const side = inner - title_plain.length - 2;
+  const titlePlain = render(opts.title, false).plain;
+  const renderedLines = lines.map((line) => render(line, color));
+  const contentWidth = Math.max(0, ...renderedLines.map((l) => visibleWidth(l.ansi)));
+  const inner = Math.max(contentWidth + pad * 2, titlePlain.length + 2);
+  const titleShown = render(opts.title, color);
+  const side = inner - titlePlain.length - 2;
   const left = Math.max(0, Math.floor(side / 2));
   const right = Math.max(0, side - left);
   const border = color ? (opts.borderStyle === "green" ? "\x1b[32m" : "\x1b[31m") : "";
   const reset = color ? RESET : "";
-  const top = `${border}╭${"─".repeat(left)} ${reset}${title_shown.ansi}${border} ${"─".repeat(right)}╮${reset}`;
-  const top_plain = `╭${"─".repeat(left)} ${title_plain} ${"─".repeat(right)}╮`;
+  const top = `${border}╭${"─".repeat(left)} ${reset}${titleShown.ansi}${border} ${"─".repeat(right)}╮${reset}`;
+  const topPlain = `╭${"─".repeat(left)} ${titlePlain} ${"─".repeat(right)}╮`;
   const mid: string[] = [];
-  const mid_plain: string[] = [];
-  for (const line of rendered_lines) {
+  const midPlain: string[] = [];
+  for (const line of renderedLines) {
     const fill = inner - pad * 2 - visibleWidth(line.ansi);
-    const right_spaces = pad + Math.max(0, fill);
-    mid.push(`${border}│${reset}${" ".repeat(pad)}${line.ansi}${" ".repeat(right_spaces)}${border}│${reset}`);
-    const fill_plain = inner - pad * 2 - pyLen(line.plain);
-    mid_plain.push(`│${" ".repeat(pad)}${line.plain}${" ".repeat(pad + Math.max(0, fill_plain))}│`);
+    const rightSpaces = pad + Math.max(0, fill);
+    mid.push(`${border}│${reset}${" ".repeat(pad)}${line.ansi}${" ".repeat(rightSpaces)}${border}│${reset}`);
+    const fillPlain = inner - pad * 2 - pyLen(line.plain);
+    midPlain.push(`│${" ".repeat(pad)}${line.plain}${" ".repeat(pad + Math.max(0, fillPlain))}│`);
   }
   const bot = `${border}╰${"─".repeat(inner)}╯${reset}`;
-  const bot_plain = `╰${"─".repeat(inner)}╯`;
+  const botPlain = `╰${"─".repeat(inner)}╯`;
   return {
     ansi: [top, ...mid, bot].join("\n") + "\n",
-    plain: [top_plain, ...mid_plain, bot_plain].join("\n") + "\n",
+    plain: [topPlain, ...midPlain, botPlain].join("\n") + "\n",
   };
 }

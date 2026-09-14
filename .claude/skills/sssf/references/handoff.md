@@ -26,7 +26,7 @@ export interface EnvelopeBase {
 
 `status` is load-bearing: an envelope that parses but reports `status="fail"` raises, failing the phase. An agent declaring its own failure is not a successful phase.
 
-The starter types in `adw_modules/data_types.ts`:
+The starter types in `adw_modules/dataTypes.ts`:
 
 ```ts
 export interface GenericOutput extends EnvelopeBase {}  // fallback when no sharper contract exists
@@ -83,7 +83,7 @@ The user prompt asks for the shape; the type enforces it. They always travel as 
 
 **Parse failure is not a restart.** If the response doesn't parse or doesn't validate, the harness re-prompts the **same session** with a correction naming the required fields — bounded by `JSON_FIX_ATTEMPTS` in `agents.ts` (2). Gate violations use the identical mechanism, bounded instead by the phase's `retries`. A cold restart would throw away the context that produced the near-miss.
 
-In v1 there is no separate continue call to make: `agent_pi.run()` passes `--session-id`, which pi treats as create-or-continue, so running an agent and continuing it are the same call with the same id. Before parsing, the harness also tolerates a fenced `json` code block or prose wrapped around the object — but the prompt still asks for bare JSON, and every failed attempt is persisted as an invalid envelope row.
+In v1 there is no separate continue call to make: `agentPi.run()` passes `--session-id`, which pi treats as create-or-continue, so running an agent and continuing it are the same call with the same id. Before parsing, the harness also tolerates a fenced `json` code block or prose wrapped around the object — but the prompt still asks for bare JSON, and every failed attempt is persisted as an invalid envelope row.
 
 ## Injecting the previous envelope
 

@@ -43,7 +43,7 @@ The gate event payload carries `attempt` too, so the `gate_results` table and th
 
 **A `tool_call` is the one event that spans time**, so it fills both `started_at` and `ended_at` on the row — the tool's real start and return. Every other type is a point in time: `started_at` is when it was recorded and `ended_at` stays NULL. Lay tool calls out on a time axis from those columns, never by parsing `payload_json` (`duration_ms` is in the payload too, as pi's own number, but it is a convenience, not the source for layout).
 
-**Streaming is solved by construction.** `agent_pi.ts` tails pi's JSONL stdout line by line and the tracer inserts each event into `sssf.db` **while the agent is still working** — never batched at phase end (verified in the first smoke run: tool calls visible mid-run). Everything downstream is a poll → render.
+**Streaming is solved by construction.** `agentPi.ts` tails pi's JSONL stdout line by line and the tracer inserts each event into `sssf.db` **while the agent is still working** — never batched at phase end (verified in the first smoke run: tool calls visible mid-run). Everything downstream is a poll → render.
 
 ## Tables
 
@@ -86,7 +86,7 @@ envelopes (
   adw_id        TEXT REFERENCES sessions,
   phase_id      TEXT REFERENCES phases,
   agent         TEXT,
-  output_type   TEXT,              -- name of the data_types model it parsed against
+  output_type   TEXT,              -- name of the dataTypes model it parsed against
   payload_json  TEXT,
   valid         INTEGER,
   attempt       INTEGER,

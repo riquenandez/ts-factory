@@ -3,7 +3,7 @@ import { pyJson } from "../../templates/adws/adw_modules/compat/json.ts";
 import { comma, fixed, pyStr } from "../../templates/adws/adw_modules/compat/format.ts";
 import { shlexJoin } from "../../templates/adws/adw_modules/compat/shell.ts";
 import { pyYamlLoad } from "../../templates/adws/adw_modules/compat/yaml.ts";
-import { GenericOutput } from "../../templates/adws/adw_modules/data_types.ts";
+import { GenericOutput } from "../../templates/adws/adw_modules/dataTypes.ts";
 
 const ORACLE = `${import.meta.dir}/oracle.py`;
 

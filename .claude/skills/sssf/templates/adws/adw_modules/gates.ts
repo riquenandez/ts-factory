@@ -3,7 +3,7 @@ import { extname } from "node:path";
 import { fixed, pyTail } from "./compat/format.ts";
 import { pyLoads } from "./compat/json.ts";
 import { spawnShell } from "./compat/shell.ts";
-import { GateReport, type EnvelopeBase, type GateFn } from "./data_types.ts";
+import { GateReport, type EnvelopeBase, type GateFn } from "./dataTypes.ts";
 
 const TAIL_CHARS = 1000;
 

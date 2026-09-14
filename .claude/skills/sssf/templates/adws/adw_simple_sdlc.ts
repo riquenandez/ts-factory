@@ -41,7 +41,7 @@ pinned before the first commit phase and printed in the request phase.
 import * as agents from "./adw_modules/agents.ts";
 import * as changes from "./adw_modules/changes.ts";
 import * as gates from "./adw_modules/gates.ts";
-import * as gitHelper from "./adw_modules/git_helper.ts";
+import * as gitHelper from "./adw_modules/gitHelper.ts";
 import * as quality from "./adw_modules/quality.ts";
 import * as session from "./adw_modules/session.ts";
 import * as utils from "./adw_modules/utils.ts";
@@ -52,7 +52,7 @@ import {
   PlanOutput,
   type QualityResult,
   ReviewOutput,
-} from "./adw_modules/data_types.ts";
+} from "./adw_modules/dataTypes.ts";
 import { RuntimeError } from "./adw_modules/utils.ts";
 
 const REQUIRED_AGENTS = ["planner", "builder", "reviewer", "documenter"];

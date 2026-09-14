@@ -9,7 +9,7 @@ const UV_INSTALL = /^Installed \d+ packages in \d+ms\n*/gm;
 
 const PYDANTIC_URL = /https:\/\/errors\.pydantic\.dev\/\d+\.\d+\/v\//g;
 
-export function normalize_text(s: string): string {
+export function normalizeText(s: string): string {
   return s
     .replace(UV_INSTALL, "")
     .replace(/adws\/adw_modules\/quality\.py/g, "adws/adw_modules/quality.ts")
@@ -27,7 +27,7 @@ export function normalize_text(s: string): string {
     .replace(PYDANTIC_URL, "https://errors.pydantic.dev/<VER>/v/");
 }
 
-export function normalize_sqlite_dump(dump: string): string {
-  return normalize_text(dump)
+export function normalizeSqliteDump(dump: string): string {
+  return normalizeText(dump)
     .replace(/INSERT INTO processes[^;]+;/g, (row) => row.replace(/\d+/g, (n) => (n.length > 4 ? n : n)));
 }

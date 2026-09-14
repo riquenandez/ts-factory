@@ -13,12 +13,12 @@ builder as an envelope, and only an exhausted fix loop fails the run.
 
 import * as agents from "./adw_modules/agents.ts";
 import * as gates from "./adw_modules/gates.ts";
-import * as gitHelper from "./adw_modules/git_helper.ts";
+import * as gitHelper from "./adw_modules/gitHelper.ts";
 import * as quality from "./adw_modules/quality.ts";
 import * as session from "./adw_modules/session.ts";
 import * as utils from "./adw_modules/utils.ts";
 import { parseArgs, runMain } from "./adw_modules/compat/cli.ts";
-import { BuildOutput, PlanOutput, type QualityResult } from "./adw_modules/data_types.ts";
+import { BuildOutput, PlanOutput, type QualityResult } from "./adw_modules/dataTypes.ts";
 
 const REQUIRED_AGENTS = ["planner", "builder"];
 const MAX_FIX_LOOPS = 3;

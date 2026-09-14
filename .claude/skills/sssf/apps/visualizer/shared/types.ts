@@ -96,7 +96,7 @@ export interface Envelope {
   adw_id: string;
   phase_id: string | null;
   agent: string | null;
-  /** Name of the data_types model the response was parsed against. */
+  /** Name of the dataTypes model the response was parsed against. */
   output_type: string | null;
   payload_json: string | null;
   /** SQLite integer boolean. */

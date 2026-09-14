@@ -174,7 +174,7 @@ export class Tracer {
   }
 
   event(record: EventRecord): string {
-    const event_id = `evt_${newId(12)}`;
+    const eventId = `evt_${newId(12)}`;
     const ts = nowIso();
     const dumped = {
       adw_id: record.adw_id,
@@ -187,13 +187,13 @@ export class Tracer {
       started_at: record.started_at ?? null,
       ended_at: record.ended_at ?? null,
     };
-    const line = { event_id, ts, ...dumped };
+    const line = { event_id: eventId, ts, ...dumped };
     appendFileSync(this.eventsJsonl, pyJson(line) + "\n");
     this.conn.run(
       "INSERT INTO events (event_id, adw_id, phase_id, parent_id, type, name," +
         " payload_json, tokens, started_at, ended_at) VALUES (?,?,?,?,?,?,?,?,?,?)",
       [
-        event_id,
+        eventId,
         dumped.adw_id,
         dumped.phase_id,
         dumped.parent_id,
@@ -205,70 +205,70 @@ export class Tracer {
         dumped.ended_at,
       ],
     );
-    return event_id;
+    return eventId;
   }
 
-  sessionStart(adw_id: string, engineer: string, adw_name: string | null = null): void {
+  sessionStart(adwId: string, engineer: string, adwName: string | null = null): void {
     this.conn.run(
       "INSERT INTO sessions (adw_id, status, engineer, started_at) VALUES (?,?,?,?) " +
         "ON CONFLICT(adw_id) DO UPDATE SET status='running'",
-      [adw_id, "running", engineer, nowIso()],
+      [adwId, "running", engineer, nowIso()],
     );
-    if (!adw_name) return;
-    const row = this.conn.query("SELECT adw_name FROM sessions WHERE adw_id=?").get(adw_id) as
+    if (!adwName) return;
+    const row = this.conn.query("SELECT adw_name FROM sessions WHERE adw_id=?").get(adwId) as
       | { adw_name: string | null }
       | null;
     const names = row?.adw_name ? row.adw_name.split(" + ") : [];
-    if (!names.includes(adw_name)) {
-      names.push(adw_name);
-      this.conn.run("UPDATE sessions SET adw_name=? WHERE adw_id=?", [names.join(" + "), adw_id]);
+    if (!names.includes(adwName)) {
+      names.push(adwName);
+      this.conn.run("UPDATE sessions SET adw_name=? WHERE adw_id=?", [names.join(" + "), adwId]);
     }
   }
 
-  sessionRequest(adw_id: string, request: string): void {
-    this.conn.run("UPDATE sessions SET request=? WHERE adw_id=?", [pyHead(request, 500), adw_id]);
+  sessionRequest(adwId: string, request: string): void {
+    this.conn.run("UPDATE sessions SET request=? WHERE adw_id=?", [pyHead(request, 500), adwId]);
   }
 
-  sessionFinish(adw_id: string, ok: boolean): void {
+  sessionFinish(adwId: string, ok: boolean): void {
     this.conn.run(
       "UPDATE sessions SET status=?, ended_at=? WHERE adw_id=?",
-      [ok ? "success" : "fail", nowIso(), adw_id],
+      [ok ? "success" : "fail", nowIso(), adwId],
     );
-    this.processesEndAll(adw_id);
+    this.processesEndAll(adwId);
   }
 
-  sessionAddUsage(adw_id: string, tokens: number, cost: number): void {
+  sessionAddUsage(adwId: string, tokens: number, cost: number): void {
     this.conn.run(
       "UPDATE sessions SET total_tokens=total_tokens+?, total_cost=total_cost+? WHERE adw_id=?",
-      [tokens, cost, adw_id],
+      [tokens, cost, adwId],
     );
   }
 
-  processStart(adw_id: string, kind: string, name: string, pid: number, command: string): void {
+  processStart(adwId: string, kind: string, name: string, pid: number, command: string): void {
     this.conn.run(
       "INSERT INTO processes (adw_id, kind, name, pid, command, started_at) VALUES (?,?,?,?,?,?)",
-      [adw_id, kind, name, pid, pyHead(command, 500), nowIso()],
+      [adwId, kind, name, pid, pyHead(command, 500), nowIso()],
     );
   }
 
-  processEnd(adw_id: string, pid: number): void {
+  processEnd(adwId: string, pid: number): void {
     this.conn.run(
       "UPDATE processes SET ended_at=? WHERE id = (" +
         "  SELECT id FROM processes WHERE adw_id=? AND pid=? AND ended_at IS NULL" +
         "  ORDER BY id DESC LIMIT 1)",
-      [nowIso(), adw_id, pid],
+      [nowIso(), adwId, pid],
     );
   }
 
-  processesEndAll(adw_id: string): void {
+  processesEndAll(adwId: string): void {
     this.conn.run(
       "UPDATE processes SET ended_at=? WHERE adw_id=? AND ended_at IS NULL",
-      [nowIso(), adw_id],
+      [nowIso(), adwId],
     );
   }
 
-  maxPhaseSeq(adw_id: string): number {
-    const row = this.conn.query("SELECT MAX(seq) AS m FROM phases WHERE adw_id = ?").get(adw_id) as
+  maxPhaseSeq(adwId: string): number {
+    const row = this.conn.query("SELECT MAX(seq) AS m FROM phases WHERE adw_id = ?").get(adwId) as
       | { m: number | null }
       | null;
     return row?.m ?? 0;
@@ -292,8 +292,8 @@ export class Tracer {
   envelopeRow(
     phase: PhaseRow,
     agent: string,
-    output_type: string,
-    payload_json: string,
+    outputType: string,
+    payloadJson: string,
     valid: boolean,
     attempt: ParseAttempt,
   ): void {
@@ -301,8 +301,8 @@ export class Tracer {
       "INSERT INTO envelopes (envelope_id, adw_id, phase_id, agent, output_type," +
         " payload_json, valid, attempt, created_at) VALUES (?,?,?,?,?,?,?,?,?)",
       [
-        `env_${newId(12)}`, phase.adw_id, phase.phase_id, agent, output_type,
-        payload_json, valid ? 1 : 0, attempt, nowIso(),
+        `env_${newId(12)}`, phase.adw_id, phase.phase_id, agent, outputType,
+        payloadJson, valid ? 1 : 0, attempt, nowIso(),
       ],
     );
   }
@@ -319,11 +319,11 @@ export class Tracer {
   }
 
   agentSessionRow(
-    adw_id: string,
+    adwId: string,
     agent: AgentLabel,
-    session_id: string,
-    context_tokens = 0,
-    context_window = 0,
+    sessionId: string,
+    contextTokens = 0,
+    contextWindow = 0,
   ): void {
     const ts = nowIso();
     this.conn.run(
@@ -336,8 +336,8 @@ export class Tracer {
         " context_window=excluded.context_window," +
         " last_used_at=excluded.last_used_at",
       [
-        adw_id, agent.name, agent.coding_agent, agent.model, agent.color,
-        session_id, context_tokens, context_window, ts, ts,
+        adwId, agent.name, agent.coding_agent, agent.model, agent.color,
+        sessionId, contextTokens, contextWindow, ts, ts,
       ],
     );
   }

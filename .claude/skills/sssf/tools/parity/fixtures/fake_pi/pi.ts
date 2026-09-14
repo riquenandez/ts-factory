@@ -17,19 +17,19 @@ openai  gpt-5.6-terra  1.0M
 fireworks  accounts/fireworks/models/kimi-k3  128K
 `;
 
-const catalog_path = process.env.FAKE_PI_CATALOG ?? "";
-const replay_file = process.env.FAKE_PI_JSONL ?? "";
-const replay_dir = process.env.FAKE_PI_REPLAY ?? "";
-const expect_raw = process.env.FAKE_PI_EXPECT;
+const catalogPath = process.env.FAKE_PI_CATALOG ?? "";
+const replayFile = process.env.FAKE_PI_JSONL ?? "";
+const replayDir = process.env.FAKE_PI_REPLAY ?? "";
+const expectRaw = process.env.FAKE_PI_EXPECT;
 
 if (process.argv.includes("--list-models")) {
-  const text = catalog_path ? await Bun.file(catalog_path).text() : DEFAULT_CATALOG;
+  const text = catalogPath ? await Bun.file(catalogPath).text() : DEFAULT_CATALOG;
   process.stdout.write(text.endsWith("\n") ? text : text + "\n");
   process.exit(0);
 }
 
-if (expect_raw) {
-  const expected = JSON.parse(expect_raw) as string[];
+if (expectRaw) {
+  const expected = JSON.parse(expectRaw) as string[];
   const got = process.argv.slice(2);
   if (JSON.stringify(got) !== JSON.stringify(expected)) {
     process.stderr.write(
@@ -39,21 +39,21 @@ if (expect_raw) {
   }
 }
 
-const session_id = flag("--session-id");
+const sessionId = flag("--session-id");
 let bytes: Uint8Array | null = null;
-if (replay_file) {
-  bytes = await Bun.file(replay_file).bytes();
-} else if (replay_dir && session_id) {
-  const raw_turns = [...new Bun.Glob(`${session_id}.*.jsonl`).scanSync({ cwd: replay_dir })];
-  raw_turns.sort();
-  const fallback = [...new Bun.Glob("*.jsonl").scanSync({ cwd: replay_dir })];
+if (replayFile) {
+  bytes = await Bun.file(replayFile).bytes();
+} else if (replayDir && sessionId) {
+  const rawTurns = [...new Bun.Glob(`${sessionId}.*.jsonl`).scanSync({ cwd: replayDir })];
+  rawTurns.sort();
+  const fallback = [...new Bun.Glob("*.jsonl").scanSync({ cwd: replayDir })];
   fallback.sort();
-  const turn_file = raw_turns[0] ?? fallback[0];
-  if (!turn_file) {
-    process.stderr.write(`fake_pi: no replay for session ${session_id} in ${replay_dir}\n`);
+  const turnFile = rawTurns[0] ?? fallback[0];
+  if (!turnFile) {
+    process.stderr.write(`fake_pi: no replay for session ${sessionId} in ${replayDir}\n`);
     process.exit(1);
   }
-  bytes = await Bun.file(`${replay_dir}/${turn_file}`).bytes();
+  bytes = await Bun.file(`${replayDir}/${turnFile}`).bytes();
 }
 
 if (bytes) await Bun.write(Bun.stdout, bytes);

@@ -1,7 +1,8 @@
 # Module map
 
-Two rings. The **factory** ring is a name-for-name port of `adw_modules/` — an engineer
-who knows the Python knows where to look. The **compat** ring is new: it is where every
+Two rings. The **factory** ring is a module-for-module port of `adw_modules/`, with file
+names in camelCase (`dataTypes.ts` for `data_types.py`) — an engineer who knows the Python
+knows where to look. The **compat** ring is new: it is where every
 Python-runtime behaviour the observable contract depends on is reimplemented, once.
 
 ```
@@ -10,21 +11,21 @@ adws/
     adw_build_review.ts  adw_plan_build.ts  adw_plan_build_test.ts
     adw_plan_build_test_quality.ts  adw_simple_sdlc.ts  adw_document.ts  adw_quality.ts
   adw_modules/
-    index.ts        barrel: agents, changes, cli, gates, git_helper, permissions,
+    index.ts        barrel: agents, changes, cli, gates, gitHelper, permissions,
                     prompts, quality, session, utils  (NOT tracer/console)
-    data_types.ts   envelope schemas + config schemas + plain engine records
+    dataTypes.ts   envelope schemas + config schemas + plain engine records
     session.ts      ensure() — pin-or-create adw_id, build Run, install signal doors
     runner.ts       Run, PhaseHandle — the phase primitive and finish()
     agents.ts       loadConfig / validate / execute — parse retries, gates, permissions
-    agent_pi.ts     pi argv, JSONL stream tail, ToolCallTracker, model resolution
-    agent_cc.ts     stub: throws
+    agentPi.ts     pi argv, JSONL stream tail, ToolCallTracker, model resolution
+    agentCc.ts     stub: throws
     tracer.ts       SCHEMA + MIGRATIONS + every INSERT/UPDATE; JSONL append
     console.ts      the narrative — print AND trace, always together
     permissions.ts  git-fingerprint audit: snapshot / enforce / rollback
     gates.ts        claim verifiers
     quality.ts      deterministic lint/typecheck/build/test blocks
     changes.ts      git diff capture -> ChangeSet -> envelope
-    git_helper.ts   low-level git
+    gitHelper.ts   low-level git
     prompts.ts      render {{placeholders}} + save the audit copy
     utils.ts        ids, timestamps, operator env, prompt resolution, engineer name
     compat/
@@ -40,7 +41,7 @@ adws/
 
 ## Naming rule
 
-**Field names are wire. Method names are code.**
+**Field names are wire. Method names are code. File names are camelCase.**
 
 Anything that reaches sqlite, JSONL, a prompt, or a `payload` keeps its Python
 snake_case spelling: `adw_id`, `payload_json`, `notes_for_next_agent`, `changed_files`,
@@ -81,7 +82,7 @@ all sit behind `phase` / `call` / `finish`.
 | Flow | Files |
 |---|---|
 | an agent phase, prompt to envelope | `adw_x.ts` → `runner.ts` → `agents.ts` |
-| what pi was actually asked | `agents.ts` → `agent_pi.ts` |
+| what pi was actually asked | `agents.ts` → `agentPi.ts` |
 | what reached the UI | `runner.ts`/`agents.ts` → `tracer.ts` |
 | what reached the terminal | any caller → `console.ts` → `compat/markup.ts` |
 | a permission breach | `agents.ts` → `permissions.ts` |
@@ -112,11 +113,11 @@ Bun, for four reasons that are all contract, not taste:
 
 1. `bun:sqlite` is **synchronous**, so the tracer writes inside a signal handler and
    inside a phase transition exactly where Python's `sqlite3` does.
-2. `Bun.spawnSync` gives blocking git/quality/gate subprocesses, so `git_helper`,
+2. `Bun.spawnSync` gives blocking git/quality/gate subprocesses, so `gitHelper`,
    `permissions`, `changes`, `gates` and `quality` stay synchronous like their Python
    originals and async coloring is confined to `ph.call()`.
 3. `Bun.spawn` streams pi's stdout while it works, which is the whole point of
-   `agent_pi`.
+   `agentPi`.
 4. The visualizer is already Bun, and `just obs` is unchanged.
 
 `.env` is loaded by Bun at startup (replacing `python-dotenv`), which like

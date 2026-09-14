@@ -48,7 +48,7 @@ refactor.
 
 ```
 tools/parity/
-  run_both.ts        # run the Python ADW and the TS ADW against one fixture repo
+  runBoth.ts        # run the Python ADW and the TS ADW against one fixture repo
   normalize.ts       # blank the 6 fields that are legitimately non-deterministic
   compare.ts         # diff stdout, exit code, sqlite dump, session tree, events.jsonl
   fixtures/
@@ -102,9 +102,9 @@ fixed:
 - `--adw-id` joins the session and continues `seq`, but does **not** hydrate `previous`
   from a prior `envelope.json`. Case: joined run's first agent call renders
   `previous_envelope` as the six characters `(none)`.
-- `make_adw` emits `run.succeeded`, which does not exist. Case: generated file matches
+- `makeAdw` emits `run.succeeded`, which does not exist. Case: generated file matches
   the golden template byte-for-byte.
-- The cwd split: `git_helper` runs git in the **process cwd** while `permissions` runs
+- The cwd split: `gitHelper` runs git in the **process cwd** while `permissions` runs
   it in **`repo_root`**, and `gates.tests_pass` shells out with no cwd at all. Case:
   run an ADW from a subdirectory of the repo and assert each subprocess's cwd.
 - `session.ensure` writes the session row *before* the first phase, and

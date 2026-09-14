@@ -1,8 +1,8 @@
 import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-export function render(template_path: string, variables: Record<string, string>): string {
-  let text = readFileSync(template_path, "utf8");
+export function render(templatePath: string, variables: Record<string, string>): string {
+  let text = readFileSync(templatePath, "utf8");
   for (const [key, value] of Object.entries(variables)) {
     text = text.replaceAll("{{" + key + "}}", value);
   }

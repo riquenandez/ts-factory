@@ -21,7 +21,7 @@ import * as gates from "./adw_modules/gates.ts";
 import * as session from "./adw_modules/session.ts";
 import * as utils from "./adw_modules/utils.ts";
 import { parseArgs, runMain } from "./adw_modules/compat/cli.ts";
-import { BuildOutput, ReviewOutput } from "./adw_modules/data_types.ts";
+import { BuildOutput, ReviewOutput } from "./adw_modules/dataTypes.ts";
 
 const REQUIRED_AGENTS = ["builder", "reviewer"];
 const MAX_REVISION_LOOPS = 3;
