@@ -1,10 +1,12 @@
 # Run ADW
 
-Launch a workflow, watch it, report. Read `how_to_prompt_for_the_eng.md` first; it produces the prompt and picks the chain. This cookbook starts once you have both.
+Run a workflow and report on it. **You run and observe. You never step into the process or do the work yourself.**
 
-## Posture
+Read `how_to_prompt_for_the_eng.md` before you launch anything. The prompt you pass is read by every agent in the chain, so it gets written deliberately: same intent, sharper words, verified paths, and a stated "done means". That cookbook is the whole procedure; this one starts once you have the prompt.
 
-The ADW is the worker. You launch it, watch the trace, and tell the engineer what happened. Do not read the target files to "help", do not fix code an agent was supposed to fix, do not edit an envelope. A failed run is reported with its failing phase and violations; the fix is a config, prompt, or ADW change, then a re-run.
+## The orchestrator's posture
+
+The ADW is the worker. Your job is to launch it, watch the trace, and tell the engineer what happened. Do not read the agent's target files and "help", do not fix the code an agent was supposed to fix, do not edit an envelope. If a run fails, report the failing phase and its violations. The fix is a config, prompt, or ADW change, made deliberately, and then a re-run.
 
 ## Launch
 
@@ -16,7 +18,12 @@ bun adws/<chain>.ts "<prompt>" --config adws/adw_sssf_config/<other>.config.yaml
 
 Launch in the background so you can poll. The `adw_id` is printed on startup; capture it.
 
-**Rosters.** `--config` selects one; the justfile reads `SSSF_CONFIG` instead. If the engineer names a roster, a config, or a model tier, resolve it to a file on disk (`ls adws/adw_sssf_config/`) and pass it. Never swap rosters on your own; a different roster is a different cost and result. A joined run whose roster now names a different model for an agent starts that agent fresh instead of resuming, so say so when it applies.
+**Rosters.** `--config` selects one; the justfile reads `SSSF_CONFIG` instead. If the engineer names a roster, a config, or a model tier, resolve it to a file on disk (`ls adws/adw_sssf_config/`) and pass it. 
+
+Two things that bite:
+
+- **Never swap rosters on your own.** A different roster is a different cost and a different result. If the default's model looks wrong for the work, say so and let the engineer choose.
+- **Switching rosters mid-session breaks resumption.** `agent_map.json` records the model each session was created with, so a joined run (`--adw-id`) whose config now names a different model starts that agent fresh instead of resuming its context window. That is deliberate, but it means "plan on one roster, then build on another" costs the builder its accumulated context. Say so when you report it.
 
 **Sessions.** `--adw-id` joins an existing session or pins a new one to that id: same `sessions/<adw_id>/`, same `context_handoff/`, and each agent resumes its context window through `agent_map.json`. Plan under one id, then build under the same id.
 
