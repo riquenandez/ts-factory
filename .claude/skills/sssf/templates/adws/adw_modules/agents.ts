@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import * as agentCc from "./agentCc.ts";
+import * as agentCopilot from "./agentCopilot.ts";
 import * as agentPi from "./agentPi.ts";
 import { SystemExit } from "./compat/cli.ts";
 import { pyRepr, pyStr, pyTail, removePrefix } from "./compat/format.ts";
@@ -24,7 +25,7 @@ import {
 import { PermissionBreach, enforce, snapshot } from "./permissions.ts";
 import * as prompts from "./prompts.ts";
 import type { Run } from "./runner.ts";
-import { RuntimeError, ValueError, newId } from "./utils.ts";
+import { RuntimeError, ValueError, newId, operatorEnv } from "./utils.ts";
 
 export const JSON_FIX_ATTEMPTS = 2;
 
@@ -53,7 +54,7 @@ const AGENT_CONFIG: Schema = {
   name: "AgentConfig",
   fields: [
     { name: "name", kind: "str" },
-    { name: "coding_agent", kind: "literal", literals: ["pi", "claude_code"], default: "pi" },
+    { name: "coding_agent", kind: "literal", literals: ["pi", "claude_code", "copilot"], default: "pi" },
     { name: "model", kind: "str", default: BASE.defaults.model },
     { name: "thinking", kind: "str", default: BASE.defaults.thinking },
     { name: "color", kind: "str", default: "" },
@@ -68,7 +69,7 @@ const AGENT_CONFIG: Schema = {
 const CONFIG_DEFAULTS: Schema = {
   name: "ConfigDefaults",
   fields: [
-    { name: "coding_agent", kind: "literal", literals: ["pi", "claude_code"], default: "pi" },
+    { name: "coding_agent", kind: "literal", literals: ["pi", "claude_code", "copilot"], default: "pi" },
     { name: "model", kind: "str", default: BASE.defaults.model },
     { name: "thinking", kind: "str", default: BASE.defaults.thinking },
     { name: "color", kind: "str", default: "" },
@@ -213,6 +214,42 @@ function validateClaudeCode(agent: AgentConfig): string[] {
   return problems;
 }
 
+let copilotBinary: { ok: boolean; detail: string } | null = null;
+
+function copilotBinaryStatus(): { ok: boolean; detail: string } {
+  if (copilotBinary) return copilotBinary;
+  const captured = spawnCaptured([agentCopilot.COPILOT_PATH, "--version"], {
+    timeoutSeconds: 30,
+    env: operatorEnv(),
+  });
+  copilotBinary = {
+    ok: captured.returncode === 0,
+    detail: captured.stderr.trim() || captured.stdout.trim(),
+  };
+  return copilotBinary;
+}
+
+function validateCopilot(agent: AgentConfig): string[] {
+  const problems: string[] = [];
+  if (!agent.model.trim()) {
+    problems.push(`agent ${pyRepr(agent.name)}: model is empty`);
+  }
+  const binary = copilotBinaryStatus();
+  if (!binary.ok) {
+    problems.push(
+      `agent ${pyRepr(agent.name)}: copilot binary not runnable: ${agentCopilot.COPILOT_PATH} (${pyTail(binary.detail, 200)})`,
+    );
+  }
+  for (const entry of agent.harness_engineering) {
+    if (!entry.endsWith(".json")) {
+      problems.push(
+        `agent ${pyRepr(agent.name)}: harness_engineering entry ${entry} is a pi extension; copilot takes MCP config JSON files`,
+      );
+    }
+  }
+  return problems;
+}
+
 const PI_INTERFACE: AgentInterface = {
   run: agentPi.run,
   newTracker: () => new agentPi.ToolCallTracker(),
@@ -228,8 +265,17 @@ const CLAUDE_CODE_INTERFACE: AgentInterface = {
   validate: validateClaudeCode,
 };
 
+const COPILOT_INTERFACE: AgentInterface = {
+  run: agentCopilot.run,
+  newTracker: () => new agentCopilot.CopilotToolCallTracker(),
+  newSessionId: (run, agent) => reuseOrMint(run, agent, () => crypto.randomUUID()),
+  validate: validateCopilot,
+};
+
 function interfaceFor(agent: AgentConfig): AgentInterface {
-  return agent.coding_agent === "claude_code" ? CLAUDE_CODE_INTERFACE : PI_INTERFACE;
+  if (agent.coding_agent === "copilot") return COPILOT_INTERFACE;
+  if (agent.coding_agent === "claude_code") return CLAUDE_CODE_INTERFACE;
+  return PI_INTERFACE;
 }
 
 export function validate(cfg: SSSFConfig, required: string[]): void {
@@ -305,7 +351,14 @@ export async function execute(run: Run, phase: Phase, call: AgentCall): Promise<
       model: agent.model,
       thinking: agent.thinking,
       session_id: sessionId,
-      session_dir: join(agentDirAbs, agent.coding_agent === "claude_code" ? "claude_sessions" : "pi_sessions"),
+      session_dir: join(
+        agentDirAbs,
+        agent.coding_agent === "copilot"
+          ? "copilot_sessions"
+          : agent.coding_agent === "claude_code"
+            ? "claude_sessions"
+            : "pi_sessions",
+      ),
       raw_output_path: join(agentDirAbs, "raw_output.jsonl"),
       tools: agent.tools,
       extensions: agent.harness_engineering,

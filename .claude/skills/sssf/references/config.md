@@ -41,8 +41,8 @@ agents:
 
 | Field | Type | Meaning |
 |---|---|---|
-| `coding_agent` | `pi` \| `claude_code` | Which interface runs the agent. Both are implemented in v1. `claude_code` runs `claude -p` headless and uses the machine's Claude Code login. |
-| `model` | string | For `pi`: `provider/model-id`, resolved against pi's catalog. For `claude_code`: passed to `--model` as written (`opus`, `sonnet`, or a full id; no `provider/` prefix). Starter default `google/gemini-3.6-flash`. |
+| `coding_agent` | `pi` \| `claude_code` \| `copilot` | Which interface runs the agent. All three are implemented in v1. `claude_code` runs `claude -p` headless and uses the machine's Claude Code login. `copilot` runs `copilot -p` headless and uses the machine's `copilot login` or `COPILOT_GITHUB_TOKEN`. |
+| `model` | string | For `pi`: `provider/model-id`, resolved against pi's catalog. For `claude_code`: passed to `--model` as written (`opus`, `sonnet`, or a full id; no `provider/` prefix). For `copilot`: the model name as the CLI's `/model` shows it (`gpt-5.4`, `claude-sonnet-4.5`, or `auto`), passed to `--model` as written. Starter default `google/gemini-3.6-flash`. |
 | `thinking` | enum | Reasoning effort, see below. Default `medium`. |
 | `color` | hex string | Lane color for agents that do not set their own. Unset means the visualizer's palette. |
 | `harness_engineering` | list of paths | Pi extension files, passed as `pi -e <path>`. Default none. |
@@ -80,7 +80,7 @@ Output types are deliberately absent. Config defines who an agent is; the ADW ca
 off | minimal | low | medium | high | xhigh | max
 ```
 
-Pi's reasoning-effort ladder. It applies only to models registered with `reasoning: true` in `~/.pi/agent/models.json`; on other models it is inert. `claude_code` maps it to `--effort`; `off` and `minimal` become `low`. Rough guidance: `high` or `xhigh` for planners and reviewers, `medium` for builders, `low` for mechanical read-and-report agents.
+Pi's reasoning-effort ladder. It applies only to models registered with `reasoning: true` in `~/.pi/agent/models.json`; on other models it is inert. `claude_code` maps it to `--effort`; `off` and `minimal` become `low`. `copilot` maps it to `--effort`; `off` becomes `none`; `minimal|low|medium|high|xhigh|max` pass through. Rough guidance: `high` or `xhigh` for planners and reviewers, `medium` for builders, `low` for mechanical read-and-report agents.
 
 ## Model resolution
 
@@ -122,9 +122,21 @@ Resolution: the agent's own list wins; an agent that omits the key inherits `def
 | `find` | `Glob` |
 | `ls` | dropped |
 
+`copilot` maps the roster names onto Copilot CLI tools and drops `ls`. Any other name is passed through unchanged, so a roster can name `task`, `skill`, `web_search`, or an MCP tool directly. An empty mapped list is sent as `--available-tools none` (zero tools); the flag is omitted when `tools` is unset:
+
+| Roster name | `--available-tools` |
+|---|---|
+| `read` | `view` |
+| `bash` | `bash` |
+| `edit` | `edit` |
+| `write` | `create` |
+| `grep` | `grep` |
+| `find` | `glob` |
+| `ls` | dropped |
+
 ## Harness engineering
 
-`harness_engineering` entries are pi extension file paths, passed as `pi -e <path>`, one flag per entry, scoped to that agent. The stamped `adws/adw_data/harness_engineering/subagents.ts` registers `subagent_create`, `subagent_continue`, `subagent_list`, and `subagent_remove`, wired to the planner and scout. For `claude_code`, entries are MCP config JSON files passed as `--mcp-config` (one flag per entry); `--strict-mcp-config` is always passed so only the roster's MCP files are loaded; a non-`.json` path fails `validate()`.
+`harness_engineering` entries are pi extension file paths, passed as `pi -e <path>`, one flag per entry, scoped to that agent. The stamped `adws/adw_data/harness_engineering/subagents.ts` registers `subagent_create`, `subagent_continue`, `subagent_list`, and `subagent_remove`, wired to the planner and scout. For `claude_code`, entries are MCP config JSON files passed as `--mcp-config` (one flag per entry); `--strict-mcp-config` is always passed so only the roster's MCP files are loaded; a non-`.json` path fails `validate()`. For `copilot`, entries are MCP config JSON files passed as `--additional-mcp-config @<path>` (one flag per entry); a non-`.json` path fails `validate()`.
 
 ## Write permissions
 
@@ -153,5 +165,9 @@ agents:
 `writes` semantics: omitted means unrestricted apart from `protected_files`; `[]` means no repo writes; a list allows only those patterns. A trailing `/` is a directory prefix, `*` matches within one path segment, `**` crosses segments, `?` matches one character, anything else is an exact path. Naming a `protected_files` path in `writes` unlocks it for that agent.
 
 The session runtime under `data_dir` is always writable for every agent. `context_handoff/`, prompts, `raw_output.jsonl`, and `envelope.json` live there, and an agent's ability to record its own work does not depend on a gitignore line. `writes: []` means read-only with respect to the repo, never mute.
+
+`--allow-all-tools` is mandatory in Copilot's non-interactive mode (it is approval, not availability), so the factory's after-the-fact `writes`/`protected_files` enforcement is the boundary, as with the other interfaces.
+
+The system prompt for a `copilot` agent is delivered as a temporary custom agent appended to Copilot's own system prompt, not a replacement. The temporary file lives under `$COPILOT_HOME/agents/` for the duration of the call.
 
 Narrow by role, not by reflex. An agent that must produce a `context_handoff/` artifact needs `write`. Withhold `edit` where the restriction is the guarantee: a reviewer that cannot edit cannot quietly fix what it was asked to report.

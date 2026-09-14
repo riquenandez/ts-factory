@@ -1,0 +1,276 @@
+import { appendFileSync, existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { constants as osConstants, homedir } from "node:os";
+import { dirname, join } from "node:path";
+import { _clip as clip, _label as labelFor, type PiEvent } from "./agentPi.ts";
+import { pyTail } from "./compat/format.ts";
+import { pyLoads } from "./compat/json.ts";
+import { newPiResult, type PiRequest, type PiResult } from "./dataTypes.ts";
+import { nowIso, operatorEnv, RuntimeError } from "./utils.ts";
+
+export const COPILOT_PATH = process.env.COPILOT_PATH ?? "copilot";
+
+const RESULT_SNIPPET_CHARS = 20_000;
+const ARG_VALUE_CHARS = 20_000;
+
+const TOOL_MAP: Record<string, string | null> = {
+  read: "view",
+  bash: "bash",
+  edit: "edit",
+  write: "create",
+  grep: "grep",
+  find: "glob",
+  ls: null,
+};
+
+type Dict = Record<string, unknown>;
+
+function isDict(value: unknown): value is Dict {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+export function copilotHome(): string {
+  return process.env.COPILOT_HOME ?? join(homedir(), ".copilot");
+}
+
+function mapEffort(thinking: string): string {
+  return thinking === "off" ? "none" : thinking;
+}
+
+function mapTools(tools: string[]): string[] {
+  const mapped: string[] = [];
+  for (const name of tools) {
+    if (Object.hasOwn(TOOL_MAP, name)) {
+      const next = TOOL_MAP[name];
+      if (next) mapped.push(next);
+    } else {
+      mapped.push(name);
+    }
+  }
+  return mapped;
+}
+
+function shapeUsageFile(raw: unknown): { shaped: Dict; totalTokens: number; totalCost: number } {
+  const obj = isDict(raw) ? raw : {};
+  const metrics = isDict(obj.modelMetrics) ? obj.modelMetrics : {};
+  let input = 0;
+  let output = 0;
+  let cacheRead = 0;
+  let cacheWrite = 0;
+  let reasoning = 0;
+  let totalCost = 0;
+  for (const entry of Object.values(metrics)) {
+    if (!isDict(entry)) continue;
+    const usage = isDict(entry.usage) ? entry.usage : {};
+    input += Number(usage.inputTokens ?? 0);
+    output += Number(usage.outputTokens ?? 0);
+    cacheRead += Number(usage.cacheReadTokens ?? 0);
+    cacheWrite += Number(usage.cacheWriteTokens ?? 0);
+    reasoning += Number(usage.reasoningTokens ?? 0);
+    const requests = isDict(entry.requests) ? entry.requests : {};
+    totalCost += Number(requests.cost ?? 0);
+  }
+  const totalTokens = input + output + cacheRead + cacheWrite + reasoning;
+  return {
+    shaped: { input, output, cacheRead, cacheWrite, reasoning, cost: { total: totalCost } },
+    totalTokens,
+    totalCost,
+  };
+}
+
+interface OpenCall {
+  tool: unknown;
+  args: unknown;
+  started_at: string;
+  clock: number;
+}
+
+export class CopilotToolCallTracker {
+  private _open = new Map<string, OpenCall>();
+
+  observe(event: PiEvent): Dict | null {
+    const etype = event.type ?? "";
+    const data = isDict(event.data) ? event.data : {};
+    if (etype === "tool.execution_start") {
+      this._announce(data.toolCallId, data.toolName, data.arguments);
+      return null;
+    }
+    if (etype !== "tool.execution_complete") return null;
+    return this._close(data);
+  }
+
+  private _announce(callId: unknown, tool: unknown, args: unknown): void {
+    if (callId === null || callId === undefined || callId === "") return;
+    const key = String(callId);
+    if (this._open.has(key)) return;
+    this._open.set(key, {
+      tool: tool ?? "",
+      args: isDict(args) ? args : {},
+      started_at: nowIso(),
+      clock: performance.now(),
+    });
+  }
+
+  private _close(data: Dict): Dict {
+    const callId = data.toolCallId == null ? "" : String(data.toolCallId);
+    const opened = this._open.get(callId);
+    this._open.delete(callId);
+    const tool = String(opened?.tool || data.toolName || "tool");
+    const rawArgs = isDict(opened?.args) ? opened!.args : isDict(data.arguments) ? data.arguments : {};
+    const args: Dict = isDict(rawArgs) ? rawArgs : {};
+    const record: Dict = {
+      tool,
+      tool_call_id: callId,
+      args: Object.fromEntries(
+        Object.entries(args).map(([key, value]) => [
+          key,
+          typeof value === "string" ? clip(value, ARG_VALUE_CHARS) : value,
+        ]),
+      ),
+      ok: data.success === true,
+      label: labelFor(tool, args),
+    };
+    const result = isDict(data.result) ? data.result : {};
+    const error = isDict(data.error) ? data.error : {};
+    const snippet =
+      typeof result.content === "string" && result.content
+        ? result.content
+        : typeof error.message === "string" && error.message
+          ? error.message
+          : "";
+    if (snippet) record.result_snippet = clip(snippet, RESULT_SNIPPET_CHARS);
+    record.ended_at = nowIso();
+    if (opened && opened.clock) record.duration_ms = Math.trunc(performance.now() - opened.clock);
+    if (opened && opened.started_at) record.started_at = opened.started_at;
+    return record;
+  }
+}
+
+export function buildArgv(request: PiRequest, agentName: string, usagePath: string): string[] {
+  const cmd = [
+    COPILOT_PATH,
+    "-p",
+    request.prompt,
+    "--output-format",
+    "json",
+    "--no-color",
+    "--no-auto-update",
+    "--no-ask-user",
+    "--no-remote-export",
+    "--session-id",
+    request.session_id,
+    "--model",
+    request.model,
+    "--effort",
+    mapEffort(request.thinking),
+    "--agent",
+    agentName,
+    "--allow-all-tools",
+  ];
+  if (request.tools !== null) {
+    const mapped = mapTools(request.tools);
+    cmd.push("--available-tools", mapped.length ? mapped.join(",") : "none");
+  }
+  for (const entry of request.extensions) cmd.push("--additional-mcp-config", `@${entry}`);
+  cmd.push("--usage-output-file", usagePath);
+  return cmd;
+}
+
+export async function run(
+  request: PiRequest,
+  onEvent?: (event: PiEvent) => void,
+  onSpawn?: (pid: number) => void,
+  onExit?: (pid: number) => void,
+): Promise<PiResult> {
+  mkdirSync(request.session_dir, { recursive: true });
+  mkdirSync(dirname(request.raw_output_path), { recursive: true });
+
+  const agentName = `sssf-${request.session_id}`;
+  const agentPath = join(copilotHome(), "agents", `${agentName}.agent.md`);
+  mkdirSync(dirname(agentPath), { recursive: true });
+  writeFileSync(
+    agentPath,
+    `---\nname: ${agentName}\ndescription: SSSF factory agent\n---\n${request.system_prompt}`,
+  );
+
+  const usagePath = join(request.session_dir, `${request.session_id}.usage.json`);
+  if (existsSync(usagePath)) unlinkSync(usagePath);
+
+  const result = newPiResult(request.session_id, 0);
+  let errorMessage = "";
+
+  try {
+    const cmd = buildArgv(request, agentName, usagePath);
+    const child = Bun.spawn({
+      cmd,
+      cwd: request.cwd,
+      env: operatorEnv(),
+      stdin: "ignore",
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    onSpawn?.(child.pid);
+    const stderrText = new Response(child.stderr).text();
+
+    const absorb = (rawLine: string): void => {
+      const line = rawLine.trim();
+      if (!line) return;
+      let event: unknown;
+      try {
+        event = pyLoads(line);
+      } catch {
+        return;
+      }
+      if (!isDict(event)) return;
+
+      if (event.type === "assistant.message") {
+        const data = isDict(event.data) ? event.data : {};
+        if (typeof data.content === "string" && data.content) result.text = data.content;
+      } else if (event.type === "session.error") {
+        const data = isDict(event.data) ? event.data : {};
+        if (typeof data.message === "string" && data.message) errorMessage = data.message;
+      }
+
+      onEvent?.(event);
+    };
+
+    const decoder = new TextDecoder();
+    let pending = "";
+    for await (const chunk of child.stdout) {
+      appendFileSync(request.raw_output_path, chunk);
+      pending += decoder.decode(chunk, { stream: true });
+      let newline: number;
+      while ((newline = pending.indexOf("\n")) !== -1) {
+        absorb(pending.slice(0, newline));
+        pending = pending.slice(newline + 1);
+      }
+    }
+    pending += decoder.decode();
+    if (pending) absorb(pending);
+
+    const stderr = await stderrText;
+    const code = await child.exited;
+    result.returncode = child.signalCode ? -(osConstants.signals[child.signalCode] ?? 0) : code;
+    onExit?.(child.pid);
+
+    if (existsSync(usagePath)) {
+      try {
+        const parsed = pyLoads(readFileSync(usagePath, "utf8"));
+        const { shaped, totalTokens, totalCost } = shapeUsageFile(parsed);
+        result.usage.addTurn(shaped, totalTokens);
+        result.tokens = totalTokens;
+        result.cost = totalCost;
+      } finally {
+        unlinkSync(usagePath);
+      }
+    }
+
+    if (result.returncode !== 0 && !result.text) {
+      throw new RuntimeError(
+        `copilot exited ${result.returncode}: ${errorMessage || pyTail(stderr.trim(), 800)}`,
+      );
+    }
+    return result;
+  } finally {
+    if (existsSync(agentPath)) unlinkSync(agentPath);
+  }
+}

@@ -21,6 +21,7 @@ Python under `python-gold/` is the spec. TypeScript under `templates/` is the pr
 - `makeAdw` emits `return run.finish()` because `run.succeeded` is a compile error.
 - Do not add comments that narrate what the Python already stated. A comment stays only for a non-obvious why.
 - `claude_code` has no Python gold; its contract is pinned by the `fake_claude` cases in `tools/parity/claude.test.ts`.
+- `copilot` has no Python gold; its contract is pinned by the `fake_copilot` cases in `tools/parity/copilot.test.ts`.
 
 ## Layout
 

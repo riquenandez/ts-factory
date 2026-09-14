@@ -19,6 +19,7 @@ adws/
     agents.ts       loadConfig / validate / execute — parse retries, gates, permissions
     agentPi.ts     pi argv, JSONL stream tail, ToolCallTracker, model resolution
     agentCc.ts     claude_code argv, stream-json tail, ClaudeToolCallTracker
+    agentCopilot.ts copilot argv, JSONL tail, CopilotToolCallTracker
     tracer.ts       SCHEMA + MIGRATIONS + every INSERT/UPDATE; JSONL append
     console.ts      the narrative — print AND trace, always together
     permissions.ts  git-fingerprint audit: snapshot / enforce / rollback

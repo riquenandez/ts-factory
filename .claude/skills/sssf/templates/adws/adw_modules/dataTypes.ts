@@ -327,7 +327,7 @@ export interface PromptEngineering {
 
 export interface AgentConfig {
   name: string;
-  coding_agent: "pi" | "claude_code";
+  coding_agent: "pi" | "claude_code" | "copilot";
   model: string;
   thinking: string;
   color: string;
@@ -339,7 +339,7 @@ export interface AgentConfig {
 }
 
 export interface ConfigDefaults {
-  coding_agent: "pi" | "claude_code";
+  coding_agent: "pi" | "claude_code" | "copilot";
   model: string;
   thinking: string;
   color: string;

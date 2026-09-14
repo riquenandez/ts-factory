@@ -10,7 +10,7 @@ Add or retune agents in `adws/adw_sssf_config/sssf.config.yaml`. Full field spec
     thinking: high                   # off | minimal | low | medium | high | xhigh | max
 ```
 
-A bare model id can match several providers and `agents.validate()` refuses it. Thinking only applies to models registered with `reasoning: true` in `~/.pi/agent/models.json`. A `claude_code` agent takes `model` as written (`opus`, `sonnet`, or a full id — no `provider/` prefix) and maps `thinking` to `--effort` (`off` and `minimal` become `low`).
+A bare model id can match several providers and `agents.validate()` refuses it. Thinking only applies to models registered with `reasoning: true` in `~/.pi/agent/models.json`. A `claude_code` agent takes `model` as written (`opus`, `sonnet`, or a full id — no `provider/` prefix) and maps `thinking` to `--effort` (`off` and `minimal` become `low`). A `copilot` agent takes `model` as the CLI's `/model` shows it (`gpt-5.4`, `claude-sonnet-4.5`, or `auto`) and maps `thinking` to `--effort` (`off` becomes `none`).
 
 **A model change starts a fresh session.** `agent_map.json` records the model each session was created with. A joined run (`--adw-id`) whose config now names a different model starts that agent cold instead of resuming. Thinking changes do not invalidate a session.
 
@@ -38,7 +38,7 @@ Narrow by role. Any agent that must write a `context_handoff/` artifact needs `w
       - ast_query                                        # required, or the tool is silently filtered out
 ```
 
-`--tools` filters extension tools like builtins. Once an agent has any `tools` list, its own or inherited, a tool registered by an extension is dropped unless named. Nothing errors; the tool is just never offered. Adding a tool-registering extension is therefore a two-part edit. A `claude_code` agent treats `harness_engineering` entries as MCP config JSON files passed as `--mcp-config`, not pi extension scripts.
+`--tools` filters extension tools like builtins. Once an agent has any `tools` list, its own or inherited, a tool registered by an extension is dropped unless named. Nothing errors; the tool is just never offered. Adding a tool-registering extension is therefore a two-part edit. A `claude_code` agent treats `harness_engineering` entries as MCP config JSON files passed as `--mcp-config`, not pi extension scripts. A `copilot` agent treats them as MCP config JSON files passed as `--additional-mcp-config`.
 
 ## Add an agent
 

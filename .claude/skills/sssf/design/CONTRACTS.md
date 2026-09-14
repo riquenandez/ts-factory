@@ -209,7 +209,7 @@ accepted: <reason>` prints as a `note` before the panel.
 tools, writes` from `defaults` **only when the key is present in `defaults`** (via
 `setdefault`), then always `setdefault("harness_engineering", defaults.harness_engineering
 or [])`. Unknown keys anywhere are ignored. `validate()` collects **all** problems and
-raises one `SystemExit` listing them: unknown agent name, a `claude_code` agent whose binary is not runnable or whose `harness_engineering` names a non-MCP file,
+raises one `SystemExit` listing them: unknown agent name, a `claude_code` agent whose binary is not runnable or whose `harness_engineering` names a non-MCP file, a `copilot` agent whose binary is not runnable or whose `harness_engineering` names a non-MCP file,
 a missing prompt file, an unresolvable model pattern.
 
 ## Install

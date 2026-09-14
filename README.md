@@ -15,6 +15,7 @@ It ships as one Claude Code skill, `.claude/skills/sssf/`, that you copy into a 
 | [`bun`](https://bun.sh) | runs the ADWs, the installer, and the trace UI |
 | [`pi`](https://github.com/mariozechner/pi-coding-agent) | needed for `coding_agent: pi` agents |
 | [Claude Code](https://docs.anthropic.com/en/docs/claude-code) (`claude`) | needed for `coding_agent: claude_code` agents |
+| Copilot CLI (`npm install -g @github/copilot`) | needed for `coding_agent: copilot` agents |
 | `sqlite3` | reading the trace from the shell |
 | `git` | chains that end in a commit phase need a repo with one commit |
 | [`just`](https://github.com/casey/just) | optional; every recipe is a one-line `bun` or `sqlite3` command |
