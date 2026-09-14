@@ -76,7 +76,7 @@ export async function runSide(kind: "gold" | "port", c: Case, fixture: string): 
   }
   stampCommit(dir);
   const cmd = kind === "gold"
-    ? ["uv", "run", join(dest, c.script.replace(/\.ts$/, ".py")), ...c.args]
+    ? ["uv", "run", "-q", join(dest, c.script.replace(/\.ts$/, ".py")), ...c.args]
     : ["bun", join(dest, c.script), ...c.args];
   const env = {
     ENGINEER_NAME: "enrique",
