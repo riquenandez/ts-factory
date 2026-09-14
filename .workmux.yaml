@@ -1,0 +1,10 @@
+# workmux: dispatch builders into their own worktree + tmux window.
+agent: grok
+
+# Lint, typecheck, and the parity tests need the root devDependencies.
+post_create:
+  - bun install
+
+panes:
+  - command: <agent>
+    focus: true
