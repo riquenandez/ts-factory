@@ -83,6 +83,24 @@ just obs                 # the trace UI at http://localhost:4601
 
 Files under `adws/adw_data/sessions/<adw_id>/` are the raw record: `raw_output.jsonl`, `envelope.json`, and each agent's rendered prompts. The db is the queryable mirror.
 
+## Operate it from Claude Code
+
+The skill is also the operator. With `.claude/skills/sssf/` in the repo, open Claude Code and type `/sssf` followed by what you want. The agent reads `SKILL.md`, which routes each request to one cookbook, and it stays on the factory layer: it launches workflows, watches the trace, and reports. It never plans, builds, or edits application code itself.
+
+```
+/sssf install                                  # stamp the factory, then run the post-install checklist
+/sssf                                          # list this repo's ADWs as a table and wait for a request
+/sssf add a GET /api/tags endpoint sorted by count      # pick a chain, launch it, report the adw_id
+/sssf what is run a1b2c3d4 doing                        # query sssf.db and report phase status
+/sssf create an adw that scouts, then builds            # generate adws/adw_<name>.ts from the roster
+/sssf give the reviewer a stronger model                # edit sssf.config.yaml
+/sssf add a gate that checks the changelog was updated  # extend adw_modules/gates.ts
+```
+
+When you ask for work, the agent rewrites your request into a four-line prompt before launching: the ask in one sentence, where it applies, what done means, and what is out of scope. It shows you that prompt, the chain it chose, and the `adw_id`, so a bad translation dies in seconds rather than at the commit phase. Name an ADW or a roster and it uses that one; otherwise it reads the `Phases:` line of each `adws/adw_*.ts` and picks the most complete chain the work justifies.
+
+The routing table, the ten hard rules every ADW follows, and the cookbooks live in [SKILL.md](.claude/skills/sssf/SKILL.md).
+
 ## Make it yours
 
 The stamped files are starters. These are the edits that pay off, in order.
@@ -110,8 +128,6 @@ Five starter agents ship: `planner`, `builder`, `scout`, `reviewer`, `documenter
 - **Gates.** After the agent finishes, gates such as `artifactsExist`, `filesNonEmpty`, and `diffMatchesClaims` check what the envelope claims against the repo. Violations go back to the same session.
 - **Permissions.** `writes:` per agent and `protected_files` in defaults are enforced in code by diffing the repo before and after every call. Unauthorized changes are rolled back and the phase fails. See [references/config.md](.claude/skills/sssf/references/config.md).
 - **Trace.** Seven tables in `sssf.db`, one cursor query as the whole transport. See [references/observability.md](.claude/skills/sssf/references/observability.md).
-
-The skill's [SKILL.md](.claude/skills/sssf/SKILL.md) carries the hard rules and routes each request to a cookbook, so Claude Code can operate the factory for you: install it, create or modify a chain, retune an agent, run and monitor.
 
 ## Known limits
 
