@@ -9,8 +9,6 @@ import { nowIso, operatorEnv, RuntimeError } from "./utils.ts";
 
 export const CLAUDE_CODE_PATH = process.env.CLAUDE_CODE_PATH ?? "claude";
 
-export { clip, labelFor, textOf };
-
 const RESULT_SNIPPET_CHARS = 20_000;
 const ARG_VALUE_CHARS = 20_000;
 
@@ -50,7 +48,7 @@ function mapTools(tools: string[]): string[] {
   return mapped;
 }
 
-function claudeEnv(): Record<string, string> {
+export function claudeEnv(): Record<string, string> {
   const env = operatorEnv();
   delete env.CLAUDECODE;
   delete env.CLAUDE_CODE_ENTRYPOINT;
@@ -162,7 +160,7 @@ export class ClaudeToolCallTracker {
   }
 }
 
-function buildArgv(request: PiRequest, first: boolean): string[] {
+export function buildArgv(request: PiRequest, first: boolean): string[] {
   const cmd = [CLAUDE_CODE_PATH, "-p", "--output-format", "stream-json", "--verbose"];
   if (first) cmd.push("--session-id", request.session_id);
   else cmd.push("--resume", request.session_id);
@@ -173,13 +171,17 @@ function buildArgv(request: PiRequest, first: boolean): string[] {
     cmd.push("--dangerously-skip-permissions");
   } else {
     const mapped = mapTools(request.tools);
-    if (mapped.length) cmd.push("--allowedTools", mapped.join(","));
+    const builtin = mapped.filter((name) => !name.startsWith("mcp__"));
+    if (mapped.length) {
+      cmd.push("--tools", builtin.join(","));
+      cmd.push("--allowedTools", mapped.join(","));
+    } else {
+      cmd.push("--tools", "");
+    }
     cmd.push("--permission-mode", "dontAsk");
   }
-  if (request.extensions.length) {
-    for (const entry of request.extensions) cmd.push("--mcp-config", entry);
-    cmd.push("--strict-mcp-config");
-  }
+  for (const entry of request.extensions) cmd.push("--mcp-config", entry);
+  cmd.push("--strict-mcp-config");
   cmd.push(request.prompt);
   return cmd;
 }

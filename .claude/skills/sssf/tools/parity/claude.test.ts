@@ -2,6 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { buildArgv } from "../../templates/adws/adw_modules/agentCc.ts";
+import type { PiRequest } from "../../templates/adws/adw_modules/dataTypes.ts";
 import { runSide } from "./runBoth.ts";
 
 const REPO_CLAUDE = join(import.meta.dir, "fixtures/repo_claude");
@@ -25,10 +27,13 @@ const FIRST_ARGV = [
   "medium",
   "--system-prompt",
   "<any>",
+  "--tools",
+  "Read,Grep,Glob,Bash,Write",
   "--allowedTools",
   "Read,Grep,Glob,Bash,Write",
   "--permission-mode",
   "dontAsk",
+  "--strict-mcp-config",
   "<any>",
 ];
 
@@ -98,6 +103,11 @@ describe("claude_code via fake_claude", () => {
       scout: { coding_agent: string };
     };
     expect(map.scout.coding_agent).toBe("claude_code");
+    expect(
+      Object.keys(side.files).some((key) =>
+        /^abcd1234\/scout\/claude_sessions\/[0-9a-f-]{36}\.created$/.test(key),
+      ),
+    ).toBe(true);
   }, 60_000);
 
   test("argv on first call", async () => {
@@ -244,3 +254,62 @@ describe("claude_code via fake_claude", () => {
     expect(dumpInserts(side.dump, "sessions")).toHaveLength(0);
   }, 60_000);
 });
+
+function ccRequest(over: Partial<PiRequest> = {}): PiRequest {
+  return {
+    prompt: "hi",
+    system_prompt: "sys",
+    model: "sonnet",
+    thinking: "medium",
+    session_id: "00000000-0000-0000-0000-000000000001",
+    session_dir: "/tmp",
+    raw_output_path: "/tmp/out.jsonl",
+    tools: null,
+    extensions: [],
+    cwd: "/tmp",
+    ...over,
+  };
+}
+
+function flagAfter(argv: string[], flag: string): string | undefined {
+  const i = argv.indexOf(flag);
+  return i === -1 ? undefined : argv[i + 1];
+}
+
+describe("buildArgv", () => {
+  test("tools null: dangerously-skip-permissions, no --tools", () => {
+    const argv = buildArgv(ccRequest({ tools: null }), true);
+    expect(argv).toContain("--dangerously-skip-permissions");
+    expect(argv).not.toContain("--tools");
+    expect(argv).not.toContain("--allowedTools");
+    expect(argv).toContain("--strict-mcp-config");
+  });
+
+  test("roster list: --tools and --allowedTools, ls dropped, find→Glob", () => {
+    const argv = buildArgv(
+      ccRequest({ tools: ["read", "grep", "find", "ls", "bash", "write"] }),
+      true,
+    );
+    expect(flagAfter(argv, "--tools")).toBe("Read,Grep,Glob,Bash,Write");
+    expect(flagAfter(argv, "--allowedTools")).toBe("Read,Grep,Glob,Bash,Write");
+    expect(argv.indexOf("--tools")).toBeLessThan(argv.indexOf("--allowedTools"));
+    expect(argv.indexOf("--allowedTools")).toBeLessThan(argv.indexOf("--permission-mode"));
+    expect(argv).toContain("--strict-mcp-config");
+  });
+
+  test("empty list: --tools empty, no --allowedTools", () => {
+    const argv = buildArgv(ccRequest({ tools: [] }), true);
+    expect(flagAfter(argv, "--tools")).toBe("");
+    expect(argv).not.toContain("--allowedTools");
+    expect(argv).toContain("--permission-mode");
+    expect(argv).toContain("--strict-mcp-config");
+  });
+
+  test("MCP tool is in --allowedTools only", () => {
+    const argv = buildArgv(ccRequest({ tools: ["read", "mcp__jira__search"] }), true);
+    expect(flagAfter(argv, "--tools")).toBe("Read");
+    expect(flagAfter(argv, "--allowedTools")).toBe("Read,mcp__jira__search");
+    expect(argv).toContain("--strict-mcp-config");
+  });
+});
+

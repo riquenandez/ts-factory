@@ -118,6 +118,7 @@ adws/adw_data/sessions/{adw_id}/
 └── {agent}/
     ├── prompts/            the exact system.md and user.md sent, saved before execution
     ├── pi_sessions/        pi's own session state for this agent
+    ├── claude_sessions/    claude_code session markers (`<uuid>.created`)
     ├── raw_output.jsonl    the full JSONL stream, appended live
     └── envelope.json       the final parsed response
 ```

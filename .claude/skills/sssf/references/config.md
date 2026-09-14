@@ -124,7 +124,7 @@ Resolution: the agent's own list wins; an agent that omits the key inherits `def
 
 ## Harness engineering
 
-`harness_engineering` entries are pi extension file paths, passed as `pi -e <path>`, one flag per entry, scoped to that agent. The stamped `adws/adw_data/harness_engineering/subagents.ts` registers `subagent_create`, `subagent_continue`, `subagent_list`, and `subagent_remove`, wired to the planner and scout. For `claude_code`, entries are MCP config JSON files passed as `--mcp-config` (one flag per entry, then `--strict-mcp-config`); a non-`.json` path fails `validate()`.
+`harness_engineering` entries are pi extension file paths, passed as `pi -e <path>`, one flag per entry, scoped to that agent. The stamped `adws/adw_data/harness_engineering/subagents.ts` registers `subagent_create`, `subagent_continue`, `subagent_list`, and `subagent_remove`, wired to the planner and scout. For `claude_code`, entries are MCP config JSON files passed as `--mcp-config` (one flag per entry); `--strict-mcp-config` is always passed so only the roster's MCP files are loaded; a non-`.json` path fails `validate()`.
 
 ## Write permissions
 

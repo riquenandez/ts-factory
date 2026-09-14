@@ -24,7 +24,7 @@ import {
 import { PermissionBreach, enforce, snapshot } from "./permissions.ts";
 import * as prompts from "./prompts.ts";
 import type { Run } from "./runner.ts";
-import { RuntimeError, ValueError, newId, operatorEnv } from "./utils.ts";
+import { RuntimeError, ValueError, newId } from "./utils.ts";
 
 export const JSON_FIX_ATTEMPTS = 2;
 
@@ -183,7 +183,7 @@ function claudeBinaryStatus(): { ok: boolean; detail: string } {
   if (claudeBinary) return claudeBinary;
   const captured = spawnCaptured([agentCc.CLAUDE_CODE_PATH, "--version"], {
     timeoutSeconds: 30,
-    env: operatorEnv(),
+    env: agentCc.claudeEnv(),
   });
   claudeBinary = {
     ok: captured.returncode === 0,
@@ -305,7 +305,7 @@ export async function execute(run: Run, phase: Phase, call: AgentCall): Promise<
       model: agent.model,
       thinking: agent.thinking,
       session_id: sessionId,
-      session_dir: join(agentDirAbs, "pi_sessions"),
+      session_dir: join(agentDirAbs, agent.coding_agent === "claude_code" ? "claude_sessions" : "pi_sessions"),
       raw_output_path: join(agentDirAbs, "raw_output.jsonl"),
       tools: agent.tools,
       extensions: agent.harness_engineering,
