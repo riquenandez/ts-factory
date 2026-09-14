@@ -1,15 +1,15 @@
 # Handoff Reference
 
-The envelope schema, the two-channel output contract, and the session directory layout — how context transfers in code, not in conversation.
+The envelope schema, the two-channel output contract, and the session directory layout. Context transfers in code, not in conversation.
 
-## Two output channels, exactly
+## Two output channels
 
-An agent may produce output in two ways and no others:
+An agent produces output in two ways and no others:
 
-1. **Reference files** written into `context_handoff/` — plans, notes, artifacts for the agents that follow.
-2. **A final valid-JSON response** — the envelope, its direct response and nothing else.
+1. Reference files written into `context_handoff/` for the agents that follow.
+2. One final valid-JSON response, the envelope.
 
-Code does the rest: parse the response against the output type the call declared, persist it as `envelope.json`, and inject it into the next agent's user prompt.
+Code parses the response against the output type the call declared, saves it as `envelope.json`, and injects it into the next agent's user prompt.
 
 ## Envelope schema
 
@@ -17,59 +17,36 @@ Every output type extends `EnvelopeBase`:
 
 ```ts
 export interface EnvelopeBase {
-  status: "success" | "fail";  // the only required field
-  summary: string;             // one sentence: what happened
-  artifacts: string[];         // paths written, usually inside context_handoff/
+  status: "success" | "fail";   // the only required field
+  summary: string;              // one sentence on what happened
+  artifacts: string[];          // paths written, usually inside context_handoff/
   notes_for_next_agent: string; // what the next agent must know
 }
 ```
 
-`status` is load-bearing: an envelope that parses but reports `status="fail"` raises, failing the phase. An agent declaring its own failure is not a successful phase.
+`status` is load-bearing. An envelope that parses but reports `fail` fails the phase; an agent declaring its own failure is not a successful phase.
 
-The starter types in `adw_modules/dataTypes.ts`:
+The starter types in `adw_modules/dataTypes.ts`. Each is an interface plus a same-named schema constant built with `envelopeType(...)`, which is what `outputType:` takes.
 
 ```ts
-export interface GenericOutput extends EnvelopeBase {}  // fallback when no sharper contract exists
+GenericOutput                     // EnvelopeBase with no extra fields; the fallback contract
 
-export interface PlanOutput extends EnvelopeBase {
-  commit_message: string;       // imperative git subject for the PLAN FILE itself
-}
-
-export interface BuildOutput extends EnvelopeBase {
-  changed_files: string[];
-  commit_message: string;       // consumed by the git commit phase
-}
-
-export interface ScoutOutput extends EnvelopeBase {
-  findings: ScoutFinding[];     // ScoutFinding: { file, note }
-}
-
-export interface ReviewOutput extends EnvelopeBase {
-  approved: boolean;            // the verdict; status is only "did the review run"
-  findings: ReviewFinding[];    // ReviewFinding: { requirement, met, evidence }
-  blocking: string[];           // what must change before approval
-}
-
-export interface DocumentOutput extends EnvelopeBase {
-  document_path: string;        // the write-up's home in the repo
-  documented_files: string[];
-  commit_message: string;
-}
+PlanOutput      { commit_message }                                   // subject for the plan file itself
+BuildOutput     { changed_files, commit_message }                    // consumed by the commit phase
+ScoutOutput     { findings: { file, note }[] }
+ReviewOutput    { approved, findings: { requirement, met, evidence }[], blocking }
+DocumentOutput  { document_path, documented_files, commit_message }
 ```
 
-`commit_message` defaults to empty, so a git phase consuming it always needs a fallback — see `cookbooks/create_adw.md`.
+`commit_message` defaults to empty, so a commit phase always pairs it with a fallback. Each one describes its own agent's product: the spec, the code, the write-up. A chain that commits per step (`adw_simple_sdlc.ts`) uses all three and never reuses one agent's sentence for another's diff.
 
-**Each `commit_message` describes its own agent's work product, never the next one's**: `PlanOutput`'s covers the spec file, `BuildOutput`'s the code, `DocumentOutput`'s the write-up. A chain that commits once can use whichever fits; a chain that commits per step (`adw_simple_sdlc.ts`) needs all three, and reusing one agent's sentence for another's diff is how a commit log starts lying.
+Two more types are adapters, code results shaped as envelopes so an agent receives a deterministic result through the same door: `VerifyOutput { passed, failures }` from `quality.asEnvelope`, and `ChangesOutput { base, changed_files, insertions, deletions, stat, diff_path }` from `changes.asEnvelope`. There is no test output type; running the suite is a code phase.
 
-There is no test output type: running the suite is a `kind="code"` phase, and its `QualityResult` reaches the next agent through `quality.asEnvelope`.
-
-Two of these are adapters rather than agent reports — code shaped as an envelope so an agent can be handed a deterministic result through the same door: `VerifyOutput` (a lint/test block's result) and `ChangesOutput` (a captured `git diff`, from `changes.asEnvelope`). The consuming agent cannot tell the difference, which is the point.
-
-The envelope is a **manifest of claims**. Gates verify those claims after the fact — declared artifacts exist and are non-empty, declared changes appear in the diff, declared tests actually pass. See `cookbooks/update_modules.md`.
+The envelope is a manifest of claims. Gates verify those claims after the fact: declared artifacts exist and are non-empty, declared changes appear in the diff, declared tests pass. See `cookbooks/update_modules.md`.
 
 ## The typed-output rule
 
-**Every agent call passes a concrete output type**, and the agent's final JSON is parsed against exactly that type. No untyped handoffs.
+Every `ph.call` passes a concrete output type and the agent's final JSON is parsed against exactly that type.
 
 ```ts
 const plan = await ph.call({
@@ -79,23 +56,21 @@ const plan = await ph.call({
 }) as PlanOutput;
 ```
 
-The user prompt asks for the shape; the type enforces it. They always travel as a pair, which is what lets one agent serve many calls — same system prompt, different user prompt + output type per call site. Output types live in code, never in `sssf.config.yaml`.
+The user prompt asks for the shape; the type enforces it. They travel as a pair, which is what lets one agent serve many calls. Output types live in code, never in `sssf.config.yaml`.
 
-**Parse failure is not a restart.** If the response doesn't parse or doesn't validate, the harness re-prompts the **same session** with a correction naming the required fields — bounded by `JSON_FIX_ATTEMPTS` in `agents.ts` (2). Gate violations use the identical mechanism, bounded instead by the phase's `retries`. A cold restart would throw away the context that produced the near-miss.
+**Parse failure is not a restart.** A response that does not parse or validate is re-prompted in the same session with a correction naming the required fields, up to `JSON_FIX_ATTEMPTS` in `agents.ts` (2). Gate violations use the same mechanism, bounded by the phase's `retries`. Pi treats `--session-id` as create-or-continue, so running and continuing an agent are the same call. The harness tolerates a fenced `json` block or prose around the object before parsing, but the prompt still asks for bare JSON, and every failed attempt is stored as an invalid `envelopes` row.
 
-In v1 there is no separate continue call to make: `agentPi.run()` passes `--session-id`, which pi treats as create-or-continue, so running an agent and continuing it are the same call with the same id. Before parsing, the harness also tolerates a fenced `json` code block or prose wrapped around the object — but the prompt still asks for bare JSON, and every failed attempt is persisted as an invalid envelope row.
-
-## Injecting the previous envelope
+## Rendering the user prompt
 
 `prompts.ts` renders the agent's `user.md`, substituting:
 
 | Placeholder | Value |
 |---|---|
-| `{{prompt}}` | the engineer's ask (or the ADW's per-call prompt) |
-| `{{previous_envelope}}` | the upstream envelope JSON, from `ph.call({ previous: ... })` |
+| `{{prompt}}` | the engineer's ask, or the ADW's per-call prompt |
+| `{{previous_envelope}}` | the upstream envelope JSON from `ph.call({ previous })`, or `(none)` |
 | `{{context_handoff_dir}}` | absolute path to this session's `context_handoff/` |
 
-A `user.md` declares one h3 per incoming datum, then the task, then the output contract:
+A `user.md` declares one h3 per input, then the task, then the output contract:
 
 ````markdown
 # Scout Task
@@ -120,50 +95,46 @@ Find what `prompt` asks about. Write findings into `context_handoff_dir`, then e
 
 ## Report
 
-Respond with ONLY valid JSON matching `ScoutOutput` — no prose before or after:
+Respond with ONLY valid JSON matching `ScoutOutput`, no prose before or after:
 
 ```json
 {
   "status": "success",
   "summary": "<one sentence on what you found>",
-  "findings": [
-    { "file": "src/server.ts", "note": "<why this file matters>" }
-  ],
+  "findings": [{ "file": "src/server.ts", "note": "<why this file matters>" }],
   "artifacts": ["<context_handoff_dir>/scout_findings.md"]
 }
 ```
 ````
 
-The `## Report` section shows the exact JSON shape of the declared output type — that is the agent's output contract, and it lives in `user.md` because the shape belongs to the *use*, not the identity. The matching `system.md` stays static: Purpose + Instructions only.
+The `## Report` section shows the exact JSON shape of the declared output type. It lives in `user.md` because the shape belongs to the use, not the identity. The matching `system.md` stays static: Purpose and Instructions only.
 
 ## Session directory layout
 
 ```
 adws/adw_data/sessions/{adw_id}/
 ├── agent_map.json          agent name → coding-agent session_id + model
-├── context_handoff/        the ONE place agents write files for the agents that follow
-└── {agent_name}/
-    ├── prompts/            exact prompts sent (system.md + user.md), saved before execution
+├── context_handoff/        the one place agents write files for the agents that follow
+└── {agent}/
+    ├── prompts/            the exact system.md and user.md sent, saved before execution
     ├── pi_sessions/        pi's own session state for this agent
-    ├── raw_output.jsonl    full JSONL stream from the coding agent, appended live
-    └── envelope.json       the final valid-JSON response — captured, validated, persisted by code
+    ├── raw_output.jsonl    the full JSONL stream, appended live
+    └── envelope.json       the final parsed response
 ```
 
-`session.ensure(cfg, adwId)` mints or joins the id and creates these dirs. One `context_handoff/` per session, shared by every agent — the single location for cross-agent files.
+`session.ensure(cfg, adwId)` mints or joins the id and creates these directories. One `context_handoff/` per session, shared by every agent.
 
 ## agent_map.json and resuming
 
 ```json
 {
-  "planner": {"session_id": "sssf-a1b2c3d4-planner-9f2e",
-              "model": "google/gemini-3.6-flash", "coding_agent": "pi"},
-  "builder": {"session_id": "sssf-a1b2c3d4-builder-71ac",
-              "model": "google/gemini-3.6-flash", "coding_agent": "pi"}
+  "planner": { "session_id": "sssf-a1b2c3d4-planner-9f2e", "model": "google/gemini-3.6-flash", "coding_agent": "pi" },
+  "builder": { "session_id": "sssf-a1b2c3d4-builder-71ac", "model": "google/gemini-3.6-flash", "coding_agent": "pi" }
 }
 ```
 
-This map is the key that lets a later ADW rejoin each agent's **existing context window**. Run `adw_build.ts --adw-id a1b2c3d4` after `adw_plan.ts` and the builder resumes its own session rather than starting cold.
+This map lets a later ADW rejoin each agent's existing context window. `adw_build.ts --adw-id a1b2c3d4` after `adw_plan.ts` resumes the builder's own session rather than starting cold. The map records the model each session was created with; if the config now names a different model, that agent starts fresh and the map is updated. `agent_sessions` in `sssf.db` is the queryable mirror.
 
-The map records the model each session was created with. If config drift changes an agent's model, that agent starts a **fresh** session and the map is updated — never a bad resume. `agent_sessions` in `sssf.db` is the queryable mirror of this file.
+Two processes joined to the same `adw_id` at the same time overwrite each other's `agent_map.json`. This is inherited from the Python original and deliberately not fixed.
 
-**Files are the raw record; the db is the queryable mirror.** Losing `sssf.db` loses nothing that can't be rebuilt from `raw_output.jsonl`, `envelope.json`, and `agent_map.json`.
+Files are the raw record; the db is the queryable mirror. Losing `sssf.db` loses nothing that `raw_output.jsonl`, `envelope.json`, and `agent_map.json` cannot rebuild.
