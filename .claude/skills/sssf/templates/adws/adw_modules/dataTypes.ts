@@ -336,6 +336,7 @@ export interface AgentConfig {
   harness_engineering: string[];
   tools: string[] | null;
   writes: string[] | null;
+  command: string[];
 }
 
 export interface ConfigDefaults {
@@ -404,6 +405,7 @@ export interface AgentRequest {
   tools: string[] | null;
   extensions: string[];
   cwd: string;
+  command?: string[];
 }
 
 export interface ToolCallRecord {

@@ -73,4 +73,4 @@ Deep specs, when needed: [references/config.md](references/config.md) · [refere
 
 ## v1 scope
 
-All three coding-agent interfaces are v1: `coding_agent: pi`, `coding_agent: claude_code`, and `coding_agent: copilot`. Default model `gemini-3.6-flash` via openrouter, thinking `medium`. The visualizer app lives at `apps/visualizer/` and is started with `just obs`; sqlite queries work without it.
+All four coding-agent interfaces are v1: `coding_agent: pi`, `coding_agent: claude_code`, `coding_agent: copilot`, and `coding_agent: exec`. Default model `gemini-3.6-flash` via openrouter, thinking `medium`. The visualizer app lives at `apps/visualizer/` and is started with `just obs`; sqlite queries work without it.

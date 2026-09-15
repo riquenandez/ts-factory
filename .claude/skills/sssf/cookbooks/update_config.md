@@ -10,7 +10,7 @@ Add or retune agents in `adws/adw_sssf_config/sssf.config.yaml`. Full field spec
     thinking: high                   # off | minimal | low | medium | high | xhigh | max
 ```
 
-A bare model id can match several providers and `agents.validate()` refuses it. Thinking only applies to models registered with `reasoning: true` in `~/.pi/agent/models.json`. A `claude_code` agent takes `model` as written (`opus`, `sonnet`, or a full id — no `provider/` prefix) and maps `thinking` to `--effort` (`off` and `minimal` become `low`). A `copilot` agent takes `model` as the CLI's `/model` shows it (`gpt-5.4`, `claude-sonnet-4.5`, or `auto`) and maps `thinking` to `--effort` (`off` becomes `none`).
+A bare model id can match several providers and `agents.validate()` refuses it. Thinking only applies to models registered with `reasoning: true` in `~/.pi/agent/models.json`. A `claude_code` agent takes `model` as written (`opus`, `sonnet`, or a full id — no `provider/` prefix) and maps `thinking` to `--effort` (`off` and `minimal` become `low`). A `copilot` agent takes `model` as the CLI's `/model` shows it (`gpt-5.4`, `claude-sonnet-4.5`, or `auto`) and maps `thinking` to `--effort` (`off` becomes `none`). `command` is an argv list used only by `coding_agent: exec`; it is not inherited from `defaults`.
 
 **A model change starts a fresh session.** `agent_map.json` records the model each session was created with. A joined run (`--adw-id`) whose config now names a different model starts that agent cold instead of resuming. Thinking changes do not invalidate a session.
 

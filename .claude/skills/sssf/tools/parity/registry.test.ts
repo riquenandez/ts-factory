@@ -12,6 +12,7 @@ const SESSION_DIRS: Record<string, string> = {
   pi: "pi_sessions",
   claude_code: "claude_sessions",
   copilot: "copilot_sessions",
+  exec: "exec_sessions",
 };
 
 function dumpInserts(dump: string, table: string): string[] {
@@ -21,7 +22,7 @@ function dumpInserts(dump: string, table: string): string[] {
 
 describe("agent registry", () => {
   test("registry shape", () => {
-    expect(Object.keys(INTERFACES)).toEqual(["pi", "claude_code", "copilot"]);
+    expect(Object.keys(INTERFACES)).toEqual(["pi", "claude_code", "copilot", "exec"]);
     for (const [key, iface] of Object.entries(INTERFACES)) {
       expect(typeof iface.run).toBe("function");
       expect(typeof iface.newTracker).toBe("function");
@@ -48,6 +49,12 @@ describe("agent registry", () => {
     expect(copilotA).toMatch(UUID_RE);
     expect(copilotB).toMatch(UUID_RE);
     expect(copilotA).not.toBe(copilotB);
+
+    const execA = INTERFACES.exec!.mintSessionId("abcd1234", "scout");
+    const execB = INTERFACES.exec!.mintSessionId("abcd1234", "scout");
+    expect(execA).toMatch(UUID_RE);
+    expect(execB).toMatch(UUID_RE);
+    expect(execA).not.toBe(execB);
   });
 
   test("unknown coding_agent fails validation before any session", async () => {
@@ -76,18 +83,18 @@ describe("agent registry", () => {
     );
     expect(side.exit).toBe(1);
     expect(side.stderr).toContain("unknown coding_agent 'bogus'");
-    expect(side.stderr).toContain("known: pi, claude_code, copilot");
+    expect(side.stderr).toContain("known: pi, claude_code, copilot, exec");
     expect(dumpInserts(side.dump, "sessions")).toHaveLength(0);
   }, 60_000);
 
   test("runtime files are self-contained", () => {
-    for (const name of ["agentPi.ts", "agentCc.ts", "agentCopilot.ts"]) {
+    for (const name of ["agentPi.ts", "agentCc.ts", "agentCopilot.ts", "agentExec.ts"]) {
       const text = readFileSync(join(MODULES, name), "utf8");
       expect(text).toContain("export const INTERFACE");
       expect(text).not.toContain('from "./agents.ts"');
       expect(text).not.toContain('from "./runner.ts"');
     }
-    for (const name of ["agentCc.ts", "agentCopilot.ts"]) {
+    for (const name of ["agentCc.ts", "agentCopilot.ts", "agentExec.ts"]) {
       const text = readFileSync(join(MODULES, name), "utf8");
       expect(text).not.toContain('from "./agentPi.ts"');
     }

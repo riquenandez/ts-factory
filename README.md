@@ -121,7 +121,7 @@ Generate a new chain from agents in your roster:
 bun .claude/skills/sssf/scripts/makeAdw.ts --name review_docs --agents scout,builder
 ```
 
-Five starter agents ship: `planner`, `builder`, `scout`, `reviewer`, `documenter`. There is no tester, because running a suite is a known command and therefore a code phase. ADW scripts never name a model. They name an agent, and the config says what that agent is.
+Five starter agents ship: `planner`, `builder`, `scout`, `reviewer`, `documenter`. There is no tester, because running a suite is a known command and therefore a code phase. ADW scripts never name a model. They name an agent, and the config says what that agent is. Bring your own agent with `coding_agent: exec` and a command that speaks the [exec protocol](.claude/skills/sssf/references/exec-protocol.md).
 
 ## How it works
 

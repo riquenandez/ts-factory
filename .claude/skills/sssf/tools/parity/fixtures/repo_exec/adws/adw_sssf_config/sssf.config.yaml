@@ -1,0 +1,33 @@
+defaults:
+  data_dir: adws/adw_data
+  protected_files: []
+  coding_agent: exec
+  model: any-model
+  thinking: medium
+  tools:
+    - read
+    - bash
+observability:
+  db: adws/adw_data/sssf.db
+  poll_ms: 500
+agents:
+  - name: scout
+    purpose: Find and report where things live; change nothing.
+    coding_agent: exec
+    model: any-model
+    thinking: medium
+    prompt_engineering:
+      system: adws/adw_data/prompt_engineering/scout/system.md
+      user: adws/adw_data/prompt_engineering/scout/user.md
+    writes: []
+    harness_engineering: []
+    tools:
+      - read
+      - grep
+      - find
+      - ls
+      - bash
+      - write
+    command:
+      - bun
+      - PLACEHOLDER

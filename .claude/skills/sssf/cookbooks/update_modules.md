@@ -79,6 +79,8 @@ A new runtime is four steps. Nothing else in the core changes.
 
 Runtime files import `dataTypes.ts`, `toolCalls.ts`, `compat/*`, and `utils.ts` only, never `agents.ts` or `runner.ts`.
 
+An agent that lives in another repo does not need a runtime file at all: it needs a command that speaks [references/exec-protocol.md](../references/exec-protocol.md), registered as `coding_agent: exec` with a `command` argv list.
+
 ## Before you finish
 
 `bun adws/adw_prompt.ts "ping" --agent scout`. Every module change rides the same path a real run does.

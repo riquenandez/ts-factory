@@ -41,12 +41,12 @@ agents:
 
 | Field | Type | Meaning |
 |---|---|---|
-| `coding_agent` | any name registered in `agents.INTERFACES` | Which interface runs the agent. `pi`, `claude_code`, and `copilot` ship. An unknown name fails `validate()` before any session row. `claude_code` runs `claude -p` headless and uses the machine's Claude Code login. `copilot` runs `copilot -p` headless and uses the machine's `copilot login` or `COPILOT_GITHUB_TOKEN`. |
-| `model` | string | For `pi`: `provider/model-id`, resolved against pi's catalog. For `claude_code`: passed to `--model` as written (`opus`, `sonnet`, or a full id; no `provider/` prefix). For `copilot`: the model name as the CLI's `/model` shows it (`gpt-5.4`, `claude-sonnet-4.5`, or `auto`), passed to `--model` as written. Starter default `google/gemini-3.6-flash`. |
-| `thinking` | enum | Reasoning effort, see below. Default `medium`. |
+| `coding_agent` | any name registered in `agents.INTERFACES` | Which interface runs the agent. `pi`, `claude_code`, `copilot`, and `exec` ship. An unknown name fails `validate()` before any session row. `claude_code` runs `claude -p` headless and uses the machine's Claude Code login. `copilot` runs `copilot -p` headless and uses the machine's `copilot login` or `COPILOT_GITHUB_TOKEN`. `exec` runs the agent's `command` and speaks [the exec protocol](exec-protocol.md). |
+| `model` | string | For `pi`: `provider/model-id`, resolved against pi's catalog. For `claude_code`: passed to `--model` as written (`opus`, `sonnet`, or a full id; no `provider/` prefix). For `copilot`: the model name as the CLI's `/model` shows it (`gpt-5.4`, `claude-sonnet-4.5`, or `auto`), passed to `--model` as written. For `exec` the value passes through verbatim; the adapter interprets it. Starter default `google/gemini-3.6-flash`. |
+| `thinking` | enum | Reasoning effort, see below. Default `medium`. For `exec` the value passes through verbatim; the adapter interprets it. |
 | `color` | hex string | Lane color for agents that do not set their own. Unset means the visualizer's palette. |
-| `harness_engineering` | list of paths | Pi extension files, passed as `pi -e <path>`. Default none. |
-| `tools` | list of names | Roster-wide allowlist inherited by agents that omit `tools`. Unset means all tools. |
+| `harness_engineering` | list of paths | Pi extension files, passed as `pi -e <path>`. Default none. For `exec` the value passes through verbatim as `extensions`; the adapter interprets it. |
+| `tools` | list of names | Roster-wide allowlist inherited by agents that omit `tools`. Unset means all tools. For `exec` the value passes through verbatim; the adapter interprets it. |
 | `protected_files` | list of patterns | Paths no agent may modify unless named in its own `writes`. Default: `adws/adw_modules/`, `adws/adw_sssf_config/`, `adws/adw_*.ts`. An agent must not be able to edit the machinery that grades it. |
 | `data_dir` | path | Runtime home. Sessions land at `{data_dir}/sessions/{adw_id}/{agent}/`. Default `adws/adw_data`. |
 
@@ -66,6 +66,7 @@ agents:
 | `prompt_engineering.system` | yes | Path to the system prompt: who the agent is and its one purpose. |
 | `prompt_engineering.user` | yes | Path to the user prompt template with `{{prompt}}`, `{{previous_envelope}}`, `{{context_handoff_dir}}`, and a `## Report` section. |
 | `coding_agent`, `model`, `thinking`, `color`, `harness_engineering`, `tools`, `writes` | no | Override the matching `defaults` key. |
+| `command` | no | List of argv tokens. Only `exec` reads it. A relative first token is resolved from the repo root; a bare name resolves through `PATH`. Default `[]`, not inherited from `defaults`. |
 | `writes` | no | What this agent may modify in the repo, enforced after every call. See below. |
 
 Output types are deliberately absent. Config defines who an agent is; the ADW call site defines how it is used, so one agent serves many calls.

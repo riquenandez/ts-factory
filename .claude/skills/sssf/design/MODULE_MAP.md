@@ -20,6 +20,8 @@ adws/
     agentPi.ts     pi argv, JSONL stream tail, ToolCallTracker, model resolution
     agentCc.ts     claude_code argv, stream-json tail, ClaudeToolCallTracker
     agentCopilot.ts copilot argv, JSONL tail, CopilotToolCallTracker
+    agentExec.ts   exec runtime: spawn `command` speaking sssf-exec/1
+                    (protocol: references/exec-protocol.md)
     toolCalls.ts   label, clip, textOf: the one tool-call record shape every runtime emits
     tracer.ts       SCHEMA + MIGRATIONS + every INSERT/UPDATE; JSONL append
     console.ts      the narrative — print AND trace, always together

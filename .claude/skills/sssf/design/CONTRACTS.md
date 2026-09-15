@@ -209,9 +209,11 @@ accepted: <reason>` prints as a `note` before the panel.
 tools, writes` from `defaults` **only when the key is present in `defaults`** (via
 `setdefault`), then always `setdefault("harness_engineering", defaults.harness_engineering
 or [])`. Unknown keys anywhere are ignored. `coding_agent` is a string, default `pi`.
+`command` is a list of strings, default `[]`, and is not inherited from `defaults`.
 `validate()` collects **all** problems and
 raises one `SystemExit` listing them: unknown agent name, an unknown `coding_agent`,
-plus whatever the named runtime's own `validate()` reports, a missing prompt file.
+plus whatever the named runtime's own `validate()` reports (for `exec`: a missing/empty
+`command`, or a non-zero `--check`), a missing prompt file.
 
 ## Install
 

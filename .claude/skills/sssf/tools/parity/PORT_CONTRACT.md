@@ -22,6 +22,7 @@ Python under `python-gold/` is the spec. TypeScript under `templates/` is the pr
 - Do not add comments that narrate what the Python already stated. A comment stays only for a non-obvious why.
 - `claude_code` has no Python gold; its contract is pinned by the `fake_claude` cases in `tools/parity/claude.test.ts`.
 - `copilot` has no Python gold; its contract is pinned by the `fake_copilot` cases in `tools/parity/copilot.test.ts`.
+- `exec` has no Python gold; its contract is pinned by the `fake_exec` cases in `tools/parity/exec.test.ts`.
 - `coding_agent` is an open string validated against `agents.INTERFACES`.
 - Runtime files export `INTERFACE` and never import `agents.ts`, `runner.ts`, or another runtime's file.
 

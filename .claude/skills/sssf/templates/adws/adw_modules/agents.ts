@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileS
 import { join } from "node:path";
 import * as agentCc from "./agentCc.ts";
 import * as agentCopilot from "./agentCopilot.ts";
+import * as agentExec from "./agentExec.ts";
 import * as agentPi from "./agentPi.ts";
 import { SystemExit } from "./compat/cli.ts";
 import { pyRepr, pyStr, pyTail, removePrefix } from "./compat/format.ts";
@@ -65,6 +66,7 @@ const AGENT_CONFIG: Schema = {
     { name: "harness_engineering", kind: "list", defaultFactory: () => [], inner: STR_LIST },
     { name: "tools", kind: "list", optional: true, default: null, inner: STR_LIST },
     { name: "writes", kind: "list", optional: true, default: null, inner: STR_LIST },
+    { name: "command", kind: "list", defaultFactory: () => [], inner: STR_LIST },
   ],
 };
 
@@ -154,6 +156,7 @@ export const INTERFACES: Record<string, AgentInterface> = {
   pi: agentPi.INTERFACE,
   claude_code: agentCc.INTERFACE,
   copilot: agentCopilot.INTERFACE,
+  exec: agentExec.INTERFACE,
 };
 
 function reuseOrMint(run: Run, agent: AgentConfig, mint: () => string): string {
@@ -255,6 +258,7 @@ export async function execute(run: Run, phase: Phase, call: AgentCall): Promise<
       tools: agent.tools,
       extensions: agent.harness_engineering,
       cwd: run.repoRoot,
+      command: agent.command,
     };
     const result = await iface.run(
       request,

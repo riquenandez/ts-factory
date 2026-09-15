@@ -1,0 +1,4 @@
+{"type":"tool_call","tool":"bash","tool_call_id":"c1","args":{"command":"echo hi"},"ok":true,"result_snippet":"hi\n"}
+{"type":"usage","input":200,"output":40,"cost":0.0125}
+{"type":"context","tokens":1200,"window":200000}
+{"type":"message","text":"{\"status\":\"success\",\"summary\":\"repo has a README\",\"artifacts\":[],\"findings\":[],\"notes_for_next_agent\":\"\"}"}
