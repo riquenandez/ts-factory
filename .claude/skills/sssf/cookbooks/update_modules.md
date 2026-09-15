@@ -6,10 +6,11 @@ Extend `adws/adw_modules/`. All low-level logic lives here; ADW scripts declare 
 
 | Module | Owns |
 |---|---|
-| `dataTypes.ts` | `PhaseParams`, `AgentCall`, `EnvelopeBase`, one output type per agent call, config models, `EventRecord`, `PiRequest`/`PiResult` |
+| `dataTypes.ts` | `PhaseParams`, `AgentCall`, `EnvelopeBase`, one output type per agent call, config models, `EventRecord`, `AgentRequest`/`AgentResult` |
 | `agents.ts` | `loadConfig`, `validate`, running an agent call: JSON retries, gates, permissions |
 | `runner.ts` | `Run`, `run.phase()`, `ph.call()`, `run.finish()` |
 | `agentPi.ts` | the pi interface: argv, live JSONL tail, model resolution. `agentCc.ts` is a v2 stub |
+| `toolCalls.ts` | `labelFor`, `clip`, `textOf`: the one tool-call record shape every runtime emits |
 | `gates.ts` | claim verifiers |
 | `quality.ts` | lint, typecheck, build, test blocks; `asEnvelope` |
 | `changes.ts` | git diff capture into `context_handoff/changes.diff`; `asEnvelope` |
@@ -66,6 +67,17 @@ Object.defineProperty(testsDeclaredPassed, "name", { value: "tests_declared_pass
 - Do not gate plan quality or code taste. That is the reviewer's job.
 
 Reusable gates go in `gates.ts`; one-offs can be inline at the call site.
+
+## Add a coding-agent runtime
+
+A new runtime is four steps. Nothing else in the core changes.
+
+1. Add one file in `adw_modules/` that exports `INTERFACE: AgentInterface` (`run`, `newTracker`, `mintSessionId`, `validate`, `sessionDirName`).
+2. Register it with one line in `agents.INTERFACES`.
+3. Add a `fake_<name>` fixture and `<name>.test.ts` mirroring `fake_copilot` / `copilot.test.ts`.
+4. Document the name on the `coding_agent` row and any runtime-specific rows in `references/config.md`.
+
+Runtime files import `dataTypes.ts`, `toolCalls.ts`, `compat/*`, and `utils.ts` only, never `agents.ts` or `runner.ts`.
 
 ## Before you finish
 

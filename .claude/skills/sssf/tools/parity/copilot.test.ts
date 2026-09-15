@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, 
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { buildArgv, shapeUsageFile } from "../../templates/adws/adw_modules/agentCopilot.ts";
-import type { PiRequest } from "../../templates/adws/adw_modules/dataTypes.ts";
+import type { AgentRequest } from "../../templates/adws/adw_modules/dataTypes.ts";
 import { runSide } from "./runBoth.ts";
 
 const REPO_COPILOT = join(import.meta.dir, "fixtures/repo_copilot");
@@ -305,7 +305,7 @@ describe("copilot via fake_copilot", () => {
   }, 60_000);
 });
 
-function copilotRequest(over: Partial<PiRequest> = {}): PiRequest {
+function copilotRequest(over: Partial<AgentRequest> = {}): AgentRequest {
   return {
     prompt: "hi",
     system_prompt: "sys",

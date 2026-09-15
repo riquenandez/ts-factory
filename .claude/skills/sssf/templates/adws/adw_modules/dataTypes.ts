@@ -327,7 +327,7 @@ export interface PromptEngineering {
 
 export interface AgentConfig {
   name: string;
-  coding_agent: "pi" | "claude_code" | "copilot";
+  coding_agent: string;
   model: string;
   thinking: string;
   color: string;
@@ -339,7 +339,7 @@ export interface AgentConfig {
 }
 
 export interface ConfigDefaults {
-  coding_agent: "pi" | "claude_code" | "copilot";
+  coding_agent: string;
   model: string;
   thinking: string;
   color: string;
@@ -391,7 +391,9 @@ export interface EventRecord {
   ended_at?: string | null;
 }
 
-export interface PiRequest {
+export type AgentEvent = Record<string, unknown>;
+
+export interface AgentRequest {
   prompt: string;
   system_prompt: string;
   model: string;
@@ -402,6 +404,22 @@ export interface PiRequest {
   tools: string[] | null;
   extensions: string[];
   cwd: string;
+}
+
+export interface ToolCallRecord {
+  tool: string;
+  tool_call_id: string;
+  args: Record<string, unknown>;
+  ok: boolean;
+  label: string;
+  result_snippet?: string;
+  started_at?: string;
+  ended_at?: string;
+  duration_ms?: number;
+}
+
+export interface ToolCallTracker {
+  observe(event: AgentEvent): ToolCallRecord | null;
 }
 
 export class UsageBreakdown {
@@ -463,7 +481,7 @@ export class UsageBreakdown {
   }
 }
 
-export interface PiResult {
+export interface AgentResult {
   text: string;
   returncode: number;
   session_id: string;
@@ -474,7 +492,7 @@ export interface PiResult {
   context_window: number;
 }
 
-export function newPiResult(sessionId: string, contextWindow = 0): PiResult {
+export function newAgentResult(sessionId: string, contextWindow = 0): AgentResult {
   return {
     text: "",
     returncode: 0,
@@ -485,4 +503,12 @@ export function newPiResult(sessionId: string, contextWindow = 0): PiResult {
     context_tokens: 0,
     context_window: contextWindow,
   };
+}
+
+export interface AgentInterface {
+  run(request: AgentRequest, onEvent?: (event: AgentEvent) => void, onSpawn?: (pid: number) => void, onExit?: (pid: number) => void): Promise<AgentResult>;
+  newTracker(): ToolCallTracker;
+  mintSessionId(adwId: string, agentName: string): string;
+  validate(agent: AgentConfig): string[];
+  sessionDirName: string;
 }

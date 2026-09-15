@@ -1,23 +1,25 @@
 import { appendFileSync, mkdirSync, readFileSync } from "node:fs";
 import { constants as os_constants, homedir } from "node:os";
 import { dirname, join } from "node:path";
-import { collapseWhitespace, pyHead, pyLen, pyRepr, pyStr, pyTail } from "./compat/format.ts";
+import { pyRepr, pyStr, pyTail } from "./compat/format.ts";
 import { pyLoads } from "./compat/json.ts";
 import { spawnCaptured } from "./compat/shell.ts";
-import { newPiResult, type PiRequest, type PiResult } from "./dataTypes.ts";
-import { nowIso, operatorEnv, RuntimeError, ValueError } from "./utils.ts";
+import {
+  newAgentResult,
+  type AgentConfig,
+  type AgentEvent,
+  type AgentInterface,
+  type AgentRequest,
+  type AgentResult,
+  type ToolCallRecord,
+} from "./dataTypes.ts";
+import { ARG_VALUE_CHARS, RESULT_SNIPPET_CHARS, clip, labelFor, textOf } from "./toolCalls.ts";
+import { nowIso, newId, operatorEnv, RuntimeError, ValueError } from "./utils.ts";
 
 export const PI_PATH = process.env.PI_PATH ?? "pi";
 export const MODELS_JSON = process.env.PI_MODELS_PATH ?? join(homedir(), ".pi", "agent", "models.json");
 
-const RESULT_SNIPPET_CHARS = 20_000;
-const ARG_VALUE_CHARS = 20_000;
-const LABEL_CHARS = 80;
-
-const PRIMARY_ARGS = ["command", "path", "file_path", "pattern", "query", "url"];
-
 type Dict = Record<string, unknown>;
-export type PiEvent = Dict;
 export type CatalogRow = [provider: string, modelId: string, contextWindow: number];
 
 function isDict(value: unknown): value is Dict {
@@ -119,35 +121,6 @@ export function contextWindow(provider: string, modelId: string): number {
   return 0;
 }
 
-export function _textOf(container: Dict): string {
-  const content = Array.isArray(container.content) ? container.content : [];
-  let out = "";
-  for (const part of content) {
-    if (isDict(part) && part.type === "text") out += typeof part.text === "string" ? part.text : "";
-  }
-  return out;
-}
-
-export function _clip(text: string, limit: number): string {
-  return pyLen(text) <= limit ? text : pyHead(text, limit).trimEnd() + "…";
-}
-
-export function _label(tool: string, args: Dict): string {
-  let value = "";
-  for (const key of PRIMARY_ARGS) {
-    const candidate = args[key];
-    if (typeof candidate === "string" && candidate.trim()) {
-      value = candidate;
-      break;
-    }
-  }
-  if (!value) {
-    value = (Object.values(args).find((v) => typeof v === "string" && v.trim()) as string | undefined) ?? "";
-  }
-  value = collapseWhitespace(value);
-  return value ? `${tool}: ${_clip(value, LABEL_CHARS)}` : tool;
-}
-
 interface OpenCall {
   tool: unknown;
   args: unknown;
@@ -158,7 +131,7 @@ interface OpenCall {
 export class ToolCallTracker {
   private _open = new Map<string, OpenCall>();
 
-  observe(event: PiEvent): Dict | null {
+  observe(event: AgentEvent): ToolCallRecord | null {
     const etype = event.type ?? "";
     if (etype === "message_end") {
       const message = isDict(event.message) ? event.message : {};
@@ -182,20 +155,20 @@ export class ToolCallTracker {
     );
     const rawArgs = pyTruthy(event.args) ? event.args : pyTruthy(opened?.args) ? opened!.args : {};
     const args: Dict = isDict(rawArgs) ? rawArgs : {};
-    const record: Dict = {
+    const record: ToolCallRecord = {
       tool,
       tool_call_id: callId,
       args: Object.fromEntries(
         Object.entries(args).map(([key, value]) => [
           key,
-          typeof value === "string" ? _clip(value, ARG_VALUE_CHARS) : value,
+          typeof value === "string" ? clip(value, ARG_VALUE_CHARS) : value,
         ]),
       ),
       ok: !pyTruthy(event.isError),
-      label: _label(tool, args),
+      label: labelFor(tool, args),
     };
-    const resultText = _textOf(isDict(event.result) ? event.result : {});
-    if (resultText) record.result_snippet = _clip(resultText, RESULT_SNIPPET_CHARS);
+    const resultText = textOf(isDict(event.result) ? event.result : {});
+    if (resultText) record.result_snippet = clip(resultText, RESULT_SNIPPET_CHARS);
     record.ended_at = nowIso();
     if (opened && opened.clock) record.duration_ms = Math.trunc(performance.now() - opened.clock);
     if (opened && opened.started_at) record.started_at = opened.started_at;
@@ -216,11 +189,11 @@ export class ToolCallTracker {
 }
 
 export async function run(
-  request: PiRequest,
-  onEvent?: (event: PiEvent) => void,
+  request: AgentRequest,
+  onEvent?: (event: AgentEvent) => void,
   onSpawn?: (pid: number) => void,
   onExit?: (pid: number) => void,
-): Promise<PiResult> {
+): Promise<AgentResult> {
   const [provider, modelId] = resolveModel(request.model);
   const cmd = [
     PI_PATH, "-p", "--mode", "json",
@@ -236,7 +209,7 @@ export async function run(
 
   mkdirSync(dirname(request.raw_output_path), { recursive: true });
 
-  const result = newPiResult(request.session_id, contextWindow(provider, modelId));
+  const result = newAgentResult(request.session_id, contextWindow(provider, modelId));
   const child = Bun.spawn({
     cmd,
     cwd: request.cwd,
@@ -262,7 +235,7 @@ export async function run(
     if (event.type === "message_end") {
       const message = isDict(event.message) ? event.message : {};
       if (message.role === "assistant") {
-        const text = _textOf(message);
+        const text = textOf(message);
         if (text) result.text = text;
         const usage = isDict(message.usage) ? message.usage : {};
         const turn = _contextTokens(usage);
@@ -301,3 +274,25 @@ export async function run(
   }
   return result;
 }
+
+function mintSessionId(adwId: string, agentName: string): string {
+  return `sssf-${adwId}-${agentName}-${newId(4)}`;
+}
+
+function validate(agent: AgentConfig): string[] {
+  try {
+    resolveModel(agent.model);
+    return [];
+  } catch (error) {
+    if (!(error instanceof ValueError)) throw error;
+    return [`agent ${pyRepr(agent.name)}: ${error.message}`];
+  }
+}
+
+export const INTERFACE: AgentInterface = {
+  run,
+  newTracker: () => new ToolCallTracker(),
+  mintSessionId,
+  validate,
+  sessionDirName: "pi_sessions",
+};

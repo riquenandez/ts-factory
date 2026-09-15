@@ -1,16 +1,22 @@
 import { appendFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { constants as osConstants } from "node:os";
 import { dirname, join } from "node:path";
-import { _clip as clip, _label as labelFor, _textOf as textOf, type PiEvent } from "./agentPi.ts";
-import { pyTail } from "./compat/format.ts";
+import { pyRepr, pyTail } from "./compat/format.ts";
 import { pyLoads } from "./compat/json.ts";
-import { newPiResult, type PiRequest, type PiResult } from "./dataTypes.ts";
+import { spawnCaptured } from "./compat/shell.ts";
+import {
+  newAgentResult,
+  type AgentConfig,
+  type AgentEvent,
+  type AgentInterface,
+  type AgentRequest,
+  type AgentResult,
+  type ToolCallRecord,
+} from "./dataTypes.ts";
+import { ARG_VALUE_CHARS, RESULT_SNIPPET_CHARS, clip, labelFor, textOf } from "./toolCalls.ts";
 import { nowIso, operatorEnv, RuntimeError } from "./utils.ts";
 
 export const CLAUDE_CODE_PATH = process.env.CLAUDE_CODE_PATH ?? "claude";
-
-const RESULT_SNIPPET_CHARS = 20_000;
-const ARG_VALUE_CHARS = 20_000;
 
 const TOOL_MAP: Record<string, string | null> = {
   read: "Read",
@@ -97,7 +103,7 @@ interface OpenCall {
 export class ClaudeToolCallTracker {
   private _open = new Map<string, OpenCall>();
 
-  observe(event: PiEvent): Dict | null {
+  observe(event: AgentEvent): ToolCallRecord | null {
     const etype = event.type ?? "";
     if (etype === "assistant") {
       const message = isDict(event.message) ? event.message : {};
@@ -111,7 +117,7 @@ export class ClaudeToolCallTracker {
 
     const message = isDict(event.message) ? event.message : {};
     const content = Array.isArray(message.content) ? message.content : [];
-    let record: Dict | null = null;
+    let record: ToolCallRecord | null = null;
     for (const block of content) {
       if (!isDict(block) || block.type !== "tool_result") continue;
       const closed = this._close(block);
@@ -132,14 +138,14 @@ export class ClaudeToolCallTracker {
     });
   }
 
-  private _close(block: Dict): Dict {
+  private _close(block: Dict): ToolCallRecord {
     const callId = block.tool_use_id == null ? "" : String(block.tool_use_id);
     const opened = this._open.get(callId);
     this._open.delete(callId);
     const tool = String(opened?.tool || "tool");
     const rawArgs = isDict(opened?.args) ? opened!.args : {};
     const args: Dict = isDict(rawArgs) ? rawArgs : {};
-    const record: Dict = {
+    const record: ToolCallRecord = {
       tool,
       tool_call_id: callId,
       args: Object.fromEntries(
@@ -160,7 +166,7 @@ export class ClaudeToolCallTracker {
   }
 }
 
-export function buildArgv(request: PiRequest, first: boolean): string[] {
+export function buildArgv(request: AgentRequest, first: boolean): string[] {
   const cmd = [CLAUDE_CODE_PATH, "-p", "--output-format", "stream-json", "--verbose"];
   if (first) cmd.push("--session-id", request.session_id);
   else cmd.push("--resume", request.session_id);
@@ -187,11 +193,11 @@ export function buildArgv(request: PiRequest, first: boolean): string[] {
 }
 
 export async function run(
-  request: PiRequest,
-  onEvent?: (event: PiEvent) => void,
+  request: AgentRequest,
+  onEvent?: (event: AgentEvent) => void,
   onSpawn?: (pid: number) => void,
   onExit?: (pid: number) => void,
-): Promise<PiResult> {
+): Promise<AgentResult> {
   mkdirSync(request.session_dir, { recursive: true });
   mkdirSync(dirname(request.raw_output_path), { recursive: true });
 
@@ -200,7 +206,7 @@ export async function run(
   createdSessionIds.add(request.session_id);
 
   const cmd = buildArgv(request, first);
-  const result = newPiResult(request.session_id, 0);
+  const result = newAgentResult(request.session_id, 0);
   const seenMessageIds = new Set<string>();
   let lastAssistantText = "";
   let errorSubtype: string | null = null;
@@ -285,3 +291,51 @@ export async function run(
   }
   return result;
 }
+
+let claudeBinary: { ok: boolean; detail: string } | null = null;
+
+function claudeBinaryStatus(): { ok: boolean; detail: string } {
+  if (claudeBinary) return claudeBinary;
+  const captured = spawnCaptured([CLAUDE_CODE_PATH, "--version"], {
+    timeoutSeconds: 30,
+    env: claudeEnv(),
+  });
+  claudeBinary = {
+    ok: captured.returncode === 0,
+    detail: captured.stderr.trim() || captured.stdout.trim(),
+  };
+  return claudeBinary;
+}
+
+function mintSessionId(_adwId: string, _agentName: string): string {
+  return crypto.randomUUID();
+}
+
+function validate(agent: AgentConfig): string[] {
+  const problems: string[] = [];
+  if (!agent.model.trim()) {
+    problems.push(`agent ${pyRepr(agent.name)}: model is empty`);
+  }
+  const binary = claudeBinaryStatus();
+  if (!binary.ok) {
+    problems.push(
+      `agent ${pyRepr(agent.name)}: claude_code binary not runnable: ${CLAUDE_CODE_PATH} (${pyTail(binary.detail, 200)})`,
+    );
+  }
+  for (const entry of agent.harness_engineering) {
+    if (!entry.endsWith(".json")) {
+      problems.push(
+        `agent ${pyRepr(agent.name)}: harness_engineering entry ${entry} is a pi extension; claude_code takes MCP config JSON files`,
+      );
+    }
+  }
+  return problems;
+}
+
+export const INTERFACE: AgentInterface = {
+  run,
+  newTracker: () => new ClaudeToolCallTracker(),
+  mintSessionId,
+  validate,
+  sessionDirName: "claude_sessions",
+};

@@ -20,6 +20,7 @@ adws/
     agentPi.ts     pi argv, JSONL stream tail, ToolCallTracker, model resolution
     agentCc.ts     claude_code argv, stream-json tail, ClaudeToolCallTracker
     agentCopilot.ts copilot argv, JSONL tail, CopilotToolCallTracker
+    toolCalls.ts   label, clip, textOf: the one tool-call record shape every runtime emits
     tracer.ts       SCHEMA + MIGRATIONS + every INSERT/UPDATE; JSONL append
     console.ts      the narrative — print AND trace, always together
     permissions.ts  git-fingerprint audit: snapshot / enforce / rollback
@@ -57,6 +58,11 @@ Two deliberate exceptions where the identifier *is* the contract the engineer re
 `gates.artifactsExist` (exported camelCase; `.name` is pinned to `artifacts_exist` so `gate_results.gate` does not drift) and
 `AgentCall.outputType` (hard rule 2 names the call-site key; the JSON field the agent emits is still the schema's snake_case `name:`).
 
+A coding-agent runtime is one file in `adw_modules/` that exports `INTERFACE: AgentInterface`
+(run, newTracker, mintSessionId, validate, sessionDirName) plus one line in `agents.INTERFACES`;
+runtime files import `dataTypes.ts`, `toolCalls.ts`, `compat/*`, and `utils.ts` only, never
+`agents.ts` or `runner.ts`.
+
 ## Public surface
 
 An ADW script may only reach for these. Everything else is `@internal`.
@@ -73,7 +79,7 @@ An ADW script may only reach for these. Everything else is `@internal`.
 | `run.engineer` / `run.adwId` / `run.repoRoot` | `runner` | `string` |
 | `gates.*`, `quality.*`, `changes.*`, `gitHelper.*`, `utils.resolvePrompt`, `cli.*` | leaf modules | domain values |
 
-No sqlite row type, no `EventRecord`, no `PiResult`, no `PiRequest`, no `Tracer`, no
+No sqlite row type, no `EventRecord`, no `AgentResult`, no `AgentRequest`, no `Tracer`, no
 `Console` appears in any of those signatures. The engine's 7 tables, its two JSON
 encoders, its ANSI renderer, its pi argv, its retry nesting and its permission audit
 all sit behind `phase` / `call` / `finish`.

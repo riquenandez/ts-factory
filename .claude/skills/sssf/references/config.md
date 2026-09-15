@@ -41,7 +41,7 @@ agents:
 
 | Field | Type | Meaning |
 |---|---|---|
-| `coding_agent` | `pi` \| `claude_code` \| `copilot` | Which interface runs the agent. All three are implemented in v1. `claude_code` runs `claude -p` headless and uses the machine's Claude Code login. `copilot` runs `copilot -p` headless and uses the machine's `copilot login` or `COPILOT_GITHUB_TOKEN`. |
+| `coding_agent` | any name registered in `agents.INTERFACES` | Which interface runs the agent. `pi`, `claude_code`, and `copilot` ship. An unknown name fails `validate()` before any session row. `claude_code` runs `claude -p` headless and uses the machine's Claude Code login. `copilot` runs `copilot -p` headless and uses the machine's `copilot login` or `COPILOT_GITHUB_TOKEN`. |
 | `model` | string | For `pi`: `provider/model-id`, resolved against pi's catalog. For `claude_code`: passed to `--model` as written (`opus`, `sonnet`, or a full id; no `provider/` prefix). For `copilot`: the model name as the CLI's `/model` shows it (`gpt-5.4`, `claude-sonnet-4.5`, or `auto`), passed to `--model` as written. Starter default `google/gemini-3.6-flash`. |
 | `thinking` | enum | Reasoning effort, see below. Default `medium`. |
 | `color` | hex string | Lane color for agents that do not set their own. Unset means the visualizer's palette. |

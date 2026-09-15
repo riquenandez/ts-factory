@@ -208,9 +208,10 @@ accepted: <reason>` prints as a `note` before the panel.
 `yaml.safe_load` → for each agent, inherit `coding_agent, model, thinking, color,
 tools, writes` from `defaults` **only when the key is present in `defaults`** (via
 `setdefault`), then always `setdefault("harness_engineering", defaults.harness_engineering
-or [])`. Unknown keys anywhere are ignored. `validate()` collects **all** problems and
-raises one `SystemExit` listing them: unknown agent name, a `claude_code` agent whose binary is not runnable or whose `harness_engineering` names a non-MCP file, a `copilot` agent whose binary is not runnable or whose `harness_engineering` names a non-MCP file,
-a missing prompt file, an unresolvable model pattern.
+or [])`. Unknown keys anywhere are ignored. `coding_agent` is a string, default `pi`.
+`validate()` collects **all** problems and
+raises one `SystemExit` listing them: unknown agent name, an unknown `coding_agent`,
+plus whatever the named runtime's own `validate()` reports, a missing prompt file.
 
 ## Install
 

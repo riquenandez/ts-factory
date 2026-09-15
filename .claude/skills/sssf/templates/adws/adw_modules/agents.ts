@@ -7,7 +7,6 @@ import { SystemExit } from "./compat/cli.ts";
 import { pyRepr, pyStr, pyTail, removePrefix } from "./compat/format.ts";
 import { pyJson, pyLoads, serdeJson } from "./compat/json.ts";
 import { modelValidate, type Schema } from "./compat/schema.ts";
-import { spawnCaptured } from "./compat/shell.ts";
 import { pyYamlLoad } from "./compat/yaml.ts";
 import {
   DEFAULT_PROTECTED,
@@ -16,16 +15,19 @@ import {
   defaultConfig,
   type AgentCall,
   type AgentConfig,
+  type AgentEvent,
+  type AgentInterface,
+  type AgentRequest,
+  type AgentResult,
   type EnvelopeBase,
   type Phase,
-  type PiRequest,
-  type PiResult,
   type SSSFConfig,
+  type ToolCallTracker,
 } from "./dataTypes.ts";
 import { PermissionBreach, enforce, snapshot } from "./permissions.ts";
 import * as prompts from "./prompts.ts";
 import type { Run } from "./runner.ts";
-import { RuntimeError, ValueError, newId, operatorEnv } from "./utils.ts";
+import { RuntimeError } from "./utils.ts";
 
 export const JSON_FIX_ATTEMPTS = 2;
 
@@ -54,7 +56,7 @@ const AGENT_CONFIG: Schema = {
   name: "AgentConfig",
   fields: [
     { name: "name", kind: "str" },
-    { name: "coding_agent", kind: "literal", literals: ["pi", "claude_code", "copilot"], default: "pi" },
+    { name: "coding_agent", kind: "str", default: "pi" },
     { name: "model", kind: "str", default: BASE.defaults.model },
     { name: "thinking", kind: "str", default: BASE.defaults.thinking },
     { name: "color", kind: "str", default: "" },
@@ -69,7 +71,7 @@ const AGENT_CONFIG: Schema = {
 const CONFIG_DEFAULTS: Schema = {
   name: "ConfigDefaults",
   fields: [
-    { name: "coding_agent", kind: "literal", literals: ["pi", "claude_code", "copilot"], default: "pi" },
+    { name: "coding_agent", kind: "str", default: "pi" },
     { name: "model", kind: "str", default: BASE.defaults.model },
     { name: "thinking", kind: "str", default: BASE.defaults.thinking },
     { name: "color", kind: "str", default: "" },
@@ -148,19 +150,11 @@ function isFile(path: string): boolean {
   }
 }
 
-type Dict = Record<string, unknown>;
-
-interface AgentInterface {
-  run: (
-    request: PiRequest,
-    onEvent?: (event: Dict) => void,
-    onSpawn?: (pid: number) => void,
-    onExit?: (pid: number) => void,
-  ) => Promise<PiResult>;
-  newTracker(): { observe(event: Dict): Dict | null };
-  newSessionId(run: Run, agent: AgentConfig): string;
-  validate(agent: AgentConfig): string[];
-}
+export const INTERFACES: Record<string, AgentInterface> = {
+  pi: agentPi.INTERFACE,
+  claude_code: agentCc.INTERFACE,
+  copilot: agentCopilot.INTERFACE,
+};
 
 function reuseOrMint(run: Run, agent: AgentConfig, mint: () => string): string {
   const entry = run.agentMap[agent.name];
@@ -168,114 +162,17 @@ function reuseOrMint(run: Run, agent: AgentConfig, mint: () => string): string {
   return mint();
 }
 
-function validatePi(agent: AgentConfig): string[] {
-  try {
-    agentPi.resolveModel(agent.model);
-    return [];
-  } catch (error) {
-    if (!(error instanceof ValueError)) throw error;
-    return [`agent ${pyRepr(agent.name)}: ${error.message}`];
-  }
+function unknownRuntime(agent: AgentConfig): string {
+  return (
+    `agent ${pyRepr(agent.name)}: unknown coding_agent ${pyRepr(agent.coding_agent)}; ` +
+    `known: ${Object.keys(INTERFACES).join(", ")}`
+  );
 }
-
-let claudeBinary: { ok: boolean; detail: string } | null = null;
-
-function claudeBinaryStatus(): { ok: boolean; detail: string } {
-  if (claudeBinary) return claudeBinary;
-  const captured = spawnCaptured([agentCc.CLAUDE_CODE_PATH, "--version"], {
-    timeoutSeconds: 30,
-    env: agentCc.claudeEnv(),
-  });
-  claudeBinary = {
-    ok: captured.returncode === 0,
-    detail: captured.stderr.trim() || captured.stdout.trim(),
-  };
-  return claudeBinary;
-}
-
-function validateClaudeCode(agent: AgentConfig): string[] {
-  const problems: string[] = [];
-  if (!agent.model.trim()) {
-    problems.push(`agent ${pyRepr(agent.name)}: model is empty`);
-  }
-  const binary = claudeBinaryStatus();
-  if (!binary.ok) {
-    problems.push(
-      `agent ${pyRepr(agent.name)}: claude_code binary not runnable: ${agentCc.CLAUDE_CODE_PATH} (${pyTail(binary.detail, 200)})`,
-    );
-  }
-  for (const entry of agent.harness_engineering) {
-    if (!entry.endsWith(".json")) {
-      problems.push(
-        `agent ${pyRepr(agent.name)}: harness_engineering entry ${entry} is a pi extension; claude_code takes MCP config JSON files`,
-      );
-    }
-  }
-  return problems;
-}
-
-let copilotBinary: { ok: boolean; detail: string } | null = null;
-
-function copilotBinaryStatus(): { ok: boolean; detail: string } {
-  if (copilotBinary) return copilotBinary;
-  const captured = spawnCaptured([agentCopilot.COPILOT_PATH, "--version"], {
-    timeoutSeconds: 30,
-    env: operatorEnv(),
-  });
-  copilotBinary = {
-    ok: captured.returncode === 0,
-    detail: captured.stderr.trim() || captured.stdout.trim(),
-  };
-  return copilotBinary;
-}
-
-function validateCopilot(agent: AgentConfig): string[] {
-  const problems: string[] = [];
-  if (!agent.model.trim()) {
-    problems.push(`agent ${pyRepr(agent.name)}: model is empty`);
-  }
-  const binary = copilotBinaryStatus();
-  if (!binary.ok) {
-    problems.push(
-      `agent ${pyRepr(agent.name)}: copilot binary not runnable: ${agentCopilot.COPILOT_PATH} (${pyTail(binary.detail, 200)})`,
-    );
-  }
-  for (const entry of agent.harness_engineering) {
-    if (!entry.endsWith(".json")) {
-      problems.push(
-        `agent ${pyRepr(agent.name)}: harness_engineering entry ${entry} is a pi extension; copilot takes MCP config JSON files`,
-      );
-    }
-  }
-  return problems;
-}
-
-const PI_INTERFACE: AgentInterface = {
-  run: agentPi.run,
-  newTracker: () => new agentPi.ToolCallTracker(),
-  newSessionId: (run, agent) =>
-    reuseOrMint(run, agent, () => `sssf-${run.adwId}-${agent.name}-${newId(4)}`),
-  validate: validatePi,
-};
-
-const CLAUDE_CODE_INTERFACE: AgentInterface = {
-  run: agentCc.run,
-  newTracker: () => new agentCc.ClaudeToolCallTracker(),
-  newSessionId: (run, agent) => reuseOrMint(run, agent, () => crypto.randomUUID()),
-  validate: validateClaudeCode,
-};
-
-const COPILOT_INTERFACE: AgentInterface = {
-  run: agentCopilot.run,
-  newTracker: () => new agentCopilot.CopilotToolCallTracker(),
-  newSessionId: (run, agent) => reuseOrMint(run, agent, () => crypto.randomUUID()),
-  validate: validateCopilot,
-};
 
 function interfaceFor(agent: AgentConfig): AgentInterface {
-  if (agent.coding_agent === "copilot") return COPILOT_INTERFACE;
-  if (agent.coding_agent === "claude_code") return CLAUDE_CODE_INTERFACE;
-  return PI_INTERFACE;
+  const iface = INTERFACES[agent.coding_agent];
+  if (!iface) throw new SystemExit(unknownRuntime(agent));
+  return iface;
 }
 
 export function validate(cfg: SSSFConfig, required: string[]): void {
@@ -292,7 +189,9 @@ export function validate(cfg: SSSFConfig, required: string[]): void {
     for (const [label, ref] of [["system", agent.prompt_engineering.system], ["user", agent.prompt_engineering.user]]) {
       if (!isFile(ref!)) problems.push(`agent ${pyRepr(name)}: ${label} prompt not found: ${ref}`);
     }
-    problems.push(...interfaceFor(agent).validate(agent));
+    const iface = INTERFACES[agent.coding_agent];
+    if (!iface) problems.push(unknownRuntime(agent));
+    else problems.push(...iface.validate(agent));
   }
   if (problems.length) {
     throw new SystemExit("config validation failed:\n- " + problems.join("\n- "));
@@ -301,7 +200,7 @@ export function validate(cfg: SSSFConfig, required: string[]): void {
 
 // ── execution ────────────────────────────────────────────────────────────────
 
-type Send = (prompt_text: string) => Promise<PiResult>;
+type Send = (prompt_text: string) => Promise<AgentResult>;
 
 export async function execute(run: Run, phase: Phase, call: AgentCall): Promise<EnvelopeBase> {
   const agent = resolve(run.cfg, phase.params.owner);
@@ -319,7 +218,7 @@ export async function execute(run: Run, phase: Phase, call: AgentCall): Promise<
   prompts.save(join(agentDir, "prompts"), "system.md", systemText);
   prompts.save(join(agentDir, "prompts"), "user.md", userText);
 
-  const sessionId = iface.newSessionId(run, agent);
+  const sessionId = reuseOrMint(run, agent, () => iface.mintSessionId(run.adwId, agent.name));
   run.tracer.event({
     adw_id: run.adwId,
     phase_id: phase.phase_id,
@@ -338,27 +237,20 @@ export async function execute(run: Run, phase: Phase, call: AgentCall): Promise<
   });
   run.console.agentStarted(agent.name, agent.model, sessionId);
 
-  let latest: PiResult | null = null;
+  let latest: AgentResult | null = null;
   const spent = new UsageBreakdown();
   const forward = eventForwarder(run, phase, agent.name, iface.newTracker());
   // Absolute, like Path.resolve(): the pi subprocess reads these from repoRoot.
   const agentDirAbs = realpathSync(agentDir);
 
   const send: Send = async (promptText) => {
-    const request: PiRequest = {
+    const request: AgentRequest = {
       prompt: promptText,
       system_prompt: systemText,
       model: agent.model,
       thinking: agent.thinking,
       session_id: sessionId,
-      session_dir: join(
-        agentDirAbs,
-        agent.coding_agent === "copilot"
-          ? "copilot_sessions"
-          : agent.coding_agent === "claude_code"
-            ? "claude_sessions"
-            : "pi_sessions",
-      ),
+      session_dir: join(agentDirAbs, iface.sessionDirName),
       raw_output_path: join(agentDirAbs, "raw_output.jsonl"),
       tools: agent.tools,
       extensions: agent.harness_engineering,
@@ -454,7 +346,7 @@ export async function execute(run: Run, phase: Phase, call: AgentCall): Promise<
 
   persistEnvelope(run, phase, agent.name, call, envelope, attempt, true);
   run.console.envelopeSummary(envelope, call.outputType.name);
-  const context: PiResult = latest ?? result;
+  const context: AgentResult = latest ?? result;
   run.tracer.agentSessionRow(run.adwId, agent, sessionId, context.context_tokens, context.context_window);
   run.saveAgentMap(agent.name, {
     session_id: sessionId,
@@ -505,8 +397,8 @@ function eventForwarder(
   run: Run,
   phase: Phase,
   agentName: string,
-  tracker: { observe(event: Dict): Dict | null },
-): (event: Dict) => void {
+  tracker: ToolCallTracker,
+): (event: AgentEvent) => void {
   return (event) => {
     const record = tracker.observe(event);
     if (record === null) return;
@@ -516,8 +408,8 @@ function eventForwarder(
       phase_id: phase.phase_id,
       type: "tool_call",
       name: pyStr(label),
-      started_at: (started_at as string | undefined) ?? null,
-      ended_at: (ended_at as string | undefined) ?? null,
+      started_at: started_at ?? null,
+      ended_at: ended_at ?? null,
       payload: { ...rest, agent: agentName },
     });
   };
@@ -545,7 +437,7 @@ async function parseWithRetries(
   run: Run,
   phase: Phase,
   call: AgentCall,
-  result: PiResult,
+  result: AgentResult,
   send: Send,
 ): Promise<[EnvelopeBase, number]> {
   for (let attempt = 1; attempt <= JSON_FIX_ATTEMPTS + 1; attempt++) {

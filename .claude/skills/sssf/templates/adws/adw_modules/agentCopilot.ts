@@ -1,16 +1,22 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { constants as osConstants, homedir } from "node:os";
 import { dirname, join } from "node:path";
-import { _clip as clip, _label as labelFor, type PiEvent } from "./agentPi.ts";
-import { pyTail } from "./compat/format.ts";
+import { pyRepr, pyTail } from "./compat/format.ts";
 import { pyLoads } from "./compat/json.ts";
-import { newPiResult, type PiRequest, type PiResult } from "./dataTypes.ts";
+import { spawnCaptured } from "./compat/shell.ts";
+import {
+  newAgentResult,
+  type AgentConfig,
+  type AgentEvent,
+  type AgentInterface,
+  type AgentRequest,
+  type AgentResult,
+  type ToolCallRecord,
+} from "./dataTypes.ts";
+import { ARG_VALUE_CHARS, RESULT_SNIPPET_CHARS, clip, labelFor } from "./toolCalls.ts";
 import { nowIso, operatorEnv, RuntimeError } from "./utils.ts";
 
 export const COPILOT_PATH = process.env.COPILOT_PATH ?? "copilot";
-
-const RESULT_SNIPPET_CHARS = 20_000;
-const ARG_VALUE_CHARS = 20_000;
 
 const TOOL_MAP: Record<string, string | null> = {
   read: "view",
@@ -87,7 +93,7 @@ interface OpenCall {
 export class CopilotToolCallTracker {
   private _open = new Map<string, OpenCall>();
 
-  observe(event: PiEvent): Dict | null {
+  observe(event: AgentEvent): ToolCallRecord | null {
     const etype = event.type ?? "";
     const data = isDict(event.data) ? event.data : {};
     if (etype === "tool.execution_start") {
@@ -110,14 +116,14 @@ export class CopilotToolCallTracker {
     });
   }
 
-  private _close(data: Dict): Dict {
+  private _close(data: Dict): ToolCallRecord {
     const callId = data.toolCallId == null ? "" : String(data.toolCallId);
     const opened = this._open.get(callId);
     this._open.delete(callId);
     const tool = String(opened?.tool || data.toolName || "tool");
     const rawArgs = isDict(opened?.args) ? opened!.args : isDict(data.arguments) ? data.arguments : {};
     const args: Dict = isDict(rawArgs) ? rawArgs : {};
-    const record: Dict = {
+    const record: ToolCallRecord = {
       tool,
       tool_call_id: callId,
       args: Object.fromEntries(
@@ -145,7 +151,7 @@ export class CopilotToolCallTracker {
   }
 }
 
-export function buildArgv(request: PiRequest, agentName: string, usagePath: string): string[] {
+export function buildArgv(request: AgentRequest, agentName: string, usagePath: string): string[] {
   const cmd = [
     COPILOT_PATH,
     "-p",
@@ -176,11 +182,11 @@ export function buildArgv(request: PiRequest, agentName: string, usagePath: stri
 }
 
 export async function run(
-  request: PiRequest,
-  onEvent?: (event: PiEvent) => void,
+  request: AgentRequest,
+  onEvent?: (event: AgentEvent) => void,
   onSpawn?: (pid: number) => void,
   onExit?: (pid: number) => void,
-): Promise<PiResult> {
+): Promise<AgentResult> {
   mkdirSync(request.session_dir, { recursive: true });
   mkdirSync(dirname(request.raw_output_path), { recursive: true });
 
@@ -195,7 +201,7 @@ export async function run(
   const usagePath = join(request.session_dir, `${request.session_id}.usage.json`);
   if (existsSync(usagePath)) unlinkSync(usagePath);
 
-  const result = newPiResult(request.session_id, 0);
+  const result = newAgentResult(request.session_id, 0);
   let errorMessage = "";
 
   try {
@@ -274,3 +280,51 @@ export async function run(
     if (existsSync(agentPath)) unlinkSync(agentPath);
   }
 }
+
+let copilotBinary: { ok: boolean; detail: string } | null = null;
+
+function copilotBinaryStatus(): { ok: boolean; detail: string } {
+  if (copilotBinary) return copilotBinary;
+  const captured = spawnCaptured([COPILOT_PATH, "--version"], {
+    timeoutSeconds: 30,
+    env: operatorEnv(),
+  });
+  copilotBinary = {
+    ok: captured.returncode === 0,
+    detail: captured.stderr.trim() || captured.stdout.trim(),
+  };
+  return copilotBinary;
+}
+
+function mintSessionId(_adwId: string, _agentName: string): string {
+  return crypto.randomUUID();
+}
+
+function validate(agent: AgentConfig): string[] {
+  const problems: string[] = [];
+  if (!agent.model.trim()) {
+    problems.push(`agent ${pyRepr(agent.name)}: model is empty`);
+  }
+  const binary = copilotBinaryStatus();
+  if (!binary.ok) {
+    problems.push(
+      `agent ${pyRepr(agent.name)}: copilot binary not runnable: ${COPILOT_PATH} (${pyTail(binary.detail, 200)})`,
+    );
+  }
+  for (const entry of agent.harness_engineering) {
+    if (!entry.endsWith(".json")) {
+      problems.push(
+        `agent ${pyRepr(agent.name)}: harness_engineering entry ${entry} is a pi extension; copilot takes MCP config JSON files`,
+      );
+    }
+  }
+  return problems;
+}
+
+export const INTERFACE: AgentInterface = {
+  run,
+  newTracker: () => new CopilotToolCallTracker(),
+  mintSessionId,
+  validate,
+  sessionDirName: "copilot_sessions",
+};

@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { buildArgv } from "../../templates/adws/adw_modules/agentCc.ts";
-import type { PiRequest } from "../../templates/adws/adw_modules/dataTypes.ts";
+import type { AgentRequest } from "../../templates/adws/adw_modules/dataTypes.ts";
 import { runSide } from "./runBoth.ts";
 
 const REPO_CLAUDE = join(import.meta.dir, "fixtures/repo_claude");
@@ -255,7 +255,7 @@ describe("claude_code via fake_claude", () => {
   }, 60_000);
 });
 
-function ccRequest(over: Partial<PiRequest> = {}): PiRequest {
+function ccRequest(over: Partial<AgentRequest> = {}): AgentRequest {
   return {
     prompt: "hi",
     system_prompt: "sys",
