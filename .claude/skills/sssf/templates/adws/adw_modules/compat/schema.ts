@@ -110,7 +110,24 @@ function coerce(field: FieldSpec, value: unknown): unknown {
       if (!Array.isArray(value)) {
         throw { type: "list_type", msg: "Input should be a valid list", loc: field.name };
       }
-      return value.map((item) => (field.inner ? coerce(field.inner, item) : item));
+      return value.map((item, index) => {
+        if (!field.inner) return item;
+        try {
+          return coerce(field.inner, item);
+        } catch (caught) {
+          if (caught instanceof ValidationError) {
+            throw new ValidationError(
+              caught.modelName,
+              caught.errors.map((err) => ({ ...err, loc: `${index}.${err.loc}` })),
+            );
+          }
+          if (caught && typeof caught === "object" && "type" in caught) {
+            const c = caught as { type: string; msg: string; loc: string };
+            throw { ...c, loc: `${field.name}.${index}` };
+          }
+          throw caught;
+        }
+      });
     }
     case "model":
       if (!field.model) throw { type: "model_type", msg: "Input should be a valid dictionary", loc: field.name };
@@ -144,7 +161,11 @@ export function modelValidate(schema: Schema, raw: unknown): Record<string, unkn
     try {
       out[field.name] = coerce(field, src[field.name]);
     } catch (caught) {
-      if (caught && typeof caught === "object" && "type" in caught) {
+      if (caught instanceof ValidationError) {
+        for (const err of caught.errors) {
+          errors.push({ ...err, loc: `${field.name}.${err.loc}` });
+        }
+      } else if (caught && typeof caught === "object" && "type" in caught) {
         const c = caught as { type: string; msg: string; loc: string };
         errors.push({ loc: c.loc, msg: c.msg, type: c.type, input: src[field.name] === undefined ? src : src[field.name] });
       } else {

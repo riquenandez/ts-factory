@@ -3,7 +3,7 @@ import { pyJson } from "../../templates/adws/adw_modules/compat/json.ts";
 import { comma, fixed, pyStr } from "../../templates/adws/adw_modules/compat/format.ts";
 import { shlexJoin } from "../../templates/adws/adw_modules/compat/shell.ts";
 import { pyYamlLoad } from "../../templates/adws/adw_modules/compat/yaml.ts";
-import { GenericOutput } from "../../templates/adws/adw_modules/dataTypes.ts";
+import { GenericOutput, ScoutOutput } from "../../templates/adws/adw_modules/dataTypes.ts";
 
 const ORACLE = `${import.meta.dir}/oracle.py`;
 
@@ -59,6 +59,23 @@ describe("compat vs live Python", () => {
     expect(gold.ok).toBe(false);
     try {
       GenericOutput.parse({ status: "success", summary: 3 });
+      throw new Error("expected throw");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const norm = (s: string) => s.replace(/errors\.pydantic\.dev\/\d+\.\d+\//g, "errors.pydantic.dev/<VER>/");
+      expect(norm(message)).toBe(norm(gold.error));
+    }
+  });
+
+  test("validate nested ScoutOutput finding locates findings.0.file", async () => {
+    const payload = { status: "success", findings: [{ note: "x" }] };
+    const gold = JSON.parse(await oracle(["validate", JSON.stringify(payload), "ScoutOutput"])) as {
+      ok: boolean;
+      error: string;
+    };
+    expect(gold.ok).toBe(false);
+    try {
+      ScoutOutput.parse(payload);
       throw new Error("expected throw");
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

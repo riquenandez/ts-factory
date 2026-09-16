@@ -18,6 +18,7 @@ from adw_modules.data_types import (  # noqa: E402
     BuildOutput,
     EventRecord,
     GenericOutput,
+    ScoutOutput,
 )
 
 
@@ -35,7 +36,7 @@ def main() -> int:
     if cmd == "validate":
         raw = json.loads(sys.argv[2])
         name = sys.argv[3] if len(sys.argv) > 3 else "GenericOutput"
-        cls = {"GenericOutput": GenericOutput, "BuildOutput": BuildOutput}[name]
+        cls = {"GenericOutput": GenericOutput, "BuildOutput": BuildOutput, "ScoutOutput": ScoutOutput}[name]
         try:
             cls.model_validate(raw)
             print(json.dumps({"ok": True}))
