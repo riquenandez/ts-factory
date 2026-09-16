@@ -269,6 +269,46 @@ describe("exec via fake_exec", () => {
     expect(dumpInserts(side.dump, "envelopes")).toHaveLength(0);
   }, 60_000);
 
+  test("non-numeric usage input does not poison session totals", async () => {
+    const scratch = mkdtempSync(join(tmpdir(), "sssf-exec-usage-"));
+    const jsonl = join(scratch, "usage.jsonl");
+    writeFileSync(
+      jsonl,
+      [
+        `{"type":"usage","input":"x","output":40}`,
+        `{"type":"message","text":${JSON.stringify(JSON.stringify({
+          status: "success",
+          summary: "ok",
+          artifacts: [],
+          findings: [],
+          notes_for_next_agent: "",
+        }))}}`,
+        "",
+      ].join("\n"),
+    );
+    const side = await runSide(
+      "port",
+      {
+        name: "scout-fake-exec-bad-usage",
+        script: "adw_prompt.ts",
+        args: ["summarize", "--agent", "scout", "--adw-id", "abcd1234"],
+        env: fakeEnv({ FAKE_EXEC_JSONL: jsonl }),
+      },
+      REPO_EXEC,
+      { prepare: stampAdapter },
+    );
+    expect(side.exit).toBe(0);
+    const evs = eventsOf(side.jsonl);
+    const agentEnd = evs.find((e) => e.type === "agent_end");
+    expect(agentEnd).toBeDefined();
+    const endPayload = agentEnd!.payload as { usage: { total_tokens: number } };
+    expect(endPayload.usage.total_tokens).toBe(40);
+    const sessionInsert = dumpInserts(side.dump, "sessions")[0] ?? "";
+    expect(sessionInsert).not.toContain(",NULL,");
+    expect(sessionInsert).toMatch(/,\d+,/);
+    rmSync(scratch, { recursive: true, force: true });
+  }, 60_000);
+
   test("protocol env pins", () => {
     const env = { ...process.env };
     delete env.SSSF_EXEC_PROTOCOL;

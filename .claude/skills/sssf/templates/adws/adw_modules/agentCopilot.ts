@@ -5,6 +5,7 @@ import { pyRepr, pyTail } from "./compat/format.ts";
 import { pyLoads } from "./compat/json.ts";
 import { spawnCaptured } from "./compat/shell.ts";
 import {
+  finiteOr0,
   newAgentResult,
   type AgentConfig,
   type AgentEvent,
@@ -67,13 +68,13 @@ export function shapeUsageFile(raw: unknown): { shaped: Dict; totalTokens: numbe
   for (const entry of Object.values(metrics)) {
     if (!isDict(entry)) continue;
     const usage = isDict(entry.usage) ? entry.usage : {};
-    input += Number(usage.inputTokens ?? 0);
-    output += Number(usage.outputTokens ?? 0);
-    cacheRead += Number(usage.cacheReadTokens ?? 0);
-    cacheWrite += Number(usage.cacheWriteTokens ?? 0);
-    reasoning += Number(usage.reasoningTokens ?? 0);
+    input += finiteOr0(usage.inputTokens ?? 0);
+    output += finiteOr0(usage.outputTokens ?? 0);
+    cacheRead += finiteOr0(usage.cacheReadTokens ?? 0);
+    cacheWrite += finiteOr0(usage.cacheWriteTokens ?? 0);
+    reasoning += finiteOr0(usage.reasoningTokens ?? 0);
     const requests = isDict(entry.requests) ? entry.requests : {};
-    totalCost += Number(requests.cost ?? 0);
+    totalCost += finiteOr0(requests.cost ?? 0);
   }
   const totalTokens = input + output + cacheRead + cacheWrite;
   return {

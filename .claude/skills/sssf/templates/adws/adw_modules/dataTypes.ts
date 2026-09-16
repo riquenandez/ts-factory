@@ -424,6 +424,11 @@ export interface ToolCallTracker {
   observe(event: AgentEvent): ToolCallRecord | null;
 }
 
+export function finiteOr0(value: unknown): number {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+}
+
 export class UsageBreakdown {
   input_tokens = 0;
   output_tokens = 0;
@@ -439,17 +444,17 @@ export class UsageBreakdown {
 
   addTurn(usage: Record<string, unknown>, totalTokens: number): void {
     const cost = (usage.cost as Record<string, unknown> | undefined) ?? {};
-    this.input_tokens += Number(usage.input ?? 0);
-    this.output_tokens += Number(usage.output ?? 0);
-    this.cache_read_tokens += Number(usage.cacheRead ?? 0);
-    this.cache_write_tokens += Number(usage.cacheWrite ?? 0);
-    this.reasoning_tokens += Number(usage.reasoning ?? 0);
-    this.total_tokens += totalTokens;
-    this.input_cost += Number(cost.input ?? 0);
-    this.output_cost += Number(cost.output ?? 0);
-    this.cache_read_cost += Number(cost.cacheRead ?? 0);
-    this.cache_write_cost += Number(cost.cacheWrite ?? 0);
-    this.total_cost += Number(cost.total ?? 0);
+    this.input_tokens += finiteOr0(usage.input ?? 0);
+    this.output_tokens += finiteOr0(usage.output ?? 0);
+    this.cache_read_tokens += finiteOr0(usage.cacheRead ?? 0);
+    this.cache_write_tokens += finiteOr0(usage.cacheWrite ?? 0);
+    this.reasoning_tokens += finiteOr0(usage.reasoning ?? 0);
+    this.total_tokens += finiteOr0(totalTokens);
+    this.input_cost += finiteOr0(cost.input ?? 0);
+    this.output_cost += finiteOr0(cost.output ?? 0);
+    this.cache_read_cost += finiteOr0(cost.cacheRead ?? 0);
+    this.cache_write_cost += finiteOr0(cost.cacheWrite ?? 0);
+    this.total_cost += finiteOr0(cost.total ?? 0);
   }
 
   merge(other: UsageBreakdown): void {

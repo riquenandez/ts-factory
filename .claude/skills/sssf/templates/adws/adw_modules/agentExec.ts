@@ -5,6 +5,7 @@ import { pyRepr, pyTail } from "./compat/format.ts";
 import { pyJson, pyLoads } from "./compat/json.ts";
 import { shlexJoin, spawnCaptured } from "./compat/shell.ts";
 import {
+  finiteOr0,
   newAgentResult,
   type AgentConfig,
   type AgentEvent,
@@ -125,12 +126,12 @@ export async function run(
     if (event.type === "message") {
       if (typeof event.text === "string" && event.text) result.text = event.text;
     } else if (event.type === "usage") {
-      const input = Number(event.input ?? 0);
-      const output = Number(event.output ?? 0);
-      const cacheRead = Number(event.cache_read ?? 0);
-      const cacheWrite = Number(event.cache_write ?? 0);
-      const reasoning = Number(event.reasoning ?? 0);
-      const cost = Number(event.cost ?? 0);
+      const input = finiteOr0(event.input ?? 0);
+      const output = finiteOr0(event.output ?? 0);
+      const cacheRead = finiteOr0(event.cache_read ?? 0);
+      const cacheWrite = finiteOr0(event.cache_write ?? 0);
+      const reasoning = finiteOr0(event.reasoning ?? 0);
+      const cost = finiteOr0(event.cost ?? 0);
       const sum = input + output + cacheRead + cacheWrite;
       result.usage.addTurn(
         { input, output, cacheRead, cacheWrite, reasoning, cost: { total: cost } },
