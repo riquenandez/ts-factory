@@ -3,6 +3,7 @@ const TS = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}\+00:00/g;
 const SESSION_SUFFIX = /sssf-([0-9a-f]{8})-([A-Za-z0-9_]+)-[0-9a-f]{4}/g;
 const DURATION = /\b\d+\.\d+s\b/g;
 const DURATION_MS = /"duration_ms": \d+/g;
+const DURATION_SECONDS = /duration_seconds: \d+\.\d+/g;
 const PID = /"pid": \d+/g;
 const COST = /\$\d+\.\d{4}/g;
 const UV_INSTALL = /^Installed \d+ packages in \d+ms\n*/gm;
@@ -20,6 +21,7 @@ export function normalizeText(s: string): string {
     .replace(SESSION_SUFFIX, "sssf-$1-$2-<HEX4>")
     .replace(ID, "$1$2_<ID>$1")
     .replace(DURATION_MS, '"duration_ms": 0')
+    .replace(DURATION_SECONDS, "duration_seconds: 0")
     .replace(DURATION, "<DUR>s")
     .replace(PID, '"pid": 0')
     .replace(/INSERT INTO processes VALUES\((\d+),('(?:[^']|'')*'),('(?:[^']|'')*'),('(?:[^']|'')*'),(\d+)/g, "INSERT INTO processes VALUES($1,$2,$3,$4,0")

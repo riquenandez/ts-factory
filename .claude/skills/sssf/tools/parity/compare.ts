@@ -28,6 +28,12 @@ export function diffSides(gold: Side, port: Side): string[] {
   const gk = Object.keys(gold.files).sort().join("\n");
   const pk = Object.keys(port.files).sort().join("\n");
   if (gk !== pk) misses.push(`session files\ngold:\n${gk}\nport:\n${pk}`);
+  for (const path of Object.keys(gold.files)) {
+    if (!(path in port.files)) continue;
+    const gf = normalizeText(gold.files[path]!);
+    const pf = normalizeText(port.files[path]!);
+    if (gf !== pf) misses.push(`session file ${path}\n${firstDiff(gf, pf)}`);
+  }
   if (gold.porcelain !== port.porcelain) {
     misses.push(`git porcelain\ngold:\n${gold.porcelain}\nport:\n${port.porcelain}`);
   }
