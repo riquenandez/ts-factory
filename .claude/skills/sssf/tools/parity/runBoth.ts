@@ -95,7 +95,8 @@ export async function runSide(
   const dest = join(dir, "adws");
   const cmd = kind === "gold"
     ? ["uv", "run", "-q", join(dest, c.script.replace(/\.ts$/, ".py")), ...c.args]
-    : ["bun", join(dest, c.script), ...c.args];
+    // bun swallows a leading "--" in script args unless one "--" precedes them.
+    : ["bun", join(dest, c.script), "--", ...c.args];
   const env = {
     ENGINEER_NAME: "enrique",
     PYTHONDONTWRITEBYTECODE: "1",

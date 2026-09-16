@@ -92,6 +92,10 @@ export function parseArgs(spec: ArgSpec, argv: string[] = process.argv.slice(2))
   for (let i = 0; i < argv.length; i++) {
     const tok = argv[i]!;
     if (tok === "-h" || tok === "--help") printHelp(spec, prog);
+    if (tok === "--") {
+      positionals.push(...argv.slice(i + 1));
+      break;
+    }
     if (tok.startsWith("--")) {
       const [raw, inline] = splitFlag(tok);
       const opt = spec.options.find((o) => o.name === raw);

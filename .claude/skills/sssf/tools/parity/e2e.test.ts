@@ -30,6 +30,18 @@ describe("gold vs port", () => {
     expect(misses).toEqual([]);
   }, 60_000);
 
+  test("-- ends options so later flags become positionals", async () => {
+    const misses = await runBoth(
+      {
+        name: "quality-end-of-options",
+        script: "adw_quality.ts",
+        args: ["--", "check", "--adw-id", "abcd1234"],
+      },
+      FIXTURE,
+    );
+    expect(misses).toEqual([]);
+  }, 60_000);
+
   test("unknown agent fails validation with no session", async () => {
     const misses = await runBoth(
       {

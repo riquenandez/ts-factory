@@ -32,6 +32,11 @@ describe("cli argparse shape", () => {
     expect(args.config).toBe("foo=bar.yaml");
   });
 
+  test("bare -- ends option parsing", () => {
+    expect(parseArgs(SPEC, ["--", "hello"]).prompt).toBe("hello");
+    expect(parseArgs(SPEC, ["--", "--not-a-flag"]).prompt).toBe("--not-a-flag");
+  });
+
   test("store_true writes a boolean, not the string true", () => {
     const forceSpec = {
       prog: "install.ts",
