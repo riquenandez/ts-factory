@@ -211,7 +211,7 @@ export class Tracer {
   sessionStart(adwId: string, engineer: string, adwName: string | null = null): void {
     this.conn.run(
       "INSERT INTO sessions (adw_id, status, engineer, started_at) VALUES (?,?,?,?) " +
-        "ON CONFLICT(adw_id) DO UPDATE SET status='running'",
+        "ON CONFLICT(adw_id) DO UPDATE SET status='running', archived=0",
       [adwId, "running", engineer, nowIso()],
     );
     if (!adwName) return;

@@ -65,4 +65,18 @@ describe("session + phase", () => {
     run.tracer.conn.close();
     rmSync(dir, { recursive: true, force: true });
   });
+
+  test("rejoining an archived session un-archives it", () => {
+    const dir = mkdtempSync(join(tmpdir(), "sssf-run-"));
+    const first = ensure(cfgIn(dir), "abcd1234");
+    first.tracer.conn.run("UPDATE sessions SET archived=1 WHERE adw_id='abcd1234'");
+    first.tracer.conn.close();
+    const second = ensure(cfgIn(dir), "abcd1234");
+    const row = second.tracer.conn.query("SELECT archived FROM sessions WHERE adw_id='abcd1234'").get() as {
+      archived: number;
+    };
+    expect(row.archived).toBe(0);
+    second.tracer.conn.close();
+    rmSync(dir, { recursive: true, force: true });
+  });
 });
