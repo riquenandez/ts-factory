@@ -67,6 +67,27 @@ export function clipRequest(request: string): string {
   return pyHead(request, 500);
 }
 
+const cleanups: Array<() => void> = [];
+
+export function registerCleanup(fn: () => void): () => void {
+  cleanups.push(fn);
+  return () => {
+    const i = cleanups.lastIndexOf(fn);
+    if (i !== -1) cleanups.splice(i, 1);
+  };
+}
+
+export function runCleanups(): void {
+  const pending = cleanups.splice(0).reverse();
+  for (const fn of pending) {
+    try {
+      fn();
+    } catch {
+      /* a throwing hook must not stop the others */
+    }
+  }
+}
+
 export class RuntimeError extends Error {
   constructor(message: string) {
     super(message);

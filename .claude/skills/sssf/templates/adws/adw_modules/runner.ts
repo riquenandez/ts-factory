@@ -16,7 +16,9 @@ import { repoRoot } from "./gitHelper.ts";
 import { Tracer } from "./tracer.ts";
 import { pyJson } from "./compat/json.ts";
 import { pyStr } from "./compat/format.ts";
-import { nowIso, RuntimeError } from "./utils.ts";
+import { nowIso, runCleanups, RuntimeError } from "./utils.ts";
+
+export { registerCleanup, runCleanups } from "./utils.ts";
 
 export class PhaseHandle {
   constructor(readonly run: Run, readonly phase: Phase) {}
@@ -195,6 +197,18 @@ export class Run {
    * SystemExit(128+signum) inside the open phase, so that phase fails too.
    */
   signalDoor(signum: number): never {
+    const live = this.tracer.conn
+      .query("SELECT pid FROM processes WHERE adw_id=? AND kind='agent' AND ended_at IS NULL")
+      .all(this.adwId) as Array<{ pid: number }>;
+    for (const { pid } of live) {
+      try {
+        process.kill(pid, "SIGTERM");
+      } catch (error) {
+        if (error && typeof error === "object" && "code" in error && error.code === "ESRCH") continue;
+        throw error;
+      }
+    }
+    runCleanups();
     this.tracer.sessionFinish(this.adwId, false);
     if (this.open) this.failPhase(this.open, String(128 + signum));
     process.exit(128 + signum);

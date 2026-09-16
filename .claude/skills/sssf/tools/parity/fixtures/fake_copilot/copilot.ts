@@ -11,6 +11,7 @@
  *   FAKE_COPILOT_USAGE     path whose contents are written to --usage-output-file
  *   FAKE_COPILOT_AGENT_LOG append the selected custom agent's body first line
  *   FAKE_COPILOT_EXIT      exit code after replay (default 0)
+ *   FAKE_SLEEP_SECONDS     sleep this many seconds after argv checks, before replay (default 0)
  *   COPILOT_HOME           agents dir is $COPILOT_HOME/agents/<name>.agent.md
  */
 
@@ -65,6 +66,11 @@ if (agentName) {
     mkdirSync(dirname(agentLog), { recursive: true });
     appendFileSync(agentLog, firstLine + "\n");
   }
+}
+
+const sleepSeconds = Number(process.env.FAKE_SLEEP_SECONDS ?? "0");
+if (Number.isFinite(sleepSeconds) && sleepSeconds > 0) {
+  await Bun.sleep(sleepSeconds * 1000);
 }
 
 const sessionId = flag("--session-id") ?? "";

@@ -14,7 +14,7 @@ import {
   type ToolCallRecord,
 } from "./dataTypes.ts";
 import { ARG_VALUE_CHARS, RESULT_SNIPPET_CHARS, clip, labelFor } from "./toolCalls.ts";
-import { nowIso, operatorEnv, RuntimeError } from "./utils.ts";
+import { nowIso, operatorEnv, registerCleanup, RuntimeError } from "./utils.ts";
 
 export const COPILOT_PATH = process.env.COPILOT_PATH ?? "copilot";
 
@@ -197,6 +197,9 @@ export async function run(
     agentPath,
     `---\nname: ${agentName}\ndescription: SSSF factory agent\n---\n${request.system_prompt}`,
   );
+  const unregister = registerCleanup(() => {
+    if (existsSync(agentPath)) unlinkSync(agentPath);
+  });
 
   const usagePath = join(request.session_dir, `${request.session_id}.usage.json`);
   if (existsSync(usagePath)) unlinkSync(usagePath);
@@ -278,6 +281,7 @@ export async function run(
     return result;
   } finally {
     if (existsSync(agentPath)) unlinkSync(agentPath);
+    unregister();
   }
 }
 

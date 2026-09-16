@@ -8,6 +8,7 @@
  *   FAKE_EXEC_REPLAY      directory of <n>.jsonl files, n = call number
  *   FAKE_EXEC_REQUEST_LOG append each stdin request as one JSON line
  *   FAKE_EXEC_EXIT        exit code after replay (default 0)
+ *   FAKE_SLEEP_SECONDS    sleep this many seconds after argv checks, before replay (default 0)
  */
 
 export {};
@@ -50,6 +51,11 @@ const callsPath = join(sessionDir, `${sessionId}.calls`);
 const previous = existsSync(callsPath) ? Number(readFileSync(callsPath, "utf8").trim()) : 0;
 const callNumber = (Number.isFinite(previous) ? previous : 0) + 1;
 writeFileSync(callsPath, String(callNumber));
+
+const sleepSeconds = Number(process.env.FAKE_SLEEP_SECONDS ?? "0");
+if (Number.isFinite(sleepSeconds) && sleepSeconds > 0) {
+  await Bun.sleep(sleepSeconds * 1000);
+}
 
 const replayFile = process.env.FAKE_EXEC_JSONL ?? "";
 const replayDir = process.env.FAKE_EXEC_REPLAY ?? "";
