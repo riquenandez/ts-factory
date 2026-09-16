@@ -28,8 +28,3 @@ export function normalizeText(s: string): string {
     .replace(COST, "$<COST>")
     .replace(PYDANTIC_URL, "https://errors.pydantic.dev/<VER>/v/");
 }
-
-export function normalizeSqliteDump(dump: string): string {
-  return normalizeText(dump)
-    .replace(/INSERT INTO processes[^;]+;/g, (row) => row.replace(/\d+/g, (n) => (n.length > 4 ? n : n)));
-}

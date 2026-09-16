@@ -78,46 +78,48 @@ export async function runSide(
   opts?: RunSideOpts,
 ): Promise<Side & { dir: string }> {
   const dir = opts?.reuseDir ?? mkdtempSync(join(tmpdir(), `sssf-${kind}-`));
-  if (!opts?.reuseDir) {
-    cpSync(fixture, dir, { recursive: true });
-    initRepo(dir);
-    const src = kind === "gold" ? GOLD_ADWS : TS_ADWS;
-    const dest = join(dir, "adws");
-    rmSync(dest, { recursive: true, force: true });
-    cpSync(src, dest, { recursive: true });
-    for (const rel of ["adws/adw_sssf_config", "adws/adw_data"]) {
-      const keep = join(fixture, rel);
-      if (existsSync(keep)) cpSync(keep, join(dir, rel), { recursive: true });
+  try {
+    if (!opts?.reuseDir) {
+      cpSync(fixture, dir, { recursive: true });
+      initRepo(dir);
+      const src = kind === "gold" ? GOLD_ADWS : TS_ADWS;
+      const dest = join(dir, "adws");
+      rmSync(dest, { recursive: true, force: true });
+      cpSync(src, dest, { recursive: true });
+      for (const rel of ["adws/adw_sssf_config", "adws/adw_data"]) {
+        const keep = join(fixture, rel);
+        if (existsSync(keep)) cpSync(keep, join(dir, rel), { recursive: true });
+      }
+      stampCommit(dir);
+      opts?.prepare?.(dir);
     }
-    stampCommit(dir);
-    opts?.prepare?.(dir);
+    const dest = join(dir, "adws");
+    const cmd = kind === "gold"
+      ? ["uv", "run", "-q", join(dest, c.script.replace(/\.ts$/, ".py")), ...c.args]
+      // bun swallows a leading "--" in script args unless one "--" precedes them.
+      : ["bun", join(dest, c.script), "--", ...c.args];
+    const env = {
+      ENGINEER_NAME: "enrique",
+      PYTHONDONTWRITEBYTECODE: "1",
+      ...(c.env ?? {}),
+    };
+    const result = await runCmd(cmd, dir, env);
+    const db = join(dir, "adws/adw_data/sssf.db");
+    const sessions = join(dir, "adws/adw_data/sessions");
+    const dump = existsSync(db) ? sqliteDump(db) : "";
+    const files = collectFiles(sessions);
+    const jsonl = Object.entries(files)
+      .filter(([k]) => k.endsWith("events.jsonl"))
+      .sort()
+      .map(([, v]) => v)
+      .join("");
+    const porcelain = utf8(
+      Bun.spawnSync(["git", "status", "--porcelain"], { cwd: dir, stdout: "pipe" }).stdout,
+    );
+    return { ...result, dump, jsonl, files, porcelain, dir };
+  } finally {
+    if (!opts?.keep && !opts?.reuseDir) rmSync(dir, { recursive: true, force: true });
   }
-  const dest = join(dir, "adws");
-  const cmd = kind === "gold"
-    ? ["uv", "run", "-q", join(dest, c.script.replace(/\.ts$/, ".py")), ...c.args]
-    // bun swallows a leading "--" in script args unless one "--" precedes them.
-    : ["bun", join(dest, c.script), "--", ...c.args];
-  const env = {
-    ENGINEER_NAME: "enrique",
-    PYTHONDONTWRITEBYTECODE: "1",
-    ...(c.env ?? {}),
-  };
-  const result = await runCmd(cmd, dir, env);
-  const db = join(dir, "adws/adw_data/sssf.db");
-  const sessions = join(dir, "adws/adw_data/sessions");
-  const dump = existsSync(db) ? sqliteDump(db) : "";
-  const files = collectFiles(sessions);
-  const jsonl = Object.entries(files)
-    .filter(([k]) => k.endsWith("events.jsonl"))
-    .sort()
-    .map(([, v]) => v)
-    .join("");
-  const porcelain = utf8(
-    Bun.spawnSync(["git", "status", "--porcelain"], { cwd: dir, stdout: "pipe" }).stdout,
-  );
-  const side: Side & { dir: string } = { ...result, dump, jsonl, files, porcelain, dir };
-  if (!opts?.keep && !opts?.reuseDir) rmSync(dir, { recursive: true, force: true });
-  return side;
 }
 
 export async function runBoth(c: Case, fixture: string): Promise<string[]> {
