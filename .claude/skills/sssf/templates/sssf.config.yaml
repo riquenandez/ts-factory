@@ -1,11 +1,17 @@
 # sssf.config.yaml — the factory's agent roster. One agent, one prompt, one purpose.
-# coding_agent: pi | claude_code | copilot | exec
-# field                pi                              claude_code                    copilot                               exec
-# model                provider/model-id               --model as written, no prefix  the /model name, as written           verbatim
-# thinking             effort ladder                   --effort; off|minimal -> low   --effort; off -> none; rest pass     verbatim
-# tools                --tools; unset = all; [] = none roster names; ls dropped       roster names; ls dropped; [] = none   verbatim
-# harness_engineering  pi -e <path>                    --mcp-config (json only)       --additional-mcp-config @<json>       verbatim, as extensions
-# command              ignored                         ignored                        ignored                               argv; only exec reads it; not inherited
+# coding_agent: pi | claude_code | copilot | exec. Per-runtime meaning of each key
+# (full table: .claude/skills/sssf/references/config.md):
+#   model               pi: provider/model-id, resolved against pi's catalog.
+#                       claude_code, copilot: passed to --model as written. exec: verbatim.
+#   thinking            pi: as written. claude_code: --effort (off, minimal -> low).
+#                       copilot: --effort (off -> none). exec: verbatim.
+#   tools               unset = every tool, on every runtime. pi: --tools; [] omits the
+#                       flag, so pi's own defaults apply. claude_code: --tools + --allowedTools,
+#                       names mapped, ls dropped; [] = no tools. copilot: --available-tools,
+#                       names mapped, ls dropped; [] = none. exec: verbatim.
+#   harness_engineering pi: -e <path>. claude_code: --mcp-config <json>.
+#                       copilot: --additional-mcp-config @<json>. exec: verbatim, as extensions.
+#   command             exec only: argv list, not inherited from defaults. Others ignore it.
 defaults:
   coding_agent: pi
   model: google/gemini-3.6-flash   # provider/id — a bare pattern is ambiguous across providers

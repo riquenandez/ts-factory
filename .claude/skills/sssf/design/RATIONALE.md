@@ -20,7 +20,7 @@ Parity is structural: `tools/parity/` runs Python gold and TS against `fake_pi`,
 
 ## Isomorphic translations
 
-**Isomorphic translations (not cleanups):** `protected_files` glob `adws/adw_*.py` → `adws/adw_*.ts` because the scripts *are* `.ts`. `makeAdw` emits `return run.finish()` because `run.succeeded` is a *compile* error in TS (a new failure mode); the Python generator is already stale against SKILL.md rule 10. Drop `__pycache__/` / `*.pyc` from the TS gitignore list; add nothing about `node_modules` because there is no package install.
+`protected_files` glob `adws/adw_*.py` → `adws/adw_*.ts` because the scripts *are* `.ts`. `makeAdw` emits `return run.finish()` because `run.succeeded` is a *compile* error in TS (a new failure mode); the Python generator is already stale against SKILL.md rule 10. Drop `__pycache__/` / `*.pyc` from the TS gitignore list; add nothing about `node_modules` because there is no package install.
 
 ## Tradeoffs accepted
 

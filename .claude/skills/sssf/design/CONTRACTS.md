@@ -1,13 +1,6 @@
 # Frozen observable contracts
 
-The Python is the spec. Every line here is a test in `tools/parity/`
-(`tools/parity/cli.test.ts`, `tools/parity/claude.test.ts`,
-`tools/parity/compare.test.ts`, `tools/parity/compat.test.ts`,
-`tools/parity/copilot.test.ts`, `tools/parity/e2e.test.ts`,
-`tools/parity/exec.test.ts`, `tools/parity/install.test.ts`,
-`tools/parity/markup.test.ts`, `tools/parity/oracle.test.ts`,
-`tools/parity/permissions.test.ts`, `tools/parity/phase.test.ts`,
-`tools/parity/registry.test.ts`, `tools/parity/signal.test.ts`). A change to
+The Python is the spec. Every line here is a test under `tools/parity/`. A change to
 any line is a spec change, not a refactor.
 
 ## CLI
