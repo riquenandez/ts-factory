@@ -55,9 +55,11 @@ tools/parity/
   PORT_CONTRACT.md
   cli.test.ts  claude.test.ts  compare.test.ts  compat.test.ts  copilot.test.ts
   e2e.test.ts  exec.test.ts  install.test.ts  markup.test.ts  oracle.test.ts
+  makeAdw.test.ts
   permissions.test.ts  phase.test.ts  registry.test.ts  signal.test.ts
   fixtures/
     fake_pi/  fake_claude/  fake_copilot/  fake_exec/
+    make_adw/adw_plan_build.golden
     repo_clean/  repo_agent/  repo_claude/  repo_copilot/  repo_exec/
   python-gold/
     scripts/         # install.py, which stamps from templates/
