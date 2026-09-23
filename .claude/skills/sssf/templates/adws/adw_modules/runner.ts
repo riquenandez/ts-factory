@@ -13,7 +13,7 @@ import {
 } from "./dataTypes.ts";
 import { repoRoot } from "./gitHelper.ts";
 import { Tracer } from "./tracer.ts";
-import { pyJson } from "./compat/json.ts";
+import { pyJson, pyLoads } from "./compat/json.ts";
 import { collapseWhitespace, pyRepr, pyStr } from "./compat/format.ts";
 import { nowIso, runCleanups, RuntimeError } from "./utils.ts";
 
@@ -105,7 +105,7 @@ export class Run {
     mkdirSync(this.contextHandoffDir, { recursive: true });
     const mapPath = join(this.sessionDir, "agent_map.json");
     this.agentMap = existsSync(mapPath)
-      ? JSON.parse(readFileSync(mapPath, "utf8")) as Run["agentMap"]
+      ? pyLoads(readFileSync(mapPath, "utf8")) as Run["agentMap"]
       : {};
     this.seq = this.tracer.maxPhaseSeq(args.adwId);
   }

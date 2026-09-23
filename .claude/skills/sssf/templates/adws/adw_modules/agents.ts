@@ -166,7 +166,7 @@ export async function execute(run: Run, phase: Phase, call: AgentCall): Promise<
   let latest: AgentResult | null = null;
   const spent = new UsageBreakdown();
   const forward = eventForwarder(run, phase, agent.name, iface.newTracker());
-  // Absolute, like Path.resolve(): the pi subprocess reads these from repoRoot.
+  // Absolute, like Path.resolve(): the agent subprocess reads these from repoRoot.
   const agentDirAbs = realpathSync(agentDir);
 
   const send: Send = async (promptText) => {
