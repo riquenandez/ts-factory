@@ -1,5 +1,4 @@
 import { fieldNames, modelDump, modelDumpJson, modelValidate, type Schema } from "./compat/schema.ts";
-import { collapseWhitespace, pyRepr } from "./compat/format.ts";
 import { PyFloat } from "./compat/json.ts";
 
 export type PhaseKind = "engineer" | "agent" | "code";
@@ -169,24 +168,6 @@ export interface PhaseParams {
   retries?: number;
 }
 
-export function validatePhaseParams(params: PhaseParams): Required<PhaseParams> {
-  const text = collapseWhitespace(params.description);
-  const name = params.name;
-  if (!text) {
-    throw new Error(
-      `phase ${pyRepr(name)}: description is required — one sentence on what this ` +
-        `phase does and why. It is what the trace and the UI show.`,
-    );
-  }
-  if (text.replace(/\.$/, "").toLowerCase() === name.replaceAll("_", " ").toLowerCase()) {
-    throw new Error(
-      `phase ${pyRepr(name)}: description ${pyRepr(text)} only restates the phase name — ` +
-        `say what it does and why instead.`,
-    );
-  }
-  return { ...params, description: text, retries: params.retries ?? 0 };
-}
-
 export interface Phase {
   phase_id: string;
   adw_id: string;
@@ -320,47 +301,6 @@ export interface AgentCall {
   gates?: GateFn[];
 }
 
-export interface PromptEngineering {
-  system: string;
-  user: string;
-}
-
-export interface AgentConfig {
-  name: string;
-  coding_agent: string;
-  model: string;
-  thinking: string;
-  color: string;
-  purpose: string;
-  prompt_engineering: PromptEngineering;
-  harness_engineering: string[];
-  tools: string[] | null;
-  writes: string[] | null;
-  command: string[];
-}
-
-export interface ConfigDefaults {
-  coding_agent: string;
-  model: string;
-  thinking: string;
-  color: string;
-  harness_engineering: string[];
-  tools: string[] | null;
-  protected_files: string[];
-  data_dir: string;
-}
-
-export interface ObservabilityConfig {
-  db: string;
-  poll_ms: number;
-}
-
-export interface SSSFConfig {
-  defaults: ConfigDefaults;
-  observability: ObservabilityConfig;
-  agents: AgentConfig[];
-}
-
 export const DEFAULT_PROTECTED = ["adws/adw_modules/", "adws/adw_sssf_config/", "adws/adw_*.ts"];
 
 export function defaultConfig(): SSSFConfig {
@@ -379,6 +319,117 @@ export function defaultConfig(): SSSFConfig {
     agents: [],
   };
 }
+
+const BASE = defaultConfig();
+
+const STR_LIST = { name: "item", kind: "str" as const };
+
+export interface PromptEngineering {
+  system: string;
+  user: string;
+}
+
+const PROMPT_ENGINEERING: Schema = {
+  name: "PromptEngineering",
+  fields: [
+    { name: "system", kind: "str" },
+    { name: "user", kind: "str" },
+  ],
+};
+
+export interface AgentConfig {
+  name: string;
+  coding_agent: string;
+  model: string;
+  thinking: string;
+  color: string;
+  purpose: string;
+  prompt_engineering: PromptEngineering;
+  harness_engineering: string[];
+  tools: string[] | null;
+  writes: string[] | null;
+  command: string[];
+}
+
+const AGENT_CONFIG: Schema = {
+  name: "AgentConfig",
+  fields: [
+    { name: "name", kind: "str" },
+    { name: "coding_agent", kind: "str", default: "pi" },
+    { name: "model", kind: "str", default: BASE.defaults.model },
+    { name: "thinking", kind: "str", default: BASE.defaults.thinking },
+    { name: "color", kind: "str", default: "" },
+    { name: "purpose", kind: "str", default: "" },
+    { name: "prompt_engineering", kind: "model", model: PROMPT_ENGINEERING },
+    { name: "harness_engineering", kind: "list", defaultFactory: () => [], inner: STR_LIST },
+    { name: "tools", kind: "list", optional: true, default: null, inner: STR_LIST },
+    { name: "writes", kind: "list", optional: true, default: null, inner: STR_LIST },
+    { name: "command", kind: "list", defaultFactory: () => [], inner: STR_LIST },
+  ],
+};
+
+export interface ConfigDefaults {
+  coding_agent: string;
+  model: string;
+  thinking: string;
+  color: string;
+  harness_engineering: string[];
+  tools: string[] | null;
+  protected_files: string[];
+  data_dir: string;
+}
+
+const CONFIG_DEFAULTS: Schema = {
+  name: "ConfigDefaults",
+  fields: [
+    { name: "coding_agent", kind: "str", default: "pi" },
+    { name: "model", kind: "str", default: BASE.defaults.model },
+    { name: "thinking", kind: "str", default: BASE.defaults.thinking },
+    { name: "color", kind: "str", default: "" },
+    { name: "harness_engineering", kind: "list", defaultFactory: () => [], inner: STR_LIST },
+    { name: "tools", kind: "list", optional: true, default: null, inner: STR_LIST },
+    { name: "protected_files", kind: "list", defaultFactory: () => [...DEFAULT_PROTECTED], inner: STR_LIST },
+    { name: "data_dir", kind: "str", default: BASE.defaults.data_dir },
+  ],
+};
+
+export interface ObservabilityConfig {
+  db: string;
+  poll_ms: number;
+}
+
+const OBSERVABILITY_CONFIG: Schema = {
+  name: "ObservabilityConfig",
+  fields: [
+    { name: "db", kind: "str", default: BASE.observability.db },
+    { name: "poll_ms", kind: "int", default: BASE.observability.poll_ms },
+  ],
+};
+
+export interface SSSFConfig {
+  defaults: ConfigDefaults;
+  observability: ObservabilityConfig;
+  agents: AgentConfig[];
+}
+
+export const SSSF_CONFIG: Schema = {
+  name: "SSSFConfig",
+  fields: [
+    {
+      name: "defaults",
+      kind: "model",
+      model: CONFIG_DEFAULTS,
+      defaultFactory: () => modelValidate(CONFIG_DEFAULTS, {}),
+    },
+    {
+      name: "observability",
+      kind: "model",
+      model: OBSERVABILITY_CONFIG,
+      defaultFactory: () => modelValidate(OBSERVABILITY_CONFIG, {}),
+    },
+    { name: "agents", kind: "list", defaultFactory: () => [], inner: { name: "item", kind: "model", model: AGENT_CONFIG } },
+  ],
+};
 
 export interface EventRecord {
   adw_id: string;

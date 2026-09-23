@@ -7,13 +7,12 @@ import * as agentPi from "./agentPi.ts";
 import { SystemExit } from "./compat/cli.ts";
 import { pyRepr, pyStr, pyTail, removePrefix } from "./compat/format.ts";
 import { isDict, pyJson, pyLoads, serdeJson } from "./compat/json.ts";
-import { modelValidate, type Schema } from "./compat/schema.ts";
+import { modelValidate } from "./compat/schema.ts";
 import { pyYamlLoad } from "./compat/yaml.ts";
 import {
-  DEFAULT_PROTECTED,
   GateReport,
+  SSSF_CONFIG,
   UsageBreakdown,
-  defaultConfig,
   type AgentCall,
   type AgentConfig,
   type AgentEvent,
@@ -38,78 +37,6 @@ export class GateFailure extends RuntimeError {
     this.name = "GateFailure";
   }
 }
-
-// ── config ───────────────────────────────────────────────────────────────────
-
-const BASE = defaultConfig();
-
-const PROMPT_ENGINEERING: Schema = {
-  name: "PromptEngineering",
-  fields: [
-    { name: "system", kind: "str" },
-    { name: "user", kind: "str" },
-  ],
-};
-
-const STR_LIST = { name: "item", kind: "str" as const };
-
-const AGENT_CONFIG: Schema = {
-  name: "AgentConfig",
-  fields: [
-    { name: "name", kind: "str" },
-    { name: "coding_agent", kind: "str", default: "pi" },
-    { name: "model", kind: "str", default: BASE.defaults.model },
-    { name: "thinking", kind: "str", default: BASE.defaults.thinking },
-    { name: "color", kind: "str", default: "" },
-    { name: "purpose", kind: "str", default: "" },
-    { name: "prompt_engineering", kind: "model", model: PROMPT_ENGINEERING },
-    { name: "harness_engineering", kind: "list", defaultFactory: () => [], inner: STR_LIST },
-    { name: "tools", kind: "list", optional: true, default: null, inner: STR_LIST },
-    { name: "writes", kind: "list", optional: true, default: null, inner: STR_LIST },
-    { name: "command", kind: "list", defaultFactory: () => [], inner: STR_LIST },
-  ],
-};
-
-const CONFIG_DEFAULTS: Schema = {
-  name: "ConfigDefaults",
-  fields: [
-    { name: "coding_agent", kind: "str", default: "pi" },
-    { name: "model", kind: "str", default: BASE.defaults.model },
-    { name: "thinking", kind: "str", default: BASE.defaults.thinking },
-    { name: "color", kind: "str", default: "" },
-    { name: "harness_engineering", kind: "list", defaultFactory: () => [], inner: STR_LIST },
-    { name: "tools", kind: "list", optional: true, default: null, inner: STR_LIST },
-    { name: "protected_files", kind: "list", defaultFactory: () => [...DEFAULT_PROTECTED], inner: STR_LIST },
-    { name: "data_dir", kind: "str", default: BASE.defaults.data_dir },
-  ],
-};
-
-const OBSERVABILITY_CONFIG: Schema = {
-  name: "ObservabilityConfig",
-  fields: [
-    { name: "db", kind: "str", default: BASE.observability.db },
-    { name: "poll_ms", kind: "int", default: BASE.observability.poll_ms },
-  ],
-};
-
-const SSSF_CONFIG: Schema = {
-  name: "SSSFConfig",
-  fields: [
-    {
-      name: "defaults",
-      kind: "model",
-      model: CONFIG_DEFAULTS,
-      defaultFactory: () => modelValidate(CONFIG_DEFAULTS, {}),
-    },
-    {
-      name: "observability",
-      kind: "model",
-      model: OBSERVABILITY_CONFIG,
-      defaultFactory: () => modelValidate(OBSERVABILITY_CONFIG, {}),
-    },
-    { name: "agents", kind: "list", defaultFactory: () => [], inner: { name: "item", kind: "model", model: AGENT_CONFIG } },
-  ],
-};
 
 const INHERITED_KEYS = ["coding_agent", "model", "thinking", "color", "tools", "writes"];
 

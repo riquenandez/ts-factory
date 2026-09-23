@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { pyRepr, pyTail } from "./compat/format.ts";
 import { isDict } from "./compat/json.ts";
-import { spawnCaptured, spawnJsonl } from "./compat/shell.ts";
+import { operatorEnv, spawnCaptured, spawnJsonl } from "./compat/shell.ts";
 import {
   newAgentResult,
   type AgentConfig,
@@ -13,7 +13,7 @@ import {
   type ToolCallRecord,
 } from "./dataTypes.ts";
 import { ARG_VALUE_CHARS, RESULT_SNIPPET_CHARS, clip, labelFor, textOf } from "./toolCalls.ts";
-import { nowIso, operatorEnv, RuntimeError } from "./utils.ts";
+import { nowIso, RuntimeError } from "./utils.ts";
 
 export const CLAUDE_CODE_PATH = process.env.CLAUDE_CODE_PATH ?? "claude";
 

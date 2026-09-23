@@ -1,7 +1,26 @@
 import { appendFileSync } from "node:fs";
 import { constants as osConstants } from "node:os";
-import { operatorEnv } from "../utils.ts";
+import { join } from "node:path";
 import { isDict, pyLoads } from "./json.ts";
+
+const PATHSEP = ":";
+
+export function operatorEnv(): Record<string, string> {
+  const env: Record<string, string> = {};
+  for (const [k, v] of Object.entries(process.env)) {
+    if (v !== undefined) env[k] = v;
+  }
+  const venv = env.VIRTUAL_ENV;
+  delete env.VIRTUAL_ENV;
+  let parts = (env.PATH ?? "").split(PATHSEP).filter(Boolean);
+  if (venv) {
+    const venvBin = join(venv, "bin");
+    parts = parts.filter((p) => p !== venvBin);
+  }
+  parts = parts.filter((p) => !p.endsWith("/node_modules/.bin"));
+  env.PATH = parts.join(PATHSEP);
+  return env;
+}
 
 function utf8(bytes?: Uint8Array | null): string {
   return Buffer.from(bytes ?? []).toString("utf8");

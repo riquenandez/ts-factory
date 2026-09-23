@@ -4,7 +4,6 @@ import { execute } from "./agents.ts";
 import { Console, errorText } from "./console.ts";
 import {
   newPhase,
-  validatePhaseParams,
   type AgentCall,
   type EnvelopeBase,
   type EnvelopeType,
@@ -15,10 +14,28 @@ import {
 import { repoRoot } from "./gitHelper.ts";
 import { Tracer } from "./tracer.ts";
 import { pyJson } from "./compat/json.ts";
-import { pyStr } from "./compat/format.ts";
+import { collapseWhitespace, pyRepr, pyStr } from "./compat/format.ts";
 import { nowIso, runCleanups, RuntimeError } from "./utils.ts";
 
 export { registerCleanup, runCleanups } from "./utils.ts";
+
+export function validatePhaseParams(params: PhaseParams): Required<PhaseParams> {
+  const text = collapseWhitespace(params.description);
+  const name = params.name;
+  if (!text) {
+    throw new Error(
+      `phase ${pyRepr(name)}: description is required — one sentence on what this ` +
+        `phase does and why. It is what the trace and the UI show.`,
+    );
+  }
+  if (text.replace(/\.$/, "").toLowerCase() === name.replaceAll("_", " ").toLowerCase()) {
+    throw new Error(
+      `phase ${pyRepr(name)}: description ${pyRepr(text)} only restates the phase name — ` +
+        `say what it does and why instead.`,
+    );
+  }
+  return { ...params, description: text, retries: params.retries ?? 0 };
+}
 
 export class PhaseHandle {
   constructor(readonly run: Run, readonly phase: Phase) {}

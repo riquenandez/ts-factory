@@ -2,7 +2,7 @@ import { mkdirSync } from "node:fs";
 import { dirname, isAbsolute, join } from "node:path";
 import { pyRepr, pyTail } from "./compat/format.ts";
 import { isDict, pyJson } from "./compat/json.ts";
-import { shlexJoin, spawnCaptured, spawnJsonl } from "./compat/shell.ts";
+import { operatorEnv, shlexJoin, spawnCaptured, spawnJsonl } from "./compat/shell.ts";
 import {
   finiteOr0,
   newAgentResult,
@@ -15,7 +15,7 @@ import {
   type ToolCallTracker,
 } from "./dataTypes.ts";
 import { ARG_VALUE_CHARS, RESULT_SNIPPET_CHARS, clip, labelFor } from "./toolCalls.ts";
-import { nowIso, operatorEnv, RuntimeError } from "./utils.ts";
+import { nowIso, RuntimeError } from "./utils.ts";
 
 const PROTOCOL = "sssf-exec/1";
 

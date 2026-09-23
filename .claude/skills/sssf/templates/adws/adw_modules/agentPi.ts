@@ -3,7 +3,7 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { pyRepr, pyStr, pyTail } from "./compat/format.ts";
 import { isDict, pyLoads } from "./compat/json.ts";
-import { spawnCaptured, spawnJsonl } from "./compat/shell.ts";
+import { operatorEnv, spawnCaptured, spawnJsonl } from "./compat/shell.ts";
 import {
   newAgentResult,
   type AgentConfig,
@@ -14,7 +14,7 @@ import {
   type ToolCallRecord,
 } from "./dataTypes.ts";
 import { ARG_VALUE_CHARS, RESULT_SNIPPET_CHARS, clip, labelFor, textOf } from "./toolCalls.ts";
-import { nowIso, newId, operatorEnv, RuntimeError, ValueError } from "./utils.ts";
+import { nowIso, newId, RuntimeError, ValueError } from "./utils.ts";
 
 export const PI_PATH = process.env.PI_PATH ?? "pi";
 export const MODELS_JSON = process.env.PI_MODELS_PATH ?? join(homedir(), ".pi", "agent", "models.json");

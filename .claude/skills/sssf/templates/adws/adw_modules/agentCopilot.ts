@@ -3,7 +3,7 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { pyRepr, pyTail } from "./compat/format.ts";
 import { isDict, pyLoads } from "./compat/json.ts";
-import { spawnCaptured, spawnJsonl } from "./compat/shell.ts";
+import { operatorEnv, spawnCaptured, spawnJsonl } from "./compat/shell.ts";
 import {
   finiteOr0,
   newAgentResult,
@@ -15,7 +15,7 @@ import {
   type ToolCallRecord,
 } from "./dataTypes.ts";
 import { ARG_VALUE_CHARS, RESULT_SNIPPET_CHARS, clip, labelFor } from "./toolCalls.ts";
-import { nowIso, operatorEnv, registerCleanup, RuntimeError } from "./utils.ts";
+import { nowIso, registerCleanup, RuntimeError } from "./utils.ts";
 
 export const COPILOT_PATH = process.env.COPILOT_PATH ?? "copilot";
 

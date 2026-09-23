@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fixed, pyTail } from "./compat/format.ts";
-import { shlexJoin, spawnCaptured } from "./compat/shell.ts";
+import { operatorEnv, shlexJoin, spawnCaptured } from "./compat/shell.ts";
 import type {
   QualityCheckResult,
   QualityCheckSpec,
@@ -9,7 +9,7 @@ import type {
   VerifyOutput,
 } from "./dataTypes.ts";
 import type { Run } from "./runner.ts";
-import { nowIso, operatorEnv } from "./utils.ts";
+import { nowIso } from "./utils.ts";
 
 const TAIL_CHARS = 4000;
 
