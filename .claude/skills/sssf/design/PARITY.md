@@ -61,9 +61,7 @@ tools/parity/
     repo_clean/  repo_agent/  repo_claude/  repo_copilot/  repo_exec/
   python-gold/
     scripts/         # install.py, which stamps from templates/
-    templates/       # the Python product the installer copies
-    adws/            # byte-identical to templates/adws
-    justfile  env.sample  sssf.config.yaml
+    templates/       # the Python product the installer copies, including the ADWs
 ```
 
 `fake_pi` is the load-bearing piece. It is a script on `PI_PATH` that:

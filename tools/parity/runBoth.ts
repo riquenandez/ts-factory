@@ -8,7 +8,7 @@ function utf8(bytes?: Uint8Array | null): string {
 }
 
 const SKILL = join(import.meta.dir, "../../.claude/skills/sssf");
-const GOLD_ADWS = join(import.meta.dir, "python-gold/adws");
+const GOLD_ADWS = join(import.meta.dir, "python-gold/templates/adws");
 const TS_ADWS = join(SKILL, "templates/adws");
 
 export interface Case {

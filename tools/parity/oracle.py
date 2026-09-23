@@ -10,7 +10,7 @@ import json
 import sys
 from pathlib import Path
 
-GOLD = Path(__file__).resolve().parent / "python-gold" / "adws"
+GOLD = Path(__file__).resolve().parent / "python-gold" / "templates" / "adws"
 sys.path.insert(0, str(GOLD))
 
 from pydantic import ValidationError  # noqa: E402
