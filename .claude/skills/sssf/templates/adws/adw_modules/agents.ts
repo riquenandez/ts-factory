@@ -6,7 +6,7 @@ import * as agentExec from "./agentExec.ts";
 import * as agentPi from "./agentPi.ts";
 import { SystemExit } from "./compat/cli.ts";
 import { pyRepr, pyStr, pyTail, removePrefix } from "./compat/format.ts";
-import { pyJson, pyLoads, serdeJson } from "./compat/json.ts";
+import { isDict, pyJson, pyLoads, serdeJson } from "./compat/json.ts";
 import { modelValidate, type Schema } from "./compat/schema.ts";
 import { pyYamlLoad } from "./compat/yaml.ts";
 import {
@@ -112,10 +112,6 @@ const SSSF_CONFIG: Schema = {
 };
 
 const INHERITED_KEYS = ["coding_agent", "model", "thinking", "color", "tools", "writes"];
-
-function isDict(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
 
 export function loadConfig(path = "adws/adw_sssf_config/sssf.config.yaml"): SSSFConfig {
   const loaded = pyYamlLoad(readFileSync(path, "utf8"));

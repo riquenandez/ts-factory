@@ -1,9 +1,9 @@
-import { appendFileSync, mkdirSync, readFileSync } from "node:fs";
-import { constants as os_constants, homedir } from "node:os";
+import { mkdirSync, readFileSync } from "node:fs";
+import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { pyRepr, pyStr, pyTail } from "./compat/format.ts";
-import { pyLoads } from "./compat/json.ts";
-import { spawnCaptured } from "./compat/shell.ts";
+import { isDict, pyLoads } from "./compat/json.ts";
+import { spawnCaptured, spawnJsonl } from "./compat/shell.ts";
 import {
   newAgentResult,
   type AgentConfig,
@@ -21,10 +21,6 @@ export const MODELS_JSON = process.env.PI_MODELS_PATH ?? join(homedir(), ".pi", 
 
 type Dict = Record<string, unknown>;
 export type CatalogRow = [provider: string, modelId: string, contextWindow: number];
-
-function isDict(value: unknown): value is Dict {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
 
 /** Python truthiness: None, False, 0, "", [], {} are all false. */
 function pyTruthy(value: unknown): boolean {
@@ -210,65 +206,34 @@ export async function run(
   mkdirSync(dirname(request.raw_output_path), { recursive: true });
 
   const result = newAgentResult(request.session_id, contextWindow(provider, modelId));
-  const child = Bun.spawn({
+  const { returncode, stderr } = await spawnJsonl({
     cmd,
     cwd: request.cwd,
     env: operatorEnv(),
-    stdin: "ignore",
-    stdout: "pipe",
-    stderr: "pipe",
-  });
-  onSpawn?.(child.pid);
-  // Drained concurrently so a chatty stderr cannot wedge the child while stdout is tailed.
-  const stderrText = new Response(child.stderr).text();
-
-  const absorb = (rawLine: string): void => {
-    const line = rawLine.trim();
-    if (!line) return;
-    let event: unknown;
-    try {
-      event = pyLoads(line);
-    } catch {
-      return;
-    }
-    if (!isDict(event)) return;
-    if (event.type === "message_end") {
-      const message = isDict(event.message) ? event.message : {};
-      if (message.role === "assistant") {
-        const text = textOf(message);
-        if (text) result.text = text;
-        const usage = isDict(message.usage) ? message.usage : {};
-        const turn = _contextTokens(usage);
-        result.tokens += turn;
-        result.usage.addTurn(usage, turn);
-        if (turn && message.stopReason !== "aborted" && message.stopReason !== "error") {
-          result.context_tokens = turn;
+    rawOutputPath: request.raw_output_path,
+    onEvent: (event) => {
+      if (event.type === "message_end") {
+        const message = isDict(event.message) ? event.message : {};
+        if (message.role === "assistant") {
+          const text = textOf(message);
+          if (text) result.text = text;
+          const usage = isDict(message.usage) ? message.usage : {};
+          const turn = _contextTokens(usage);
+          result.tokens += turn;
+          result.usage.addTurn(usage, turn);
+          if (turn && message.stopReason !== "aborted" && message.stopReason !== "error") {
+            result.context_tokens = turn;
+          }
+          const cost = isDict(usage.cost) ? usage.cost : {};
+          result.cost += pyTruthy(cost.total) ? Number(cost.total) : 0;
         }
-        const cost = isDict(usage.cost) ? usage.cost : {};
-        result.cost += pyTruthy(cost.total) ? Number(cost.total) : 0;
       }
-    }
-    onEvent?.(event);
-  };
-
-  const decoder = new TextDecoder();
-  let pending = "";
-  for await (const chunk of child.stdout) {
-    appendFileSync(request.raw_output_path, chunk);
-    pending += decoder.decode(chunk, { stream: true });
-    let newline: number;
-    while ((newline = pending.indexOf("\n")) !== -1) {
-      absorb(pending.slice(0, newline));
-      pending = pending.slice(newline + 1);
-    }
-  }
-  pending += decoder.decode();
-  if (pending) absorb(pending);
-
-  const stderr = await stderrText;
-  const code = await child.exited;
-  result.returncode = child.signalCode ? -(os_constants.signals[child.signalCode] ?? 0) : code;
-  onExit?.(child.pid);
+      onEvent?.(event);
+    },
+    onSpawn,
+    onExit,
+  });
+  result.returncode = returncode;
   if (result.returncode !== 0 && !result.text) {
     throw new RuntimeError(`pi exited ${result.returncode}: ${pyTail(stderr.trim(), 800)}`);
   }

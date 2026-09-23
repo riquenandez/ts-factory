@@ -1,9 +1,8 @@
-import { appendFileSync, mkdirSync } from "node:fs";
-import { constants as osConstants } from "node:os";
+import { mkdirSync } from "node:fs";
 import { dirname, isAbsolute, join } from "node:path";
 import { pyRepr, pyTail } from "./compat/format.ts";
-import { pyJson, pyLoads } from "./compat/json.ts";
-import { shlexJoin, spawnCaptured } from "./compat/shell.ts";
+import { isDict, pyJson } from "./compat/json.ts";
+import { shlexJoin, spawnCaptured, spawnJsonl } from "./compat/shell.ts";
 import {
   finiteOr0,
   newAgentResult,
@@ -21,10 +20,6 @@ import { nowIso, operatorEnv, RuntimeError } from "./utils.ts";
 const PROTOCOL = "sssf-exec/1";
 
 type Dict = Record<string, unknown>;
-
-function isDict(value: unknown): value is Dict {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
 
 export function buildRequest(request: AgentRequest): Record<string, unknown> {
   return {
@@ -93,7 +88,7 @@ export async function run(
   const result = newAgentResult(request.session_id, 0);
   let lastError = "";
 
-  const child = Bun.spawn({
+  const { returncode, stderr } = await spawnJsonl({
     cmd,
     cwd: request.cwd,
     env: {
@@ -102,71 +97,38 @@ export async function run(
       SSSF_SESSION_ID: request.session_id,
       SSSF_SESSION_DIR: request.session_dir,
     },
-    stdin: "pipe",
-    stdout: "pipe",
-    stderr: "pipe",
+    stdin: pyJson(buildRequest(request)),
+    rawOutputPath: request.raw_output_path,
+    onEvent: (event) => {
+      if (event.type === "message") {
+        if (typeof event.text === "string" && event.text) result.text = event.text;
+      } else if (event.type === "usage") {
+        const input = finiteOr0(event.input ?? 0);
+        const output = finiteOr0(event.output ?? 0);
+        const cacheRead = finiteOr0(event.cache_read ?? 0);
+        const cacheWrite = finiteOr0(event.cache_write ?? 0);
+        const reasoning = finiteOr0(event.reasoning ?? 0);
+        const cost = finiteOr0(event.cost ?? 0);
+        const sum = input + output + cacheRead + cacheWrite;
+        result.usage.addTurn(
+          { input, output, cacheRead, cacheWrite, reasoning, cost: { total: cost } },
+          sum,
+        );
+        result.tokens += sum;
+        result.cost += cost;
+      } else if (event.type === "context") {
+        if (event.tokens != null) result.context_tokens = Math.trunc(Number(event.tokens));
+        if (event.window != null) result.context_window = Math.trunc(Number(event.window));
+      } else if (event.type === "error") {
+        if (typeof event.message === "string" && event.message) lastError = event.message;
+      }
+
+      onEvent?.(event);
+    },
+    onSpawn,
+    onExit,
   });
-  onSpawn?.(child.pid);
-  const stderrText = new Response(child.stderr).text();
-
-  await child.stdin.write(pyJson(buildRequest(request)));
-  child.stdin.end();
-
-  const absorb = (rawLine: string): void => {
-    const line = rawLine.trim();
-    if (!line) return;
-    let event: unknown;
-    try {
-      event = pyLoads(line);
-    } catch {
-      return;
-    }
-    if (!isDict(event)) return;
-
-    if (event.type === "message") {
-      if (typeof event.text === "string" && event.text) result.text = event.text;
-    } else if (event.type === "usage") {
-      const input = finiteOr0(event.input ?? 0);
-      const output = finiteOr0(event.output ?? 0);
-      const cacheRead = finiteOr0(event.cache_read ?? 0);
-      const cacheWrite = finiteOr0(event.cache_write ?? 0);
-      const reasoning = finiteOr0(event.reasoning ?? 0);
-      const cost = finiteOr0(event.cost ?? 0);
-      const sum = input + output + cacheRead + cacheWrite;
-      result.usage.addTurn(
-        { input, output, cacheRead, cacheWrite, reasoning, cost: { total: cost } },
-        sum,
-      );
-      result.tokens += sum;
-      result.cost += cost;
-    } else if (event.type === "context") {
-      if (event.tokens != null) result.context_tokens = Math.trunc(Number(event.tokens));
-      if (event.window != null) result.context_window = Math.trunc(Number(event.window));
-    } else if (event.type === "error") {
-      if (typeof event.message === "string" && event.message) lastError = event.message;
-    }
-
-    onEvent?.(event);
-  };
-
-  const decoder = new TextDecoder();
-  let pending = "";
-  for await (const chunk of child.stdout) {
-    appendFileSync(request.raw_output_path, chunk);
-    pending += decoder.decode(chunk, { stream: true });
-    let newline: number;
-    while ((newline = pending.indexOf("\n")) !== -1) {
-      absorb(pending.slice(0, newline));
-      pending = pending.slice(newline + 1);
-    }
-  }
-  pending += decoder.decode();
-  if (pending) absorb(pending);
-
-  const stderr = await stderrText;
-  const code = await child.exited;
-  result.returncode = child.signalCode ? -(osConstants.signals[child.signalCode] ?? 0) : code;
-  onExit?.(child.pid);
+  result.returncode = returncode;
 
   if (result.returncode !== 0 && !result.text) {
     throw new RuntimeError(

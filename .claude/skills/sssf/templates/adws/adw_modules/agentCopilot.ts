@@ -1,9 +1,9 @@
-import { appendFileSync, existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
-import { constants as osConstants, homedir } from "node:os";
+import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { pyRepr, pyTail } from "./compat/format.ts";
-import { pyLoads } from "./compat/json.ts";
-import { spawnCaptured } from "./compat/shell.ts";
+import { isDict, pyLoads } from "./compat/json.ts";
+import { spawnCaptured, spawnJsonl } from "./compat/shell.ts";
 import {
   finiteOr0,
   newAgentResult,
@@ -30,10 +30,6 @@ const TOOL_MAP: Record<string, string | null> = {
 };
 
 type Dict = Record<string, unknown>;
-
-function isDict(value: unknown): value is Dict {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
 
 export function copilotHome(): string {
   return process.env.COPILOT_HOME ?? join(homedir(), ".copilot");
@@ -210,57 +206,26 @@ export async function run(
 
   try {
     const cmd = buildArgv(request, agentName, usagePath);
-    const child = Bun.spawn({
+    const { returncode, stderr } = await spawnJsonl({
       cmd,
       cwd: request.cwd,
       env: operatorEnv(),
-      stdin: "ignore",
-      stdout: "pipe",
-      stderr: "pipe",
+      rawOutputPath: request.raw_output_path,
+      onEvent: (event) => {
+        if (event.type === "assistant.message") {
+          const data = isDict(event.data) ? event.data : {};
+          if (typeof data.content === "string" && data.content) result.text = data.content;
+        } else if (event.type === "session.error") {
+          const data = isDict(event.data) ? event.data : {};
+          if (typeof data.message === "string" && data.message) errorMessage = data.message;
+        }
+
+        onEvent?.(event);
+      },
+      onSpawn,
+      onExit,
     });
-    onSpawn?.(child.pid);
-    const stderrText = new Response(child.stderr).text();
-
-    const absorb = (rawLine: string): void => {
-      const line = rawLine.trim();
-      if (!line) return;
-      let event: unknown;
-      try {
-        event = pyLoads(line);
-      } catch {
-        return;
-      }
-      if (!isDict(event)) return;
-
-      if (event.type === "assistant.message") {
-        const data = isDict(event.data) ? event.data : {};
-        if (typeof data.content === "string" && data.content) result.text = data.content;
-      } else if (event.type === "session.error") {
-        const data = isDict(event.data) ? event.data : {};
-        if (typeof data.message === "string" && data.message) errorMessage = data.message;
-      }
-
-      onEvent?.(event);
-    };
-
-    const decoder = new TextDecoder();
-    let pending = "";
-    for await (const chunk of child.stdout) {
-      appendFileSync(request.raw_output_path, chunk);
-      pending += decoder.decode(chunk, { stream: true });
-      let newline: number;
-      while ((newline = pending.indexOf("\n")) !== -1) {
-        absorb(pending.slice(0, newline));
-        pending = pending.slice(newline + 1);
-      }
-    }
-    pending += decoder.decode();
-    if (pending) absorb(pending);
-
-    const stderr = await stderrText;
-    const code = await child.exited;
-    result.returncode = child.signalCode ? -(osConstants.signals[child.signalCode] ?? 0) : code;
-    onExit?.(child.pid);
+    result.returncode = returncode;
 
     if (existsSync(usagePath)) {
       try {

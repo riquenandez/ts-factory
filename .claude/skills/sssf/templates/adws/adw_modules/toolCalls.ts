@@ -1,14 +1,11 @@
 import { collapseWhitespace, pyHead, pyLen } from "./compat/format.ts";
+import { isDict } from "./compat/json.ts";
 
 export const RESULT_SNIPPET_CHARS = 20_000;
 export const ARG_VALUE_CHARS = 20_000;
 export const LABEL_CHARS = 80;
 
 export const PRIMARY_ARGS = ["command", "path", "file_path", "pattern", "query", "url"];
-
-function isDict(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
 
 export function textOf(container: Record<string, unknown>): string {
   const content = Array.isArray(container.content) ? container.content : [];

@@ -109,6 +109,10 @@ export function serdeJson(value: unknown, indent?: number): string {
   return encode(value, indent, 0, false);
 }
 
+export function isDict(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
 /**
  * json.loads. Rejects NaN/Infinity (JSON.parse already does) and rethrows
  * with Python's "Expecting value: line 1 column 1 (char 0)" shape when empty.
