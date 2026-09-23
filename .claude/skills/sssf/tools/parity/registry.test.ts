@@ -87,6 +87,21 @@ describe("agent registry", () => {
     expect(dumpInserts(side.dump, "sessions")).toHaveLength(0);
   }, 60_000);
 
+  test("ph.call is typed only on agent phases", () => {
+    const text = readFileSync(join(MODULES, "runner.ts"), "utf8");
+    const handle = text.slice(
+      text.indexOf("export class PhaseHandle"),
+      text.indexOf("export class AgentPhaseHandle"),
+    );
+    expect(handle).not.toMatch(/\bcall\b/);
+    expect(text).toMatch(
+      /phase<T>\(params: PhaseParams & \{ kind: "agent" \}, body: \(ph: AgentPhaseHandle\) => T \| Promise<T>\): Promise<T>;/,
+    );
+    expect(text).toMatch(
+      /phase<T>\(params: PhaseParams & \{ kind: "engineer" \| "code" \}, body: \(ph: PhaseHandle\) => T \| Promise<T>\): Promise<T>;/,
+    );
+  });
+
   test("runtime files are self-contained", () => {
     for (const name of ["agentPi.ts", "agentCc.ts", "agentCopilot.ts", "agentExec.ts"]) {
       const text = readFileSync(join(MODULES, name), "utf8");

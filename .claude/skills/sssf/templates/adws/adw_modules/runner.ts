@@ -15,7 +15,7 @@ import { repoRoot } from "./gitHelper.ts";
 import { Tracer } from "./tracer.ts";
 import { pyJson, pyLoads } from "./compat/json.ts";
 import { collapseWhitespace, pyRepr, pyStr } from "./compat/format.ts";
-import { nowIso, runCleanups, RuntimeError } from "./utils.ts";
+import { nowIso, runCleanups } from "./utils.ts";
 
 export { registerCleanup, runCleanups } from "./utils.ts";
 
@@ -55,16 +55,10 @@ export class PhaseHandle {
       this.run.tracer.sessionRequest(this.run.adwId, pyStr(payload.input));
     }
   }
-
-  call<T extends EnvelopeBase = EnvelopeBase>(
-    _call: AgentCall & { outputType: EnvelopeType<T> },
-  ): Promise<T> {
-    throw new RuntimeError("ph.call() is only valid inside an agent phase");
-  }
 }
 
 export class AgentPhaseHandle extends PhaseHandle {
-  override call<T extends EnvelopeBase = EnvelopeBase>(
+  call<T extends EnvelopeBase = EnvelopeBase>(
     call: AgentCall & { outputType: EnvelopeType<T> },
   ): Promise<T> {
     return execute(this.run, this.phase, call) as Promise<T>;
@@ -121,6 +115,11 @@ export class Run {
     this.tracer.sessionAddUsage(this.adwId, tokens, cost);
   }
 
+  // The agent overload's callback takes AgentPhaseHandle, which is not a subtype of
+  // the implementation's PhaseHandle callback under strictFunctionTypes.
+  // @ts-expect-error TS2394
+  phase<T>(params: PhaseParams & { kind: "agent" }, body: (ph: AgentPhaseHandle) => T | Promise<T>): Promise<T>;
+  phase<T>(params: PhaseParams & { kind: "engineer" | "code" }, body: (ph: PhaseHandle) => T | Promise<T>): Promise<T>;
   async phase<T>(params: PhaseParams, body: (ph: PhaseHandle) => T | Promise<T>): Promise<T> {
     const earned = validatePhaseParams(params);
     this.seq += 1;
