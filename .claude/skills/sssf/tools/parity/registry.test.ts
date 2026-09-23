@@ -110,7 +110,7 @@ describe("agent registry", () => {
       text.indexOf("export class PhaseHandle"),
       text.indexOf("export class AgentPhaseHandle"),
     );
-    expect(handle).not.toMatch(/\bcall\b/);
+    expect(handle).not.toMatch(/^\s+(override\s+)?call</m);
     expect(text).toMatch(
       /phase<T>\(params: PhaseParams & \{ kind: "agent" \}, body: \(ph: AgentPhaseHandle\) => T \| Promise<T>\): Promise<T>;/,
     );

@@ -115,12 +115,9 @@ export class Run {
     this.tracer.sessionAddUsage(this.adwId, tokens, cost);
   }
 
-  // The agent overload's callback takes AgentPhaseHandle, which is not a subtype of
-  // the implementation's PhaseHandle callback under strictFunctionTypes.
-  // @ts-expect-error TS2394
   phase<T>(params: PhaseParams & { kind: "agent" }, body: (ph: AgentPhaseHandle) => T | Promise<T>): Promise<T>;
   phase<T>(params: PhaseParams & { kind: "engineer" | "code" }, body: (ph: PhaseHandle) => T | Promise<T>): Promise<T>;
-  async phase<T>(params: PhaseParams, body: (ph: PhaseHandle) => T | Promise<T>): Promise<T> {
+  async phase<T>(params: PhaseParams, body: (ph: AgentPhaseHandle) => T | Promise<T>): Promise<T> {
     const earned = validatePhaseParams(params);
     this.seq += 1;
     const phase = newPhase({ adw_id: this.adwId, seq: this.seq, params: earned });
@@ -142,7 +139,8 @@ export class Run {
       ? new AgentPhaseHandle(this, phase)
       : new PhaseHandle(this, phase);
     try {
-      const result = await body(handle);
+      // The overloads guarantee a non-agent body never reaches for `call`.
+      const result = await body(handle as AgentPhaseHandle);
       this.open = null;
       phase.status = "success";
       phase.ended_at = nowIso();
