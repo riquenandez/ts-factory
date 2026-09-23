@@ -5,7 +5,7 @@ ts	phase	decision	why	evidence	result
 2026-09-08T22:40:00Z	c	added root package.json, tsconfig.json, eslint.config.ts, bun-yaml.d.ts, bun.lock	maintainer checks must not travel with install.ts stamps	package.json	kept
 2026-09-08T22:40:00Z	c	decode spawn stdout with utf8 via Buffer.from, not TextDecoder on Buffer	tsc 5.7 plus bun types reject Buffer as Uint8Array	.claude/skills/sssf/templates/adws/adw_modules/compat/shell.ts	tests green
 2026-09-08T22:40:00Z	c	exclude python-gold, visualizer, and harness_engineering from tsc and eslint	python-gold is frozen spec; visualizer has oxlint; harness needs Pi packages	tsconfig.json	kept
-2026-09-08T22:40:00Z	e	bun run typecheck and bun run lint both exit 0; bun test ./tools/parity/ is 32 pass 0 fail	prove-it-works on the real commands, not a self-report	package.json	tests green
-2026-09-08T22:40:00Z	e	install.test.ts asserts stamped dests lack package.json, tsconfig.json, and eslint.config.*	encode the PORT_CONTRACT rule as a test	tools/parity/install.test.ts	tests green
+2026-09-08T22:40:00Z	e	bun run typecheck and bun run lint both exit 0; bun test ./.claude/skills/sssf/tools/parity/ is 32 pass 0 fail	prove-it-works on the real commands, not a self-report	package.json	tests green
+2026-09-08T22:40:00Z	e	install.test.ts asserts stamped dests lack package.json, tsconfig.json, and eslint.config.*	encode the PORT_CONTRACT rule as a test	.claude/skills/sssf/tools/parity/install.test.ts	tests green
 2026-09-08T22:40:00Z	audit	no commit and no PR	user rules require an explicit ask	.git	open
-2026-09-08T22:41:21Z	audit	parent re-ran bun run typecheck, bun run lint, and bun test ./tools/parity/ after reviewing the worker diff	row 8 would otherwise rest on a subagent summary; this session's shell is the proof	package.json	tests green
+2026-09-08T22:41:21Z	audit	parent re-ran bun run typecheck, bun run lint, and bun test ./.claude/skills/sssf/tools/parity/ after reviewing the worker diff	row 8 would otherwise rest on a subagent summary; this session's shell is the proof	package.json	tests green
