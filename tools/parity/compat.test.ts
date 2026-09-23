@@ -2,10 +2,10 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { pyJson, serdeJson } from "../../templates/adws/adw_modules/compat/json.ts";
-import { pyHead, pyStr, pyTail } from "../../templates/adws/adw_modules/compat/format.ts";
-import { newId, nowIso } from "../../templates/adws/adw_modules/utils.ts";
-import { Tracer } from "../../templates/adws/adw_modules/tracer.ts";
+import { pyJson, serdeJson } from "../../.claude/skills/sssf/templates/adws/adw_modules/compat/json.ts";
+import { pyHead, pyStr, pyTail } from "../../.claude/skills/sssf/templates/adws/adw_modules/compat/format.ts";
+import { newId, nowIso } from "../../.claude/skills/sssf/templates/adws/adw_modules/utils.ts";
+import { Tracer } from "../../.claude/skills/sssf/templates/adws/adw_modules/tracer.ts";
 
 describe("compat", () => {
   test("pyJson escapes em dashes the way json.dumps does", () => {

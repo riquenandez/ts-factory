@@ -2,8 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { buildArgv } from "../../templates/adws/adw_modules/agentCc.ts";
-import type { AgentRequest } from "../../templates/adws/adw_modules/dataTypes.ts";
+import { buildArgv } from "../../.claude/skills/sssf/templates/adws/adw_modules/agentCc.ts";
+import type { AgentRequest } from "../../.claude/skills/sssf/templates/adws/adw_modules/dataTypes.ts";
 import { runSide } from "./runBoth.ts";
 
 const REPO_CLAUDE = join(import.meta.dir, "fixtures/repo_claude");

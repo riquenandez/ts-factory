@@ -2,8 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { buildArgv, shapeUsageFile } from "../../templates/adws/adw_modules/agentCopilot.ts";
-import type { AgentRequest } from "../../templates/adws/adw_modules/dataTypes.ts";
+import { buildArgv, shapeUsageFile } from "../../.claude/skills/sssf/templates/adws/adw_modules/agentCopilot.ts";
+import type { AgentRequest } from "../../.claude/skills/sssf/templates/adws/adw_modules/dataTypes.ts";
 import { runSide } from "./runBoth.ts";
 
 const REPO_COPILOT = join(import.meta.dir, "fixtures/repo_copilot");

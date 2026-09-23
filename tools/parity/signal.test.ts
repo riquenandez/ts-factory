@@ -3,9 +3,9 @@ import { Database } from "bun:sqlite";
 import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { registerCleanup, runCleanups } from "../../templates/adws/adw_modules/runner.ts";
+import { registerCleanup, runCleanups } from "../../.claude/skills/sssf/templates/adws/adw_modules/runner.ts";
 
-const SKILL = join(import.meta.dir, "../..");
+const SKILL = join(import.meta.dir, "../../.claude/skills/sssf");
 const TS_ADWS = join(SKILL, "templates/adws");
 const REPO_EXEC = join(import.meta.dir, "fixtures/repo_exec");
 const REPO_COPILOT = join(import.meta.dir, "fixtures/repo_copilot");

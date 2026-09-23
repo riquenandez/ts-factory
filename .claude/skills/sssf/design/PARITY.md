@@ -38,8 +38,8 @@ Only the byte-level encoder is shared.
 
 ## 2. The frozen contract list
 
-`sketch/CONTRACTS.md` (below) enumerates every observable the port must reproduce. Each
-line is a test. A change to any line is a spec change requiring a human decision, not a
+`.claude/skills/sssf/design/CONTRACTS.md` enumerates every observable the port must reproduce. Each line is
+a test. A change to any line is a spec change requiring a human decision, not a
 refactor.
 
 ## 3. The differential harness
@@ -48,14 +48,22 @@ refactor.
 
 ```
 tools/parity/
-  runBoth.ts        # run the Python ADW and the TS ADW against one fixture repo
-  normalize.ts       # blank the 6 fields that are legitimately non-deterministic
+  runBoth.ts         # run the Python ADW and the TS ADW against one fixture repo
+  normalize.ts       # blank the fields that are legitimately non-deterministic
   compare.ts         # diff stdout, exit code, sqlite dump, session tree, events.jsonl
+  oracle.py          # live Python oracle for json, schema, markup, yaml, shlex
+  PORT_CONTRACT.md
+  cli.test.ts  claude.test.ts  compare.test.ts  compat.test.ts  copilot.test.ts
+  e2e.test.ts  exec.test.ts  install.test.ts  markup.test.ts  oracle.test.ts
+  permissions.test.ts  phase.test.ts  registry.test.ts  signal.test.ts
   fixtures/
-    fake_pi/         # a pi stand-in that replays recorded JSONL, so runs are exact
-    repo_clean/  repo_dirty/  repo_no_git/  repo_joined_session/
-  cases/
-    *.json           # one per row of CONTRACTS.md
+    fake_pi/  fake_claude/  fake_copilot/  fake_exec/
+    repo_clean/  repo_agent/  repo_claude/  repo_copilot/  repo_exec/
+  python-gold/
+    scripts/         # install.py, which stamps from templates/
+    templates/       # the Python product the installer copies
+    adws/            # byte-identical to templates/adws
+    justfile  env.sample  sssf.config.yaml
 ```
 
 `fake_pi` is the load-bearing piece. It is a script on `PI_PATH` that:

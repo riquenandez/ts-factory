@@ -6,17 +6,13 @@ const ignores = [
   ".claude/skills/sssf/apps/visualizer/**",
   ".claude/skills/sssf/templates/harness_engineering/**",
   "**/node_modules/**",
-  "**/fixtures/repo_clean/**",
-  "**/fixtures/repo_agent/**",
-  "**/fixtures/repo_claude/**",
-  "**/fixtures/repo_copilot/**",
-  "**/fixtures/repo_exec/**",
+  "**/fixtures/repo_*/**",
 ];
 
 const sources = [
   ".claude/skills/sssf/templates/adws/**/*.ts",
   ".claude/skills/sssf/scripts/**/*.ts",
-  ".claude/skills/sssf/tools/parity/**/*.ts",
+  "tools/parity/**/*.ts",
 ];
 
 export default tseslint.config(

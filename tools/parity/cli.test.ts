@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { parseArgs } from "../../templates/adws/adw_modules/compat/cli.ts";
+import { parseArgs } from "../../.claude/skills/sssf/templates/adws/adw_modules/compat/cli.ts";
 
 const SPEC = {
   prog: "adw_prompt.ts",

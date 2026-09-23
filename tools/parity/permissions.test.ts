@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { changedPaths } from "../../templates/adws/adw_modules/permissions.ts";
+import { changedPaths } from "../../.claude/skills/sssf/templates/adws/adw_modules/permissions.ts";
 
 describe("permission snapshot maps", () => {
   test("treats __proto__ as a path key, not an object trap", () => {

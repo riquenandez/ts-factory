@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { pyJson } from "../../templates/adws/adw_modules/compat/json.ts";
-import { comma, fixed, pyStr } from "../../templates/adws/adw_modules/compat/format.ts";
-import { shlexJoin } from "../../templates/adws/adw_modules/compat/shell.ts";
-import { pyYamlLoad } from "../../templates/adws/adw_modules/compat/yaml.ts";
-import { GenericOutput, ScoutOutput } from "../../templates/adws/adw_modules/dataTypes.ts";
+import { pyJson } from "../../.claude/skills/sssf/templates/adws/adw_modules/compat/json.ts";
+import { comma, fixed, pyStr } from "../../.claude/skills/sssf/templates/adws/adw_modules/compat/format.ts";
+import { shlexJoin } from "../../.claude/skills/sssf/templates/adws/adw_modules/compat/shell.ts";
+import { pyYamlLoad } from "../../.claude/skills/sssf/templates/adws/adw_modules/compat/yaml.ts";
+import { GenericOutput, ScoutOutput } from "../../.claude/skills/sssf/templates/adws/adw_modules/dataTypes.ts";
 
 const ORACLE = `${import.meta.dir}/oracle.py`;
 

@@ -3,7 +3,7 @@ import { mkdtempSync, readdirSync, readFileSync, rmSync, existsSync } from "node
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const SKILL = join(import.meta.dir, "../..");
+const SKILL = join(import.meta.dir, "../../.claude/skills/sssf");
 const GOLD_INSTALL = join(import.meta.dir, "python-gold/scripts/install.py");
 const PORT_INSTALL = join(SKILL, "scripts/install.ts");
 

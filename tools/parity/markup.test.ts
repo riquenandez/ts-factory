@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { escape, panel, render } from "../../templates/adws/adw_modules/compat/markup.ts";
+import { escape, panel, render } from "../../.claude/skills/sssf/templates/adws/adw_modules/compat/markup.ts";
 
 const ORACLE = `${import.meta.dir}/oracle.py`;
 

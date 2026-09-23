@@ -7,7 +7,7 @@ function utf8(bytes?: Uint8Array | null): string {
   return Buffer.from(bytes ?? []).toString("utf8");
 }
 
-const SKILL = join(import.meta.dir, "../..");
+const SKILL = join(import.meta.dir, "../../.claude/skills/sssf");
 const GOLD_ADWS = join(import.meta.dir, "python-gold/adws");
 const TS_ADWS = join(SKILL, "templates/adws");
 
