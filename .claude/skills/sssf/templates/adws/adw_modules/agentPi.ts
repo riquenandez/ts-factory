@@ -48,25 +48,33 @@ function _count(value: string): number {
   return pyInt(value);
 }
 
-let catalogCache: CatalogRow[] | null = null;
+let probeCache: { ok: boolean; detail: string; catalog: CatalogRow[] } | null = null;
 
-function _piCatalog(): CatalogRow[] {
-  if (catalogCache) return catalogCache;
+function piProbe(): { ok: boolean; detail: string; catalog: CatalogRow[] } {
+  if (probeCache) return probeCache;
   const result = spawnCaptured([PI_PATH, "--list-models"], { timeoutSeconds: 30, env: operatorEnv() });
-  const rows: CatalogRow[] = [];
+  const catalog: CatalogRow[] = [];
   if (result.returncode === 0) {
     for (const line of result.stdout.split(/\r?\n/).slice(1)) {
       const columns = line.trim().split(/\s+/);
       if (columns.length < 3) continue;
       try {
-        rows.push([columns[0]!, columns[1]!, _count(columns[2]!)]);
+        catalog.push([columns[0]!, columns[1]!, _count(columns[2]!)]);
       } catch {
         continue;
       }
     }
   }
-  catalogCache = rows;
-  return rows;
+  probeCache = {
+    ok: result.returncode === 0,
+    detail: result.stderr.trim() || result.stdout.trim(),
+    catalog,
+  };
+  return probeCache;
+}
+
+function _piCatalog(): CatalogRow[] {
+  return piProbe().catalog;
 }
 
 export function resolveModel(pattern: string): [provider: string, modelId: string] {
@@ -245,6 +253,12 @@ function mintSessionId(adwId: string, agentName: string): string {
 }
 
 function validate(agent: AgentConfig): string[] {
+  const probe = piProbe();
+  if (!probe.ok) {
+    return [
+      `agent ${pyRepr(agent.name)}: pi binary not runnable: ${PI_PATH} (${pyTail(probe.detail, 200)})`,
+    ];
+  }
   try {
     resolveModel(agent.model);
     return [];

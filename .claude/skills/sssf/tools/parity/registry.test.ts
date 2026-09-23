@@ -6,6 +6,7 @@ import { labelFor } from "../../templates/adws/adw_modules/toolCalls.ts";
 import { runSide } from "./runBoth.ts";
 
 const REPO_CLAUDE = join(import.meta.dir, "fixtures/repo_claude");
+const REPO_AGENT = join(import.meta.dir, "fixtures/repo_agent");
 const MODULES = join(import.meta.dir, "../../templates/adws/adw_modules");
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const SESSION_DIRS: Record<string, string> = {
@@ -84,6 +85,22 @@ describe("agent registry", () => {
     expect(side.exit).toBe(1);
     expect(side.stderr).toContain("unknown coding_agent 'bogus'");
     expect(side.stderr).toContain("known: pi, claude_code, copilot, exec");
+    expect(dumpInserts(side.dump, "sessions")).toHaveLength(0);
+  }, 60_000);
+
+  test("missing pi binary fails validation before any session", async () => {
+    const side = await runSide(
+      "port",
+      {
+        name: "missing-pi",
+        script: "adw_prompt.ts",
+        args: ["summarize", "--agent", "scout", "--adw-id", "abcd1234"],
+        env: { PI_PATH: "/nonexistent/pi" },
+      },
+      REPO_AGENT,
+    );
+    expect(side.exit).toBe(1);
+    expect(side.stderr).toContain("pi binary not runnable: /nonexistent/pi");
     expect(dumpInserts(side.dump, "sessions")).toHaveLength(0);
   }, 60_000);
 
