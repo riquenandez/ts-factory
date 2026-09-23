@@ -5,7 +5,7 @@ Usage:
     bun <skill>/scripts/install.ts [--force]
 
 Stamps: adws/ (modules + starter ADWs), adws/adw_data/prompt_engineering/
-(4 starter agents), adws/adw_sssf_config/sssf.config.yaml, .env.sample,
+(5 starter agents), adws/adw_sssf_config/sssf.config.yaml, .env.sample,
 .gitignore entries.
 Existing files are skipped unless --force.
 */

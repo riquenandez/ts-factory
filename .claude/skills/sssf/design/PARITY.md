@@ -108,8 +108,10 @@ fixed:
 - `--adw-id` joins the session and continues `seq`, but does **not** hydrate `previous`
   from a prior `envelope.json`. Case: joined run's first agent call renders
   `previous_envelope` as the six characters `(none)`.
-- `makeAdw` emits `run.succeeded`, which does not exist. Case: generated file matches
-  the golden template byte-for-byte.
+- The TypeScript `makeAdw` emits `return run.finish()` on purpose (`run.succeeded` is a
+  compile error; RATIONALE, "Isomorphic translations"). Case:
+  `tools/parity/makeAdw.test.ts` matches
+  `tools/parity/fixtures/make_adw/adw_plan_build.golden` byte for byte.
 - The cwd split: `gitHelper` runs git in the **process cwd** while `permissions` runs
   it in **`repo_root`**, and `gates.tests_pass` shells out with no cwd at all. Case:
   run an ADW from a subdirectory of the repo and assert each subprocess's cwd.
