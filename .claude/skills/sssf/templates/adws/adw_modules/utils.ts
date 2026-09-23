@@ -1,6 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { pyHead } from "./compat/format.ts";
 
 const PATHSEP = ":";
 
@@ -61,10 +60,6 @@ export function engineerName(): string {
     /* git missing */
   }
   return process.env.USER ?? "engineer";
-}
-
-export function clipRequest(request: string): string {
-  return pyHead(request, 500);
 }
 
 const cleanups: Array<() => void> = [];
