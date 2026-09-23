@@ -1,15 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { escape, panel, render } from "../../.claude/skills/sssf/templates/adws/adw_modules/compat/markup.ts";
-
-const ORACLE = `${import.meta.dir}/oracle.py`;
-
-async function oracle(args: string[]): Promise<string> {
-  const proc = Bun.spawn(["uv", "run", ORACLE, ...args], { stdout: "pipe", stderr: "pipe" });
-  const stdout = await new Response(proc.stdout).text();
-  const code = await proc.exited;
-  if (code !== 0) throw new Error(`oracle exited ${code}`);
-  return stdout;
-}
+import { oracle } from "./harness.ts";
 
 describe("markup vs live rich", () => {
   test("plain session line", async () => {

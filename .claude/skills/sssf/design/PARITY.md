@@ -49,6 +49,7 @@ refactor.
 ```
 tools/parity/
   runBoth.ts         # run the Python ADW and the TS ADW against one fixture repo
+  harness.ts         # shared paths and helpers for the parity tests
   normalize.ts       # blank the fields that are legitimately non-deterministic
   compare.ts         # diff stdout, exit code, sqlite dump, session tree, events.jsonl
   oracle.py          # live Python oracle for json, schema, markup, yaml, shlex

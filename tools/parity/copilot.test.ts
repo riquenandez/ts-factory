@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { buildArgv, shapeUsageFile } from "../../.claude/skills/sssf/templates/adws/adw_modules/agentCopilot.ts";
 import type { AgentRequest } from "../../.claude/skills/sssf/templates/adws/adw_modules/dataTypes.ts";
+import { dumpInserts, eventsOf, flagAfter, UUID_RE } from "./harness.ts";
 import { runSide } from "./runBoth.ts";
 
 const REPO_COPILOT = join(import.meta.dir, "fixtures/repo_copilot");
@@ -13,8 +14,6 @@ const BAD_JSONL = join(import.meta.dir, "fixtures/fake_copilot/bad_json.jsonl");
 const ERROR_JSONL = join(import.meta.dir, "fixtures/fake_copilot/error.jsonl");
 const USAGE = join(import.meta.dir, "fixtures/fake_copilot/usage.json");
 const TRANSCRIPT = readFileSync(JSONL, "utf8");
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 const FIRST_ARGV = [
   "-p",
@@ -50,24 +49,6 @@ function fakeEnv(extra: Record<string, string> = {}): Record<string, string> {
     FAKE_COPILOT_AGENT_LOG: join(home, "agent.log"),
     ...extra,
   };
-}
-
-function eventsOf(jsonl: string): Array<Record<string, unknown>> {
-  return jsonl
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => JSON.parse(line) as Record<string, unknown>);
-}
-
-function dumpInserts(dump: string, table: string): string[] {
-  const prefix = `INSERT INTO ${table} `;
-  return dump.split("\n").filter((line) => line.startsWith(prefix));
-}
-
-function flagAfter(argv: string[], flag: string): string | undefined {
-  const i = argv.indexOf(flag);
-  return i === -1 ? undefined : argv[i + 1];
 }
 
 describe("copilot via fake_copilot", () => {

@@ -2,8 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, readdirSync, readFileSync, rmSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { SKILL } from "./harness.ts";
 
-const SKILL = join(import.meta.dir, "../../.claude/skills/sssf");
 const GOLD_INSTALL = join(import.meta.dir, "python-gold/scripts/install.py");
 const PORT_INSTALL = join(SKILL, "scripts/install.ts");
 

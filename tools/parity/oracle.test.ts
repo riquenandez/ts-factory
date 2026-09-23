@@ -4,17 +4,7 @@ import { comma, fixed, pyStr } from "../../.claude/skills/sssf/templates/adws/ad
 import { shlexJoin } from "../../.claude/skills/sssf/templates/adws/adw_modules/compat/shell.ts";
 import { pyYamlLoad } from "../../.claude/skills/sssf/templates/adws/adw_modules/compat/yaml.ts";
 import { GenericOutput, ScoutOutput } from "../../.claude/skills/sssf/templates/adws/adw_modules/dataTypes.ts";
-
-const ORACLE = `${import.meta.dir}/oracle.py`;
-
-async function oracle(args: string[]): Promise<string> {
-  const proc = Bun.spawn(["uv", "run", ORACLE, ...args], { stdout: "pipe", stderr: "pipe" });
-  const stdout = await new Response(proc.stdout).text();
-  const stderr = await new Response(proc.stderr).text();
-  const code = await proc.exited;
-  if (code !== 0) throw new Error(`oracle ${args[0]} exited ${code}: ${stderr}`);
-  return stdout;
-}
+import { oracle } from "./harness.ts";
 
 describe("compat vs live Python", () => {
   test("pyJson matches json.dumps including em dash escape", async () => {

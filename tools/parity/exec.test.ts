@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { buildRequest, ExecToolCallTracker, resolveCommand } from "../../.claude/skills/sssf/templates/adws/adw_modules/agentExec.ts";
 import type { AgentRequest } from "../../.claude/skills/sssf/templates/adws/adw_modules/dataTypes.ts";
+import { dumpInserts, eventsOf, stampAdapter, UUID_RE } from "./harness.ts";
 import { runSide } from "./runBoth.ts";
 
 const REPO_EXEC = join(import.meta.dir, "fixtures/repo_exec");
@@ -13,7 +14,6 @@ const BAD_JSONL = join(import.meta.dir, "fixtures/fake_exec/bad_json.jsonl");
 const ERROR_JSONL = join(import.meta.dir, "fixtures/fake_exec/error.jsonl");
 const TRANSCRIPT = readFileSync(JSONL, "utf8");
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const REQUEST_KEYS = [
   "protocol",
   "prompt",
@@ -26,11 +26,6 @@ const REQUEST_KEYS = [
   "extensions",
   "cwd",
 ];
-
-function stampAdapter(dir: string): void {
-  const path = join(dir, "adws/adw_sssf_config/sssf.config.yaml");
-  writeFileSync(path, readFileSync(path, "utf8").replaceAll("PLACEHOLDER", EXEC_AGENT));
-}
 
 function stampEmptyCommand(dir: string): void {
   const path = join(dir, "adws/adw_sssf_config/sssf.config.yaml");
@@ -45,19 +40,6 @@ function fakeEnv(extra: Record<string, string> = {}): Record<string, string> {
     FAKE_EXEC_JSONL: JSONL,
     ...extra,
   };
-}
-
-function eventsOf(jsonl: string): Array<Record<string, unknown>> {
-  return jsonl
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => JSON.parse(line) as Record<string, unknown>);
-}
-
-function dumpInserts(dump: string, table: string): string[] {
-  const prefix = `INSERT INTO ${table} `;
-  return dump.split("\n").filter((line) => line.startsWith(prefix));
 }
 
 function readRequestLog(path: string): Array<Record<string, unknown>> {

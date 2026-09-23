@@ -3,22 +3,17 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { INTERFACES } from "../../.claude/skills/sssf/templates/adws/adw_modules/agents.ts";
 import { labelFor } from "../../.claude/skills/sssf/templates/adws/adw_modules/toolCalls.ts";
+import { dumpInserts, UUID_RE } from "./harness.ts";
 import { runSide } from "./runBoth.ts";
 
 const REPO_CLAUDE = join(import.meta.dir, "fixtures/repo_claude");
 const MODULES = join(import.meta.dir, "../../.claude/skills/sssf/templates/adws/adw_modules");
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const SESSION_DIRS: Record<string, string> = {
   pi: "pi_sessions",
   claude_code: "claude_sessions",
   copilot: "copilot_sessions",
   exec: "exec_sessions",
 };
-
-function dumpInserts(dump: string, table: string): string[] {
-  const prefix = `INSERT INTO ${table} `;
-  return dump.split("\n").filter((line) => line.startsWith(prefix));
-}
 
 describe("agent registry", () => {
   test("registry shape", () => {

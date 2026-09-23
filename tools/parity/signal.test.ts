@@ -1,48 +1,17 @@
 import { describe, expect, test } from "bun:test";
 import { Database } from "bun:sqlite";
-import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { registerCleanup, runCleanups } from "../../.claude/skills/sssf/templates/adws/adw_modules/runner.ts";
+import { stampAdapter } from "./harness.ts";
+import { stampSide } from "./runBoth.ts";
 
-const SKILL = join(import.meta.dir, "../../.claude/skills/sssf");
-const TS_ADWS = join(SKILL, "templates/adws");
 const REPO_EXEC = join(import.meta.dir, "fixtures/repo_exec");
 const REPO_COPILOT = join(import.meta.dir, "fixtures/repo_copilot");
-const EXEC_AGENT = join(import.meta.dir, "fixtures/fake_exec/agent.ts");
 const COPILOT = join(import.meta.dir, "fixtures/fake_copilot/copilot.ts");
 const EXEC_JSONL = join(import.meta.dir, "fixtures/fake_exec/generic_ok.jsonl");
 const COPILOT_JSONL = join(import.meta.dir, "fixtures/fake_copilot/generic_ok.jsonl");
-
-function gitCommit(dir: string, message: string): void {
-  Bun.spawnSync(["git", "add", "-A"], { cwd: dir, stdout: "pipe", stderr: "pipe" });
-  Bun.spawnSync(
-    ["git", "-c", "user.email=parity@sssf.test", "-c", "user.name=parity", "commit", "-q", "-m", message],
-    { cwd: dir, stdout: "pipe", stderr: "pipe" },
-  );
-}
-
-function stampPort(fixture: string, prepare?: (dir: string) => void): string {
-  const dir = mkdtempSync(join(tmpdir(), "sssf-signal-"));
-  cpSync(fixture, dir, { recursive: true });
-  Bun.spawnSync(["git", "init", "-q"], { cwd: dir, stdout: "pipe", stderr: "pipe" });
-  gitCommit(dir, "fixture");
-  const dest = join(dir, "adws");
-  rmSync(dest, { recursive: true, force: true });
-  cpSync(TS_ADWS, dest, { recursive: true });
-  for (const rel of ["adws/adw_sssf_config", "adws/adw_data"]) {
-    const keep = join(fixture, rel);
-    if (existsSync(keep)) cpSync(keep, join(dir, rel), { recursive: true });
-  }
-  gitCommit(dir, "stamp adws");
-  prepare?.(dir);
-  return dir;
-}
-
-function stampAdapter(dir: string): void {
-  const path = join(dir, "adws/adw_sssf_config/sssf.config.yaml");
-  writeFileSync(path, readFileSync(path, "utf8").replaceAll("PLACEHOLDER", EXEC_AGENT));
-}
 
 async function waitForAgentPid(dbPath: string, adwId: string, timeoutMs: number): Promise<number> {
   const start = Date.now();
@@ -92,7 +61,7 @@ function spawnAdw(dir: string, env: Record<string, string>) {
 
 describe("signalDoor", () => {
   test("exec child dies with the ADW", async () => {
-    const dir = stampPort(REPO_EXEC, stampAdapter);
+    const dir = stampSide("port", REPO_EXEC, { prepare: stampAdapter });
     const dbPath = join(dir, "adws/adw_data/sssf.db");
     const adw = spawnAdw(dir, {
       FAKE_SLEEP_SECONDS: "30",
@@ -132,7 +101,7 @@ describe("signalDoor", () => {
 
   test("copilot cleanup runs on a signal", async () => {
     const home = mkdtempSync(join(tmpdir(), "sssf-copilot-home-"));
-    const dir = stampPort(REPO_COPILOT);
+    const dir = stampSide("port", REPO_COPILOT);
     const dbPath = join(dir, "adws/adw_data/sssf.db");
     const adw = spawnAdw(dir, {
       FAKE_SLEEP_SECONDS: "30",

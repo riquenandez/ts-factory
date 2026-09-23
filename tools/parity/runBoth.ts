@@ -2,12 +2,12 @@ import { mkdtempSync, readFileSync, rmSync, cpSync, existsSync, readdirSync } fr
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { diffSides, type Side } from "./compare.ts";
+import { SKILL } from "./harness.ts";
 
 function utf8(bytes?: Uint8Array | null): string {
   return Buffer.from(bytes ?? []).toString("utf8");
 }
 
-const SKILL = join(import.meta.dir, "../../.claude/skills/sssf");
 const GOLD_ADWS = join(import.meta.dir, "python-gold/templates/adws");
 const TS_ADWS = join(SKILL, "templates/adws");
 
@@ -71,28 +71,41 @@ export interface RunSideOpts {
   prepare?: (dir: string) => void;
 }
 
+export function stampSide(
+  kind: "gold" | "port",
+  fixture: string,
+  opts?: RunSideOpts,
+): string {
+  if (opts?.reuseDir) return opts.reuseDir;
+  const dir = mkdtempSync(join(tmpdir(), `sssf-${kind}-`));
+  try {
+    cpSync(fixture, dir, { recursive: true });
+    initRepo(dir);
+    const src = kind === "gold" ? GOLD_ADWS : TS_ADWS;
+    const dest = join(dir, "adws");
+    rmSync(dest, { recursive: true, force: true });
+    cpSync(src, dest, { recursive: true });
+    for (const rel of ["adws/adw_sssf_config", "adws/adw_data"]) {
+      const keep = join(fixture, rel);
+      if (existsSync(keep)) cpSync(keep, join(dir, rel), { recursive: true });
+    }
+    stampCommit(dir);
+    opts?.prepare?.(dir);
+    return dir;
+  } catch (error) {
+    rmSync(dir, { recursive: true, force: true });
+    throw error;
+  }
+}
+
 export async function runSide(
   kind: "gold" | "port",
   c: Case,
   fixture: string,
   opts?: RunSideOpts,
 ): Promise<Side & { dir: string }> {
-  const dir = opts?.reuseDir ?? mkdtempSync(join(tmpdir(), `sssf-${kind}-`));
+  const dir = stampSide(kind, fixture, opts);
   try {
-    if (!opts?.reuseDir) {
-      cpSync(fixture, dir, { recursive: true });
-      initRepo(dir);
-      const src = kind === "gold" ? GOLD_ADWS : TS_ADWS;
-      const dest = join(dir, "adws");
-      rmSync(dest, { recursive: true, force: true });
-      cpSync(src, dest, { recursive: true });
-      for (const rel of ["adws/adw_sssf_config", "adws/adw_data"]) {
-        const keep = join(fixture, rel);
-        if (existsSync(keep)) cpSync(keep, join(dir, rel), { recursive: true });
-      }
-      stampCommit(dir);
-      opts?.prepare?.(dir);
-    }
     const dest = join(dir, "adws");
     const cmd = kind === "gold"
       ? ["uv", "run", "-q", join(dest, c.script.replace(/\.ts$/, ".py")), ...c.args]
