@@ -7,9 +7,10 @@
  *   FAKE_PI_REPLAY    directory of {session_id}.{turn}.jsonl files
  *   FAKE_PI_EXPECT    JSON array of expected argv tokens after the binary name
  *   FAKE_PI_MODELS    JSON written as models.json when PI_MODELS_PATH is unset
+ *   FAKE_SLEEP_SECONDS sleep this many seconds after argv checks, before replay (default 0)
  */
 
-export {};
+import { fakeSleep, flag, pickReplay } from "../replay.ts";
 
 const DEFAULT_CATALOG = `Provider  Model  Context
 openrouter  google/gemini-3.6-flash  272K
@@ -39,29 +40,20 @@ if (expectRaw) {
   }
 }
 
+await fakeSleep();
+
 const sessionId = flag("--session-id");
 let bytes: Uint8Array | null = null;
 if (replayFile) {
-  bytes = await Bun.file(replayFile).bytes();
+  bytes = await pickReplay({ file: replayFile });
 } else if (replayDir && sessionId) {
-  const rawTurns = [...new Bun.Glob(`${sessionId}.*.jsonl`).scanSync({ cwd: replayDir })];
-  rawTurns.sort();
-  const fallback = [...new Bun.Glob("*.jsonl").scanSync({ cwd: replayDir })];
-  fallback.sort();
-  const turnFile = rawTurns[0] ?? fallback[0];
-  if (!turnFile) {
+  bytes = await pickReplay({ dir: replayDir, key: sessionId });
+  if (!bytes) {
     process.stderr.write(`fake_pi: no replay for session ${sessionId} in ${replayDir}\n`);
     process.exit(1);
   }
-  bytes = await Bun.file(`${replayDir}/${turnFile}`).bytes();
 }
 
 if (bytes) await Bun.write(Bun.stdout, bytes);
 
 process.exit(0);
-
-function flag(name: string): string | null {
-  const i = process.argv.indexOf(name);
-  if (i === -1) return null;
-  return process.argv[i + 1] ?? null;
-}

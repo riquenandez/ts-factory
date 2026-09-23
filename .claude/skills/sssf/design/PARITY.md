@@ -59,7 +59,7 @@ tools/parity/
   makeAdw.test.ts
   permissions.test.ts  phase.test.ts  registry.test.ts  signal.test.ts
   fixtures/
-    fake_pi/  fake_claude/  fake_copilot/  fake_exec/
+    fake_pi/  fake_claude/  fake_copilot/  fake_exec/  replay.ts
     make_adw/adw_plan_build.golden
     repo_clean/  repo_agent/  repo_claude/  repo_copilot/  repo_exec/
   python-gold/
