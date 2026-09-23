@@ -1,8 +1,4 @@
 import { existsSync, mkdirSync, readFileSync, statSync } from "node:fs";
-import { join } from "node:path";
-import { pyHead } from "./compat/format.ts";
-
-const PATHSEP = ":";
 
 function utf8(bytes?: Uint8Array | null): string {
   return Buffer.from(bytes ?? []).toString("utf8");
@@ -33,23 +29,6 @@ export function resolvePrompt(arg: string): string {
   return arg;
 }
 
-export function operatorEnv(): Record<string, string> {
-  const env: Record<string, string> = {};
-  for (const [k, v] of Object.entries(process.env)) {
-    if (v !== undefined) env[k] = v;
-  }
-  const venv = env.VIRTUAL_ENV;
-  delete env.VIRTUAL_ENV;
-  let parts = (env.PATH ?? "").split(PATHSEP).filter(Boolean);
-  if (venv) {
-    const venvBin = join(venv, "bin");
-    parts = parts.filter((p) => p !== venvBin);
-  }
-  parts = parts.filter((p) => !p.endsWith("/node_modules/.bin"));
-  env.PATH = parts.join(PATHSEP);
-  return env;
-}
-
 export function engineerName(): string {
   const fromEnv = (process.env.ENGINEER_NAME ?? "").trim();
   if (fromEnv) return fromEnv;
@@ -61,10 +40,6 @@ export function engineerName(): string {
     /* git missing */
   }
   return process.env.USER ?? "engineer";
-}
-
-export function clipRequest(request: string): string {
-  return pyHead(request, 500);
 }
 
 const cleanups: Array<() => void> = [];

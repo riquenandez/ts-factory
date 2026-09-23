@@ -1,9 +1,8 @@
-import { appendFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
-import { constants as osConstants } from "node:os";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { pyRepr, pyTail } from "./compat/format.ts";
-import { pyLoads } from "./compat/json.ts";
-import { spawnCaptured } from "./compat/shell.ts";
+import { isDict } from "./compat/json.ts";
+import { operatorEnv, spawnCaptured, spawnJsonl } from "./compat/shell.ts";
 import {
   newAgentResult,
   type AgentConfig,
@@ -14,7 +13,7 @@ import {
   type ToolCallRecord,
 } from "./dataTypes.ts";
 import { ARG_VALUE_CHARS, RESULT_SNIPPET_CHARS, clip, labelFor, textOf } from "./toolCalls.ts";
-import { nowIso, operatorEnv, RuntimeError } from "./utils.ts";
+import { nowIso, RuntimeError } from "./utils.ts";
 
 export const CLAUDE_CODE_PATH = process.env.CLAUDE_CODE_PATH ?? "claude";
 
@@ -31,10 +30,6 @@ const TOOL_MAP: Record<string, string | null> = {
 const createdSessionIds = new Set<string>();
 
 type Dict = Record<string, unknown>;
-
-function isDict(value: unknown): value is Dict {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
 
 function mapEffort(thinking: string): string {
   if (thinking === "off" || thinking === "minimal") return "low";
@@ -211,75 +206,43 @@ export async function run(
   let lastAssistantText = "";
   let errorSubtype: string | null = null;
 
-  const child = Bun.spawn({
+  const { returncode, stderr } = await spawnJsonl({
     cmd,
     cwd: request.cwd,
     env: claudeEnv(),
-    stdin: "ignore",
-    stdout: "pipe",
-    stderr: "pipe",
-  });
-  onSpawn?.(child.pid);
-  const stderrText = new Response(child.stderr).text();
-
-  const absorb = (rawLine: string): void => {
-    const line = rawLine.trim();
-    if (!line) return;
-    let event: unknown;
-    try {
-      event = pyLoads(line);
-    } catch {
-      return;
-    }
-    if (!isDict(event)) return;
-
-    if (event.type === "assistant") {
-      const message = isDict(event.message) ? event.message : {};
-      const text = textOf(message);
-      if (text) lastAssistantText = text;
-      const messageId = typeof message.id === "string" ? message.id : "";
-      const duplicate = messageId !== "" && seenMessageIds.has(messageId);
-      if (messageId) seenMessageIds.add(messageId);
-      if (!duplicate) {
-        const usage = isDict(message.usage) ? message.usage : {};
-        const { shaped, sum } = shapeUsage(usage);
-        result.usage.addTurn(shaped, sum);
-        result.tokens += sum;
-        result.context_tokens = sum;
+    rawOutputPath: request.raw_output_path,
+    onEvent: (event) => {
+      if (event.type === "assistant") {
+        const message = isDict(event.message) ? event.message : {};
+        const text = textOf(message);
+        if (text) lastAssistantText = text;
+        const messageId = typeof message.id === "string" ? message.id : "";
+        const duplicate = messageId !== "" && seenMessageIds.has(messageId);
+        if (messageId) seenMessageIds.add(messageId);
+        if (!duplicate) {
+          const usage = isDict(message.usage) ? message.usage : {};
+          const { shaped, sum } = shapeUsage(usage);
+          result.usage.addTurn(shaped, sum);
+          result.tokens += sum;
+          result.context_tokens = sum;
+        }
+      } else if (event.type === "result") {
+        if (typeof event.result === "string" && event.result) result.text = event.result;
+        const cost = Number(event.total_cost_usd ?? 0);
+        result.cost += cost;
+        result.usage.addTurn({ cost: { total: cost } }, 0);
+        const window = contextWindowFrom(event.modelUsage, request.model);
+        if (window) result.context_window = window;
+        if (event.is_error) errorSubtype = typeof event.subtype === "string" && event.subtype ? event.subtype : "error";
       }
-    } else if (event.type === "result") {
-      if (typeof event.result === "string" && event.result) result.text = event.result;
-      const cost = Number(event.total_cost_usd ?? 0);
-      result.cost += cost;
-      result.usage.addTurn({ cost: { total: cost } }, 0);
-      const window = contextWindowFrom(event.modelUsage, request.model);
-      if (window) result.context_window = window;
-      if (event.is_error) errorSubtype = typeof event.subtype === "string" && event.subtype ? event.subtype : "error";
-    }
 
-    onEvent?.(event);
-  };
-
-  const decoder = new TextDecoder();
-  let pending = "";
-  for await (const chunk of child.stdout) {
-    appendFileSync(request.raw_output_path, chunk);
-    pending += decoder.decode(chunk, { stream: true });
-    let newline: number;
-    while ((newline = pending.indexOf("\n")) !== -1) {
-      absorb(pending.slice(0, newline));
-      pending = pending.slice(newline + 1);
-    }
-  }
-  pending += decoder.decode();
-  if (pending) absorb(pending);
-
+      onEvent?.(event);
+    },
+    onSpawn,
+    onExit,
+  });
   if (!result.text) result.text = lastAssistantText;
-
-  const stderr = await stderrText;
-  const code = await child.exited;
-  result.returncode = child.signalCode ? -(osConstants.signals[child.signalCode] ?? 0) : code;
-  onExit?.(child.pid);
+  result.returncode = returncode;
 
   if (first && result.returncode === 0) writeFileSync(marker, "");
 

@@ -4,7 +4,6 @@ import { execute } from "./agents.ts";
 import { Console, errorText } from "./console.ts";
 import {
   newPhase,
-  validatePhaseParams,
   type AgentCall,
   type EnvelopeBase,
   type EnvelopeType,
@@ -14,11 +13,29 @@ import {
 } from "./dataTypes.ts";
 import { repoRoot } from "./gitHelper.ts";
 import { Tracer } from "./tracer.ts";
-import { pyJson } from "./compat/json.ts";
-import { pyStr } from "./compat/format.ts";
-import { nowIso, runCleanups, RuntimeError } from "./utils.ts";
+import { pyJson, pyLoads } from "./compat/json.ts";
+import { collapseWhitespace, pyRepr, pyStr } from "./compat/format.ts";
+import { nowIso, runCleanups } from "./utils.ts";
 
 export { registerCleanup, runCleanups } from "./utils.ts";
+
+export function validatePhaseParams(params: PhaseParams): Required<PhaseParams> {
+  const text = collapseWhitespace(params.description);
+  const name = params.name;
+  if (!text) {
+    throw new Error(
+      `phase ${pyRepr(name)}: description is required — one sentence on what this ` +
+        `phase does and why. It is what the trace and the UI show.`,
+    );
+  }
+  if (text.replace(/\.$/, "").toLowerCase() === name.replaceAll("_", " ").toLowerCase()) {
+    throw new Error(
+      `phase ${pyRepr(name)}: description ${pyRepr(text)} only restates the phase name — ` +
+        `say what it does and why instead.`,
+    );
+  }
+  return { ...params, description: text, retries: params.retries ?? 0 };
+}
 
 export class PhaseHandle {
   constructor(readonly run: Run, readonly phase: Phase) {}
@@ -38,16 +55,10 @@ export class PhaseHandle {
       this.run.tracer.sessionRequest(this.run.adwId, pyStr(payload.input));
     }
   }
-
-  call<T extends EnvelopeBase = EnvelopeBase>(
-    _call: AgentCall & { outputType: EnvelopeType<T> },
-  ): Promise<T> {
-    throw new RuntimeError("ph.call() is only valid inside an agent phase");
-  }
 }
 
 export class AgentPhaseHandle extends PhaseHandle {
-  override call<T extends EnvelopeBase = EnvelopeBase>(
+  call<T extends EnvelopeBase = EnvelopeBase>(
     call: AgentCall & { outputType: EnvelopeType<T> },
   ): Promise<T> {
     return execute(this.run, this.phase, call) as Promise<T>;
@@ -88,7 +99,7 @@ export class Run {
     mkdirSync(this.contextHandoffDir, { recursive: true });
     const mapPath = join(this.sessionDir, "agent_map.json");
     this.agentMap = existsSync(mapPath)
-      ? JSON.parse(readFileSync(mapPath, "utf8")) as Run["agentMap"]
+      ? pyLoads(readFileSync(mapPath, "utf8")) as Run["agentMap"]
       : {};
     this.seq = this.tracer.maxPhaseSeq(args.adwId);
   }
@@ -104,7 +115,9 @@ export class Run {
     this.tracer.sessionAddUsage(this.adwId, tokens, cost);
   }
 
-  async phase<T>(params: PhaseParams, body: (ph: PhaseHandle) => T | Promise<T>): Promise<T> {
+  phase<T>(params: PhaseParams & { kind: "agent" }, body: (ph: AgentPhaseHandle) => T | Promise<T>): Promise<T>;
+  phase<T>(params: PhaseParams & { kind: "engineer" | "code" }, body: (ph: PhaseHandle) => T | Promise<T>): Promise<T>;
+  async phase<T>(params: PhaseParams, body: (ph: AgentPhaseHandle) => T | Promise<T>): Promise<T> {
     const earned = validatePhaseParams(params);
     this.seq += 1;
     const phase = newPhase({ adw_id: this.adwId, seq: this.seq, params: earned });
@@ -126,7 +139,8 @@ export class Run {
       ? new AgentPhaseHandle(this, phase)
       : new PhaseHandle(this, phase);
     try {
-      const result = await body(handle);
+      // The overloads guarantee a non-agent body never reaches for `call`.
+      const result = await body(handle as AgentPhaseHandle);
       this.open = null;
       phase.status = "success";
       phase.ended_at = nowIso();

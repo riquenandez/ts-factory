@@ -1,9 +1,9 @@
-import { appendFileSync, mkdirSync, readFileSync } from "node:fs";
-import { constants as os_constants, homedir } from "node:os";
+import { mkdirSync, readFileSync } from "node:fs";
+import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { pyRepr, pyStr, pyTail } from "./compat/format.ts";
-import { pyLoads } from "./compat/json.ts";
-import { spawnCaptured } from "./compat/shell.ts";
+import { isDict, pyLoads } from "./compat/json.ts";
+import { operatorEnv, spawnCaptured, spawnJsonl } from "./compat/shell.ts";
 import {
   newAgentResult,
   type AgentConfig,
@@ -14,17 +14,13 @@ import {
   type ToolCallRecord,
 } from "./dataTypes.ts";
 import { ARG_VALUE_CHARS, RESULT_SNIPPET_CHARS, clip, labelFor, textOf } from "./toolCalls.ts";
-import { nowIso, newId, operatorEnv, RuntimeError, ValueError } from "./utils.ts";
+import { nowIso, newId, RuntimeError, ValueError } from "./utils.ts";
 
 export const PI_PATH = process.env.PI_PATH ?? "pi";
 export const MODELS_JSON = process.env.PI_MODELS_PATH ?? join(homedir(), ".pi", "agent", "models.json");
 
 type Dict = Record<string, unknown>;
 export type CatalogRow = [provider: string, modelId: string, contextWindow: number];
-
-function isDict(value: unknown): value is Dict {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
 
 /** Python truthiness: None, False, 0, "", [], {} are all false. */
 function pyTruthy(value: unknown): boolean {
@@ -52,25 +48,33 @@ function _count(value: string): number {
   return pyInt(value);
 }
 
-let catalogCache: CatalogRow[] | null = null;
+let probeCache: { ok: boolean; detail: string; catalog: CatalogRow[] } | null = null;
 
-function _piCatalog(): CatalogRow[] {
-  if (catalogCache) return catalogCache;
+function piProbe(): { ok: boolean; detail: string; catalog: CatalogRow[] } {
+  if (probeCache) return probeCache;
   const result = spawnCaptured([PI_PATH, "--list-models"], { timeoutSeconds: 30, env: operatorEnv() });
-  const rows: CatalogRow[] = [];
+  const catalog: CatalogRow[] = [];
   if (result.returncode === 0) {
     for (const line of result.stdout.split(/\r?\n/).slice(1)) {
       const columns = line.trim().split(/\s+/);
       if (columns.length < 3) continue;
       try {
-        rows.push([columns[0]!, columns[1]!, _count(columns[2]!)]);
+        catalog.push([columns[0]!, columns[1]!, _count(columns[2]!)]);
       } catch {
         continue;
       }
     }
   }
-  catalogCache = rows;
-  return rows;
+  probeCache = {
+    ok: result.returncode === 0,
+    detail: result.stderr.trim() || result.stdout.trim(),
+    catalog,
+  };
+  return probeCache;
+}
+
+function _piCatalog(): CatalogRow[] {
+  return piProbe().catalog;
 }
 
 export function resolveModel(pattern: string): [provider: string, modelId: string] {
@@ -210,65 +214,34 @@ export async function run(
   mkdirSync(dirname(request.raw_output_path), { recursive: true });
 
   const result = newAgentResult(request.session_id, contextWindow(provider, modelId));
-  const child = Bun.spawn({
+  const { returncode, stderr } = await spawnJsonl({
     cmd,
     cwd: request.cwd,
     env: operatorEnv(),
-    stdin: "ignore",
-    stdout: "pipe",
-    stderr: "pipe",
-  });
-  onSpawn?.(child.pid);
-  // Drained concurrently so a chatty stderr cannot wedge the child while stdout is tailed.
-  const stderrText = new Response(child.stderr).text();
-
-  const absorb = (rawLine: string): void => {
-    const line = rawLine.trim();
-    if (!line) return;
-    let event: unknown;
-    try {
-      event = pyLoads(line);
-    } catch {
-      return;
-    }
-    if (!isDict(event)) return;
-    if (event.type === "message_end") {
-      const message = isDict(event.message) ? event.message : {};
-      if (message.role === "assistant") {
-        const text = textOf(message);
-        if (text) result.text = text;
-        const usage = isDict(message.usage) ? message.usage : {};
-        const turn = _contextTokens(usage);
-        result.tokens += turn;
-        result.usage.addTurn(usage, turn);
-        if (turn && message.stopReason !== "aborted" && message.stopReason !== "error") {
-          result.context_tokens = turn;
+    rawOutputPath: request.raw_output_path,
+    onEvent: (event) => {
+      if (event.type === "message_end") {
+        const message = isDict(event.message) ? event.message : {};
+        if (message.role === "assistant") {
+          const text = textOf(message);
+          if (text) result.text = text;
+          const usage = isDict(message.usage) ? message.usage : {};
+          const turn = _contextTokens(usage);
+          result.tokens += turn;
+          result.usage.addTurn(usage, turn);
+          if (turn && message.stopReason !== "aborted" && message.stopReason !== "error") {
+            result.context_tokens = turn;
+          }
+          const cost = isDict(usage.cost) ? usage.cost : {};
+          result.cost += pyTruthy(cost.total) ? Number(cost.total) : 0;
         }
-        const cost = isDict(usage.cost) ? usage.cost : {};
-        result.cost += pyTruthy(cost.total) ? Number(cost.total) : 0;
       }
-    }
-    onEvent?.(event);
-  };
-
-  const decoder = new TextDecoder();
-  let pending = "";
-  for await (const chunk of child.stdout) {
-    appendFileSync(request.raw_output_path, chunk);
-    pending += decoder.decode(chunk, { stream: true });
-    let newline: number;
-    while ((newline = pending.indexOf("\n")) !== -1) {
-      absorb(pending.slice(0, newline));
-      pending = pending.slice(newline + 1);
-    }
-  }
-  pending += decoder.decode();
-  if (pending) absorb(pending);
-
-  const stderr = await stderrText;
-  const code = await child.exited;
-  result.returncode = child.signalCode ? -(os_constants.signals[child.signalCode] ?? 0) : code;
-  onExit?.(child.pid);
+      onEvent?.(event);
+    },
+    onSpawn,
+    onExit,
+  });
+  result.returncode = returncode;
   if (result.returncode !== 0 && !result.text) {
     throw new RuntimeError(`pi exited ${result.returncode}: ${pyTail(stderr.trim(), 800)}`);
   }
@@ -280,6 +253,12 @@ function mintSessionId(adwId: string, agentName: string): string {
 }
 
 function validate(agent: AgentConfig): string[] {
+  const probe = piProbe();
+  if (!probe.ok) {
+    return [
+      `agent ${pyRepr(agent.name)}: pi binary not runnable: ${PI_PATH} (${pyTail(probe.detail, 200)})`,
+    ];
+  }
   try {
     resolveModel(agent.model);
     return [];

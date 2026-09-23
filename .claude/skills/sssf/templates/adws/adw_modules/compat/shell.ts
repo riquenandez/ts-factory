@@ -1,4 +1,26 @@
-import { operatorEnv } from "../utils.ts";
+import { appendFileSync } from "node:fs";
+import { constants as osConstants } from "node:os";
+import { join } from "node:path";
+import { isDict, pyLoads } from "./json.ts";
+
+const PATHSEP = ":";
+
+export function operatorEnv(): Record<string, string> {
+  const env: Record<string, string> = {};
+  for (const [k, v] of Object.entries(process.env)) {
+    if (v !== undefined) env[k] = v;
+  }
+  const venv = env.VIRTUAL_ENV;
+  delete env.VIRTUAL_ENV;
+  let parts = (env.PATH ?? "").split(PATHSEP).filter(Boolean);
+  if (venv) {
+    const venvBin = join(venv, "bin");
+    parts = parts.filter((p) => p !== venvBin);
+  }
+  parts = parts.filter((p) => !p.endsWith("/node_modules/.bin"));
+  env.PATH = parts.join(PATHSEP);
+  return env;
+}
 
 function utf8(bytes?: Uint8Array | null): string {
   return Buffer.from(bytes ?? []).toString("utf8");
@@ -46,4 +68,69 @@ export function spawnShell(
   opts: { cwd?: string } = {},
 ): { returncode: number; stdout: string; stderr: string } {
   return spawnCaptured(["/bin/sh", "-c", command], opts);
+}
+
+export interface SpawnJsonlOpts {
+  cmd: string[];
+  cwd: string;
+  env: Record<string, string>;
+  /** Bytes written to stdin, then stdin is closed. Omitted: stdin is "ignore". */
+  stdin?: string;
+  /** Every stdout chunk is appended here as received, before it is parsed. */
+  rawOutputPath: string;
+  /** Called once per JSON-object line, in order. Non-JSON lines and non-object values are skipped. */
+  onEvent: (event: Record<string, unknown>) => void;
+  onSpawn?: (pid: number) => void;
+  onExit?: (pid: number) => void;
+}
+
+export async function spawnJsonl(opts: SpawnJsonlOpts): Promise<{ returncode: number; stderr: string }> {
+  const child = Bun.spawn({
+    cmd: opts.cmd,
+    cwd: opts.cwd,
+    env: opts.env,
+    stdin: opts.stdin !== undefined ? "pipe" : "ignore",
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  opts.onSpawn?.(child.pid);
+  // Drained concurrently so a chatty stderr cannot wedge the child while stdout is tailed.
+  const stderrText = new Response(child.stderr).text();
+  if (opts.stdin !== undefined) {
+    await child.stdin!.write(opts.stdin);
+    child.stdin!.end();
+  }
+
+  const emit = (rawLine: string): void => {
+    const line = rawLine.trim();
+    if (!line) return;
+    let event: unknown;
+    try {
+      event = pyLoads(line);
+    } catch {
+      return;
+    }
+    if (!isDict(event)) return;
+    opts.onEvent(event);
+  };
+
+  const decoder = new TextDecoder();
+  let pending = "";
+  for await (const chunk of child.stdout) {
+    appendFileSync(opts.rawOutputPath, chunk);
+    pending += decoder.decode(chunk, { stream: true });
+    let newline: number;
+    while ((newline = pending.indexOf("\n")) !== -1) {
+      emit(pending.slice(0, newline));
+      pending = pending.slice(newline + 1);
+    }
+  }
+  pending += decoder.decode();
+  if (pending) emit(pending);
+
+  const stderr = await stderrText;
+  const code = await child.exited;
+  const returncode = child.signalCode ? -(osConstants.signals[child.signalCode] ?? 0) : code;
+  opts.onExit?.(child.pid);
+  return { returncode, stderr };
 }
