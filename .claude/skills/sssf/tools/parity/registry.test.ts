@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { readFileSync, writeFileSync } from "node:fs";
+import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { INTERFACES } from "../../templates/adws/adw_modules/agents.ts";
 import { labelFor } from "../../templates/adws/adw_modules/toolCalls.ts";
@@ -129,6 +129,16 @@ describe("agent registry", () => {
     for (const name of ["agentCc.ts", "agentCopilot.ts", "agentExec.ts"]) {
       const text = readFileSync(join(MODULES, name), "utf8");
       expect(text).not.toContain('from "./agentPi.ts"');
+    }
+  });
+
+  test("compat imports nothing outside compat", () => {
+    const dir = join(MODULES, "compat");
+    const names = readdirSync(dir).filter((name) => name.endsWith(".ts"));
+    expect(names.length).toBeGreaterThan(0);
+    for (const name of names) {
+      const text = readFileSync(join(dir, name), "utf8");
+      expect(text).not.toContain('from "../');
     }
   });
 
