@@ -41,7 +41,7 @@ agents:
 
 | Field | Type | Meaning |
 |---|---|---|
-| `coding_agent` | any name registered in `agents.INTERFACES` | Which interface runs the agent. `pi`, `claude_code`, `copilot`, and `exec` ship. An unknown name fails `validate()` before any session row. `claude_code` runs `claude -p` headless and uses the machine's Claude Code login. `copilot` runs `copilot -p` headless and uses the machine's `copilot login` or `COPILOT_GITHUB_TOKEN`. `exec` runs the agent's `command` and speaks [the exec protocol](exec-protocol.md). |
+| `coding_agent` | any name registered in `INTERFACES` (`runtimes/index.ts`) | Which interface runs the agent. `pi`, `claude_code`, `copilot`, and `exec` ship. An unknown name fails `validate()` before any session row. `claude_code` runs `claude -p` headless and uses the machine's Claude Code login. `copilot` runs `copilot -p` headless and uses the machine's `copilot login` or `COPILOT_GITHUB_TOKEN`. `exec` runs the agent's `command` and speaks [the exec protocol](exec-protocol.md). |
 | `model` | string | For `pi`: `provider/model-id`, resolved against pi's catalog. For `claude_code`: passed to `--model` as written (`opus`, `sonnet`, or a full id; no `provider/` prefix). For `copilot`: the model name as the CLI's `/model` shows it (`gpt-5.4`, `claude-sonnet-4.5`, or `auto`), passed to `--model` as written. For `exec` the value passes through verbatim; the adapter interprets it. Starter default `google/gemini-3.6-flash`. |
 | `thinking` | enum | Reasoning effort, see below. Default `medium`. For `exec` the value passes through verbatim; the adapter interprets it. |
 | `color` | hex string | Lane color for agents that do not set their own. Unset means the visualizer's palette. |

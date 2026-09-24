@@ -1,4 +1,4 @@
-import { isDict } from "./utils.ts";
+import { isDict } from "../utils.ts";
 
 export const RESULT_SNIPPET_CHARS = 20_000;
 export const ARG_VALUE_CHARS = 20_000;

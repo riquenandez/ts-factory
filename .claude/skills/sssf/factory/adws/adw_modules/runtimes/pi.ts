@@ -1,7 +1,7 @@
 import { mkdirSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import { operatorEnv, spawnCaptured, spawnJsonl } from "./shell.ts";
+import { operatorEnv, spawnCaptured, spawnJsonl } from "../shell.ts";
 import {
   newAgentResult,
   type AgentConfig,
@@ -10,9 +10,9 @@ import {
   type AgentRequest,
   type AgentResult,
   type ToolCallRecord,
-} from "./dataTypes.ts";
+} from "./types.ts";
 import { ARG_VALUE_CHARS, RESULT_SNIPPET_CHARS, clip, labelFor, textOf } from "./toolCalls.ts";
-import { isDict, nowIso, newId } from "./utils.ts";
+import { isDict, nowIso, newId } from "../utils.ts";
 
 class ModelLookupError extends Error {
   constructor(message: string) {

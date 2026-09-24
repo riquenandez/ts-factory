@@ -2,8 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { buildArgv } from "../.claude/skills/sssf/factory/adws/adw_modules/agentCc.ts";
-import type { AgentRequest } from "../.claude/skills/sssf/factory/adws/adw_modules/dataTypes.ts";
+import { buildArgv } from "../.claude/skills/sssf/factory/adws/adw_modules/runtimes/claude.ts";
+import type { AgentRequest } from "../.claude/skills/sssf/factory/adws/adw_modules/runtimes/types.ts";
 import { dumpInserts, eventsOf, flagAfter, UUID_RE } from "./harness.ts";
 import { runAdw } from "./runAdw.ts";
 

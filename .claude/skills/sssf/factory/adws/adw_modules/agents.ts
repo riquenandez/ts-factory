@@ -1,29 +1,27 @@
 import { existsSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import * as agentCc from "./agentCc.ts";
-import * as agentCopilot from "./agentCopilot.ts";
-import * as agentExec from "./agentExec.ts";
-import * as agentPi from "./agentPi.ts";
 import { ExitError } from "./cli.ts";
 import { modelValidate } from "./schema.ts";
 import {
   GateReport,
   SSSF_CONFIG,
-  UsageBreakdown,
   type AgentCall,
   type AgentConfig,
-  type AgentEvent,
-  type AgentInterface,
-  type AgentRequest,
-  type AgentResult,
   type EnvelopeBase,
   type Phase,
   type SSSFConfig,
-  type ToolCallTracker,
 } from "./dataTypes.ts";
 import { PermissionBreach, enforce, snapshot } from "./permissions.ts";
 import * as prompts from "./prompts.ts";
 import type { Run } from "./runner.ts";
+import { INTERFACES, interfaceFor, unknownRuntime } from "./runtimes/index.ts";
+import {
+  UsageBreakdown,
+  type AgentEvent,
+  type AgentRequest,
+  type AgentResult,
+  type ToolCallTracker,
+} from "./runtimes/types.ts";
 import { isDict } from "./utils.ts";
 
 export const JSON_FIX_ATTEMPTS = 2;
@@ -72,30 +70,10 @@ function isFile(path: string): boolean {
   }
 }
 
-export const INTERFACES: Record<string, AgentInterface> = {
-  pi: agentPi.INTERFACE,
-  claude_code: agentCc.INTERFACE,
-  copilot: agentCopilot.INTERFACE,
-  exec: agentExec.INTERFACE,
-};
-
 function reuseOrMint(run: Run, agent: AgentConfig, mint: () => string): string {
   const entry = run.agentMap[agent.name];
   if (entry && entry.model === agent.model) return entry.session_id;
   return mint();
-}
-
-function unknownRuntime(agent: AgentConfig): string {
-  return (
-    `agent '${agent.name}': unknown coding_agent '${agent.coding_agent}'; ` +
-    `known: ${Object.keys(INTERFACES).join(", ")}`
-  );
-}
-
-function interfaceFor(agent: AgentConfig): AgentInterface {
-  const iface = INTERFACES[agent.coding_agent];
-  if (!iface) throw new ExitError(unknownRuntime(agent));
-  return iface;
 }
 
 export function validate(cfg: SSSFConfig, required: string[]): void {

@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import { operatorEnv, spawnCaptured, spawnJsonl } from "./shell.ts";
+import { operatorEnv, spawnCaptured, spawnJsonl } from "../shell.ts";
 import {
   finiteOr0,
   newAgentResult,
@@ -11,9 +11,9 @@ import {
   type AgentRequest,
   type AgentResult,
   type ToolCallRecord,
-} from "./dataTypes.ts";
+} from "./types.ts";
 import { ARG_VALUE_CHARS, RESULT_SNIPPET_CHARS, clip, labelFor } from "./toolCalls.ts";
-import { isDict, nowIso, registerCleanup } from "./utils.ts";
+import { isDict, nowIso, registerCleanup } from "../utils.ts";
 
 export const COPILOT_PATH = process.env.COPILOT_PATH ?? "copilot";
 

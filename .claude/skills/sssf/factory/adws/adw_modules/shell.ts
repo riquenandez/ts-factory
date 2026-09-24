@@ -1,7 +1,11 @@
 import { appendFileSync } from "node:fs";
 import { constants as osConstants } from "node:os";
 import { join } from "node:path";
-import { isDict } from "./utils.ts";
+
+// Local so this file imports only Node builtins. utils.ts owns the shared predicate.
+function isDict(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
 
 const PATHSEP = ":";
 

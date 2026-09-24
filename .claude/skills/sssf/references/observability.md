@@ -32,7 +32,7 @@ Files are the raw record: `raw_output.jsonl`, `envelope.json`, `agent_map.json`.
 
 **`tool_call` is the one event that spans time.** It fills both `started_at` and `ended_at`. Every other type is a point: `started_at` is when it was recorded and `ended_at` is NULL. Lay tool calls on a time axis from those columns, not from `payload_json`.
 
-**Streaming is by construction.** `agentPi.ts` tails pi's JSONL stdout line by line and the tracer inserts each event while the agent is still working, so tool calls are visible mid-run.
+**Streaming is by construction.** `runtimes/pi.ts` tails pi's JSONL stdout line by line and the tracer inserts each event while the agent is still working, so tool calls are visible mid-run.
 
 ## Tables
 

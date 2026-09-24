@@ -33,7 +33,7 @@ Do not update snapshots in a commit that has no intended behavior change.
 - Zero npm dependencies in stamped code. Bun and Node builtins only. No stamped `package.json` or `tsconfig.json`.
 - `compat/` owns parsing and rendering: CLI, schema validation, subprocess helpers, console markup. `shell.ts` is the one file there that imports `isDict` from `utils.ts`.
 - Trace, envelope, and handoff bytes are `JSON.stringify`.
-- `coding_agent` is an open string validated against `agents.INTERFACES`.
+- `coding_agent` is an open string validated against `INTERFACES` in `runtimes/index.ts`.
 - Runtime files export `INTERFACE` and never import `agents.ts`, `runner.ts`, or another runtime's file.
 - `makeAdw` emits `return run.finish()` because `run.succeeded` is a compile error.
 - `protected_files` glob is `adws/adw_*.ts`.

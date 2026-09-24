@@ -1,6 +1,6 @@
 import { mkdirSync } from "node:fs";
 import { dirname, isAbsolute, join } from "node:path";
-import { operatorEnv, shlexJoin, spawnCaptured, spawnJsonl } from "./shell.ts";
+import { operatorEnv, shlexJoin, spawnCaptured, spawnJsonl } from "../shell.ts";
 import {
   finiteOr0,
   newAgentResult,
@@ -11,9 +11,9 @@ import {
   type AgentResult,
   type ToolCallRecord,
   type ToolCallTracker,
-} from "./dataTypes.ts";
+} from "./types.ts";
 import { ARG_VALUE_CHARS, RESULT_SNIPPET_CHARS, clip, labelFor } from "./toolCalls.ts";
-import { isDict, nowIso } from "./utils.ts";
+import { isDict, nowIso } from "../utils.ts";
 
 const PROTOCOL = "sssf-exec/1";
 

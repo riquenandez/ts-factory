@@ -1,14 +1,24 @@
 import { describe, expect, test } from "bun:test";
-import { readFileSync, writeFileSync } from "node:fs";
+import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { INTERFACES } from "../.claude/skills/sssf/factory/adws/adw_modules/agents.ts";
-import { labelFor } from "../.claude/skills/sssf/factory/adws/adw_modules/toolCalls.ts";
+import { INTERFACES } from "../.claude/skills/sssf/factory/adws/adw_modules/runtimes/index.ts";
+import { labelFor } from "../.claude/skills/sssf/factory/adws/adw_modules/runtimes/toolCalls.ts";
 import { dumpInserts, UUID_RE } from "./harness.ts";
 import { runAdw } from "./runAdw.ts";
 
 const REPO_CLAUDE = join(import.meta.dir, "fixtures/repo_claude");
 const REPO_AGENT = join(import.meta.dir, "fixtures/repo_agent");
 const MODULES = join(import.meta.dir, "../.claude/skills/sssf/factory/adws/adw_modules");
+
+function tsFiles(dir: string): string[] {
+  const out: string[] = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) out.push(...tsFiles(path));
+    else if (entry.name.endsWith(".ts")) out.push(path);
+  }
+  return out;
+}
 const SESSION_DIRS: Record<string, string> = {
   pi: "pi_sessions",
   claude_code: "claude_sessions",
@@ -112,28 +122,36 @@ describe("agent registry", () => {
     );
   });
 
-  test("runtime files are self-contained", () => {
-    for (const name of ["agentPi.ts", "agentCc.ts", "agentCopilot.ts", "agentExec.ts"]) {
-      const text = readFileSync(join(MODULES, name), "utf8");
+  test("a runtime file imports only types, toolCalls, shell, and utils", () => {
+    const allowed = new Set(["./types.ts", "./toolCalls.ts", "../shell.ts", "../utils.ts"]);
+    for (const name of ["pi.ts", "claude.ts", "copilot.ts", "exec.ts"]) {
+      const text = readFileSync(join(MODULES, "runtimes", name), "utf8");
       expect(text).toContain("export const INTERFACE");
-      expect(text).not.toContain('from "./agents.ts"');
-      expect(text).not.toContain('from "./runner.ts"');
-    }
-    for (const name of ["agentCc.ts", "agentCopilot.ts", "agentExec.ts"]) {
-      const text = readFileSync(join(MODULES, name), "utf8");
-      expect(text).not.toContain('from "./agentPi.ts"');
+      const specs = [...text.matchAll(/from "([^"]+)"/g)].map((match) => match[1]!);
+      expect(specs.length).toBeGreaterThan(0);
+      for (const spec of specs) {
+        const builtin = spec.startsWith("node:") || spec.startsWith("bun:");
+        expect(builtin || allowed.has(spec), `${name} imports ${spec}`).toBe(true);
+      }
     }
   });
 
-  test("compat imports nothing outside compat", () => {
-    for (const name of ["cli.ts", "schema.ts"]) {
-      const text = readFileSync(join(MODULES, name), "utf8");
-      expect(text.match(/from "\.\.\//g) ?? []).toEqual([]);
-      expect(text).not.toContain('from "./');
+  test("runtimes/index.ts is the only file that imports a runtime", () => {
+    const runtimeImport = /from "(?:(?:\.\.\/)+|\.\/)(?:runtimes\/)?(?:pi|claude|copilot|exec)\.ts"/;
+    const files = tsFiles(MODULES).filter((path) => !path.endsWith("/runtimes/index.ts"));
+    for (const path of files) {
+      expect(readFileSync(path, "utf8"), path).not.toMatch(runtimeImport);
     }
-    const shell = readFileSync(join(MODULES, "shell.ts"), "utf8");
-    expect(shell.match(/from "\.\.\//g) ?? []).toEqual([]);
-    expect(shell).toContain('from "./utils.ts"');
+  });
+
+  test("utils, shell, and schema import only Node and Bun builtins", () => {
+    for (const name of ["utils.ts", "shell.ts", "schema.ts"]) {
+      const text = readFileSync(join(MODULES, name), "utf8");
+      const specs = [...text.matchAll(/from "([^"]+)"/g)].map((match) => match[1]!);
+      for (const spec of specs) {
+        expect(spec.startsWith("node:") || spec.startsWith("bun:"), `${name} imports ${spec}`).toBe(true);
+      }
+    }
   });
 
   test("pi labels unchanged", () => {

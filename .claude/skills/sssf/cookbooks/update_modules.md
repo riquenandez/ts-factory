@@ -6,11 +6,13 @@ Extend `adws/adw_modules/`. All low-level logic lives here; ADW scripts declare 
 
 | Module | Owns |
 |---|---|
-| `dataTypes.ts` | `PhaseParams`, `AgentCall`, `EnvelopeBase`, one output type per agent call, config models, `EventRecord`, `AgentRequest`/`AgentResult` |
+| `dataTypes.ts` | `PhaseParams`, `AgentCall`, `EnvelopeBase`, one output type per agent call, config models, `EventRecord` |
 | `agents.ts` | `loadConfig`, `validate`, running an agent call: JSON retries, gates, permissions |
 | `runner.ts` | `Run`, `run.phase()`, `ph.call()`, `run.finish()` |
-| `agentPi.ts` | the pi interface: argv, live JSONL tail, model resolution. `agentCc.ts` is a v2 stub |
-| `toolCalls.ts` | `labelFor`, `clip`, `textOf`: the one tool-call record shape every runtime emits |
+| `runtimes/pi.ts`, `claude.ts`, `copilot.ts`, `exec.ts` | one coding-agent interface each: argv, the live tail, `INTERFACE` |
+| `runtimes/toolCalls.ts` | `labelFor`, `clip`, `textOf`: the one tool-call record shape every runtime emits |
+| `runtimes/types.ts` | `AgentRequest`, `AgentResult`, `AgentInterface`, tool-call records |
+| `runtimes/index.ts` | `INTERFACES`, `interfaceFor`, `unknownRuntime` |
 | `gates.ts` | claim verifiers |
 | `quality.ts` | lint, typecheck, build, test blocks; `asEnvelope` |
 | `changes.ts` | git diff capture into `context_handoff/changes.diff`; `asEnvelope` |
@@ -74,12 +76,12 @@ Reusable gates go in `gates.ts`; one-offs can be inline at the call site.
 
 A new runtime is four steps. Nothing else in the core changes.
 
-1. Add one file in `adw_modules/` that exports `INTERFACE: AgentInterface` (`run`, `newTracker`, `mintSessionId`, `validate`, `sessionDirName`).
-2. Register it with one line in `agents.INTERFACES`.
-3. Add a `fake_<name>` fixture and `<name>.test.ts` mirroring `fake_copilot` / `copilot.test.ts`.
+1. Add one file in `adw_modules/runtimes/` that exports `INTERFACE: AgentInterface` (`run`, `newTracker`, `mintSessionId`, `validate`, `sessionDirName`).
+2. Register it with one line in `runtimes/index.ts`.
+3. Add a `fake_<name>` fixture and `<name>.test.ts` mirroring `tests/fixtures/fake_copilot` and `tests/copilot.test.ts`.
 4. Document the name on the `coding_agent` row and any runtime-specific rows in `references/config.md`.
 
-Runtime files import `dataTypes.ts`, `toolCalls.ts`, `compat/*`, and `utils.ts` only, never `agents.ts` or `runner.ts`.
+Runtime files import `./types.ts`, `./toolCalls.ts`, `../shell.ts`, and `../utils.ts` only, never `agents.ts` or `runner.ts`.
 
 An agent that lives in another repo does not need a runtime file at all: it needs a command that speaks [references/exec-protocol.md](../references/exec-protocol.md), registered as `coding_agent: exec` with a `command` argv list.
 

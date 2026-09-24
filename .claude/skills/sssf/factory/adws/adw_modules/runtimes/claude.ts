@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { operatorEnv, spawnCaptured, spawnJsonl } from "./shell.ts";
+import { operatorEnv, spawnCaptured, spawnJsonl } from "../shell.ts";
 import {
   newAgentResult,
   type AgentConfig,
@@ -9,9 +9,9 @@ import {
   type AgentRequest,
   type AgentResult,
   type ToolCallRecord,
-} from "./dataTypes.ts";
+} from "./types.ts";
 import { ARG_VALUE_CHARS, RESULT_SNIPPET_CHARS, clip, labelFor, textOf } from "./toolCalls.ts";
-import { isDict, nowIso } from "./utils.ts";
+import { isDict, nowIso } from "../utils.ts";
 
 export const CLAUDE_CODE_PATH = process.env.CLAUDE_CODE_PATH ?? "claude";
 

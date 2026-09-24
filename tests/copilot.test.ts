@@ -2,8 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { buildArgv, shapeUsageFile } from "../.claude/skills/sssf/factory/adws/adw_modules/agentCopilot.ts";
-import type { AgentRequest } from "../.claude/skills/sssf/factory/adws/adw_modules/dataTypes.ts";
+import { buildArgv, shapeUsageFile } from "../.claude/skills/sssf/factory/adws/adw_modules/runtimes/copilot.ts";
+import type { AgentRequest } from "../.claude/skills/sssf/factory/adws/adw_modules/runtimes/types.ts";
 import { dumpInserts, eventsOf, flagAfter, UUID_RE } from "./harness.ts";
 import { runAdw } from "./runAdw.ts";
 

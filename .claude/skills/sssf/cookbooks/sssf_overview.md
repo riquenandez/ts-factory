@@ -19,7 +19,7 @@ adws/
 │   ├── runner.ts                      run.phase(params, body) and ph.call({ outputType, ... })
 │   ├── agents.ts                      loadConfig, validate, execute
 │   ├── gates.ts  quality.ts  changes.ts  permissions.ts  gitHelper.ts
-│   └── agentPi.ts                     the pi interface (agentCc.ts is a v2 stub)
+│   └── runtimes/                      pi.ts, claude.ts, copilot.ts, exec.ts — one interface each
 └── adw_data/
     ├── prompt_engineering/<agent>/    system.md + user.md, tracked, edit them here
     ├── harness_engineering/           pi extensions, tracked
