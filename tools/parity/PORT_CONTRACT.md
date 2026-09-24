@@ -1,6 +1,6 @@
 # Port contract
 
-Python under `tools/parity/python-gold/` is the spec. TypeScript under `.claude/skills/sssf/templates/` is the product. A change that "improves" Python is a bug.
+The tests under `tools/parity/` pin behavior. TypeScript under `.claude/skills/sssf/templates/` is the product. A change that drifts from those pins is a bug.
 
 ## Done
 
@@ -28,4 +28,4 @@ Python under `tools/parity/python-gold/` is the spec. TypeScript under `.claude/
 
 ## Layout
 
-The harness is `tools/parity/`. Write the port into `.claude/skills/sssf/templates/adws/`. Do not edit `tools/parity/python-gold/`.
+The harness is `tools/parity/`. Write the port into `.claude/skills/sssf/templates/adws/`.

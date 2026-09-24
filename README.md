@@ -146,9 +146,9 @@ bun run typecheck
 bun test ./tools/parity/
 ```
 
-`.claude/skills/sssf/` is the product an engineer copies into a repo. `tools/parity/` is this repo's harness plus the Python reference.
+`.claude/skills/sssf/` is the product an engineer copies into a repo. `tools/parity/` is this repo's harness.
 
-The parity tests run the original Python implementation under `tools/parity/python-gold/` against the TypeScript port and diff stdout, exit codes, the sqlite dump, the session tree, and `git status`. They need `uv`, `python3`, and `sqlite3`. `tools/parity/PORT_CONTRACT.md` is the rule set for changes to the port.
+The parity tests pin the TypeScript port. They need `sqlite3`. `tools/parity/PORT_CONTRACT.md` is the rule set for changes to the port.
 
 ## License
 

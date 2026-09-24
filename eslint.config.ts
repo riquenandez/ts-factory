@@ -2,7 +2,6 @@ import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 
 const ignores = [
-  "**/python-gold/**",
   ".claude/skills/sssf/apps/visualizer/**",
   ".claude/skills/sssf/templates/harness_engineering/**",
   "**/node_modules/**",
