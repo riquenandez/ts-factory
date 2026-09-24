@@ -1,4 +1,5 @@
-import type { EnvelopeBase, GateReport, Phase } from "./dataTypes.ts";
+import type { EnvelopeBase, GateReport } from "./dataTypes.ts";
+import type { Phase } from "./runner.ts";
 import type { Tracer } from "./tracer.ts";
 
 const ANSI: Record<string, string> = {

@@ -50,9 +50,9 @@ import {
   BuildOutput,
   DocumentOutput,
   PlanOutput,
-  type QualityResult,
   ReviewOutput,
 } from "./adw_modules/dataTypes.ts";
+import type { QualityResult } from "./adw_modules/quality.ts";
 import { RuntimeError } from "./adw_modules/utils.ts";
 
 const REQUIRED_AGENTS = ["planner", "builder", "reviewer", "documenter"];

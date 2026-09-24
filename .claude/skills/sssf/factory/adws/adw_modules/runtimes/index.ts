@@ -1,5 +1,5 @@
 import { ExitError } from "../cli.ts";
-import type { AgentConfig } from "../dataTypes.ts";
+import type { AgentConfig } from "../agents.ts";
 import type { AgentInterface } from "./types.ts";
 import * as claude from "./claude.ts";
 import * as copilot from "./copilot.ts";

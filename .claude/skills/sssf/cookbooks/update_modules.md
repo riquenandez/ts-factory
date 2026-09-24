@@ -6,18 +6,19 @@ Extend `adws/adw_modules/`. All low-level logic lives here; ADW scripts declare 
 
 | Module | Owns |
 |---|---|
-| `dataTypes.ts` | `PhaseParams`, `AgentCall`, `EnvelopeBase`, one output type per agent call, config models, `EventRecord` |
-| `agents.ts` | `loadConfig`, `validate`, running an agent call: JSON retries, gates, permissions |
+| `dataTypes.ts` | `EnvelopeBase`, the output types, `PhaseParams`, `AgentCall`, `GateReport` |
+| `agents.ts` | the roster: config types, `loadConfig`, `resolve`, `validate` |
+| `execute.ts` | one agent call: render, send, JSON retries, gates, permissions, persist |
 | `runner.ts` | `Run`, `run.phase()`, `ph.call()`, `run.finish()` |
 | `runtimes/pi.ts`, `claude.ts`, `copilot.ts`, `exec.ts` | one coding-agent interface each: argv, the live tail, `INTERFACE` |
 | `runtimes/toolCalls.ts` | `labelFor`, `clip`, `textOf`: the one tool-call record shape every runtime emits |
 | `runtimes/types.ts` | `AgentRequest`, `AgentResult`, `AgentInterface`, tool-call records |
 | `runtimes/index.ts` | `INTERFACES`, `interfaceFor`, `unknownRuntime` |
 | `gates.ts` | claim verifiers |
-| `quality.ts` | lint, typecheck, build, test blocks; `asEnvelope` |
+| `quality.ts` | lint, typecheck, build, test blocks; `asEnvelope`; `QualityResult` |
 | `changes.ts` | git diff capture into `context_handoff/changes.diff`; `asEnvelope` |
 | `permissions.ts` | before/after repo fingerprint, rollback, `writes` and `protected_files` enforcement |
-| `prompts.ts`, `session.ts`, `tracer.ts`, `console.ts`, `gitHelper.ts`, `utils.ts` | rendering, session dirs and `agent_map.json`, the trace, the narrative (markup included), git plumbing, ids and env |
+| `session.ts`, `tracer.ts`, `console.ts`, `gitHelper.ts`, `utils.ts` | session dirs and `agent_map.json`, the trace, the narrative (markup included), git plumbing, ids and env |
 | `cli.ts` | CLI parsing on `node:util` `parseArgs`: help, `error:` lines, exit 2, `ExitError` |
 | `schema.ts` | declarative schemas: ordered fields, defaults, extra ignored, plain validation errors |
 | `shell.ts` | `spawnCaptured`, `spawnShell`, `spawnJsonl`, `shlexJoin`, `operatorEnv` |

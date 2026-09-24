@@ -1,8 +1,56 @@
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import * as gitHelper from "./gitHelper.ts";
-import { baseRef, changeSet, type ChangeCapture, type ChangeSet, type ChangesOutput } from "./dataTypes.ts";
+import type { ChangesOutput } from "./dataTypes.ts";
 import type { Run } from "./runner.ts";
+
+export interface ChangeCapture {
+  base: string;
+  maxDiffLines: number;
+  includeUntracked: boolean;
+}
+
+export interface BaseRef {
+  ref: string;
+  commit: string;
+  reason: string;
+  get label(): string;
+}
+
+export function baseRef(ref: string, commit: string, reason = ""): BaseRef {
+  return {
+    ref,
+    commit,
+    reason,
+    get label() {
+      if (this.ref.length === 40 && [...this.ref].every((c) => "0123456789abcdef".includes(c))) {
+        return this.ref.slice(0, 7);
+      }
+      return this.ref;
+    },
+  };
+}
+
+export interface ChangeSet {
+  base: BaseRef;
+  files: string[];
+  untracked: string[];
+  insertions: number;
+  deletions: number;
+  stat: string;
+  diff_path: string;
+  truncated: boolean;
+  get empty(): boolean;
+}
+
+export function changeSet(args: Omit<ChangeSet, "empty">): ChangeSet {
+  return {
+    ...args,
+    get empty() {
+      return !(this.files.length || this.untracked.length);
+    },
+  };
+}
 
 const DIFF_FILENAME = "changes.diff";
 

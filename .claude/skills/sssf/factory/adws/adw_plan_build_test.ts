@@ -18,7 +18,8 @@ import * as quality from "./adw_modules/quality.ts";
 import * as session from "./adw_modules/session.ts";
 import * as utils from "./adw_modules/utils.ts";
 import { parseArgs, runMain } from "./adw_modules/cli.ts";
-import { BuildOutput, PlanOutput, type QualityResult } from "./adw_modules/dataTypes.ts";
+import { BuildOutput, PlanOutput } from "./adw_modules/dataTypes.ts";
+import type { QualityResult } from "./adw_modules/quality.ts";
 
 const REQUIRED_AGENTS = ["planner", "builder"];
 const MAX_FIX_LOOPS = 3;

@@ -1,14 +1,39 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { operatorEnv, shlexJoin, spawnCaptured } from "./shell.ts";
-import type {
-  QualityCheckResult,
-  QualityCheckSpec,
-  QualityResult,
-  VerifyOutput,
-} from "./dataTypes.ts";
+import type { VerifyOutput } from "./dataTypes.ts";
 import type { Run } from "./runner.ts";
 import { nowIso } from "./utils.ts";
+
+export type QualityArea = "frontend" | "backend";
+export type QualityOperation = "lint" | "typecheck" | "build";
+
+export interface QualityCheckSpec {
+  name: string;
+  area: QualityArea;
+  operation: QualityOperation;
+  argv: string[];
+  timeoutSeconds: number;
+}
+
+export interface QualityCheckResult {
+  name: string;
+  area: QualityArea;
+  operation: QualityOperation;
+  command: string;
+  returncode: number;
+  passed: boolean;
+  duration_seconds: number;
+  output_artifact: string;
+  output_tail: string;
+}
+
+export interface QualityResult {
+  passed: boolean;
+  checks: QualityCheckResult[];
+  failures: string[];
+  artifacts: string[];
+}
 
 const TAIL_CHARS = 4000;
 

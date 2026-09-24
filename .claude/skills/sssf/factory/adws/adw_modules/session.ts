@@ -1,5 +1,5 @@
 import { basename, parse } from "node:path";
-import type { SSSFConfig } from "./dataTypes.ts";
+import type { SSSFConfig } from "./agents.ts";
 import { Run } from "./runner.ts";
 import { Tracer } from "./tracer.ts";
 import { engineerName, newId } from "./utils.ts";

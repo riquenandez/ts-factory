@@ -291,7 +291,7 @@ exports[`pinned ADW runs unknown agent fails validation with no session: stdout 
 exports[`pinned ADW runs unknown agent fails validation with no session: exit+stderr 1`] = `
 "exit 1
 config validation failed:
-- agent 'builder' is not defined in the config — available: 
+- agent 'builder' is not defined in the config — available: (none)
 "
 `;
 

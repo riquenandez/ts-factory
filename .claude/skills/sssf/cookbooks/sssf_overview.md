@@ -15,9 +15,10 @@ adws/
 ├── adw_sssf_config/sssf.config.yaml   the agent roster: one agent, one prompt, one purpose
 ├── adw_*.ts                           the workflows; each opens with a `Phases:` line
 ├── adw_modules/                       all low-level logic; ADW scripts stay thin
-│   ├── dataTypes.ts                   PhaseParams, AgentCall, EnvelopeBase + one output type per agent call
+│   ├── dataTypes.ts                   EnvelopeBase, the output types, PhaseParams, AgentCall, GateReport
 │   ├── runner.ts                      run.phase(params, body) and ph.call({ outputType, ... })
-│   ├── agents.ts                      loadConfig, validate, execute
+│   ├── agents.ts                      the roster: loadConfig, resolve, validate
+│   ├── execute.ts                     one agent call: render, send, retries, gates
 │   ├── gates.ts  quality.ts  changes.ts  permissions.ts  gitHelper.ts
 │   └── runtimes/                      pi.ts, claude.ts, copilot.ts, exec.ts — one interface each
 └── adw_data/

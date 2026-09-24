@@ -1,7 +1,7 @@
 import { unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { spawnCaptured } from "./shell.ts";
-import type { AgentConfig, SSSFConfig } from "./dataTypes.ts";
+import type { AgentConfig, SSSFConfig } from "./agents.ts";
 import type { Run } from "./runner.ts";
 
 export class PermissionBreach extends Error {

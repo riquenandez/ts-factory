@@ -58,11 +58,11 @@ const plan = await ph.call({
 
 The user prompt asks for the shape; the type enforces it. They travel as a pair, which is what lets one agent serve many calls. Output types live in code, never in `sssf.config.yaml`.
 
-**Parse failure is not a restart.** A response that does not parse or validate is re-prompted in the same session with a correction naming the required fields, up to `JSON_FIX_ATTEMPTS` in `agents.ts` (2). Gate violations use the same mechanism, bounded by the phase's `retries`. Pi treats `--session-id` as create-or-continue, so running and continuing an agent are the same call. The harness tolerates a fenced `json` block or prose around the object before parsing, but the prompt still asks for bare JSON, and every failed attempt is stored as an invalid `envelopes` row.
+**Parse failure is not a restart.** A response that does not parse or validate is re-prompted in the same session with a correction naming the required fields, up to `JSON_FIX_ATTEMPTS` in `execute.ts` (2). Gate violations use the same mechanism, bounded by the phase's `retries`. Pi treats `--session-id` as create-or-continue, so running and continuing an agent are the same call. The harness tolerates a fenced `json` block or prose around the object before parsing, but the prompt still asks for bare JSON, and every failed attempt is stored as an invalid `envelopes` row.
 
 ## Rendering the user prompt
 
-`prompts.ts` renders the agent's `user.md`, substituting:
+`execute.ts` renders the agent's `user.md`, substituting:
 
 | Placeholder | Value |
 |---|---|

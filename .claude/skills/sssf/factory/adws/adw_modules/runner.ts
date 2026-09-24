@@ -1,21 +1,47 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { execute } from "./agents.ts";
+import type { SSSFConfig } from "./agents.ts";
+import { execute } from "./execute.ts";
 import { Console, errorText } from "./console.ts";
 import {
-  newPhase,
   type AgentCall,
   type EnvelopeBase,
   type EnvelopeType,
-  type Phase,
   type PhaseParams,
-  type SSSFConfig,
 } from "./dataTypes.ts";
 import { repoRoot } from "./gitHelper.ts";
 import { Tracer } from "./tracer.ts";
 import { nowIso, runCleanups } from "./utils.ts";
 
 export { registerCleanup, runCleanups } from "./utils.ts";
+
+export type PhaseStatus = "queued" | "running" | "success" | "fail";
+
+export interface Phase {
+  phase_id: string;
+  adw_id: string;
+  seq: number;
+  params: Required<PhaseParams>;
+  status: PhaseStatus;
+  attempt: number;
+  error: string | null;
+  started_at: string | null;
+  ended_at: string | null;
+}
+
+export function newPhase(args: { adw_id: string; seq: number; params: Required<PhaseParams> }): Phase {
+  return {
+    phase_id: `${args.adw_id}_${String(args.seq).padStart(2, "0")}_${args.params.name}`,
+    adw_id: args.adw_id,
+    seq: args.seq,
+    params: args.params,
+    status: "fail",
+    attempt: 0,
+    error: null,
+    started_at: null,
+    ended_at: null,
+  };
+}
 
 export function validatePhaseParams(params: PhaseParams): Required<PhaseParams> {
   const text = params.description.replace(/\s+/g, " ").trim();

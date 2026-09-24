@@ -154,9 +154,9 @@ The adapter does not parse envelopes, retry JSON, run gates, or enforce write pe
 
 | Concern | Owner |
 |---|---|
-| Envelope typing against the call site's output type | `agents.ts` `parseWithRetries` |
-| JSON retries in the same `session_id` | `agents.ts` `parseWithRetries` |
-| Gates and gate corrections | `agents.ts` `execute` |
+| Envelope typing against the call site's output type | `execute.ts` `parseWithRetries` |
+| JSON retries in the same `session_id` | `execute.ts` `parseWithRetries` |
+| Gates and gate corrections | `execute.ts` `execute` |
 | Git-fingerprint permission boundary (`writes` / `protected_files`) | `permissions.ts` |
 | The SQLite + JSONL trace | `tracer.ts` |
 

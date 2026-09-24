@@ -1,4 +1,4 @@
-import type { AgentConfig } from "../dataTypes.ts";
+import type { AgentConfig } from "../agents.ts";
 
 export type { AgentConfig };
 
