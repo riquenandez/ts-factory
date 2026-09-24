@@ -2,16 +2,36 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { shlexJoin } from "../.claude/skills/sssf/factory/adws/adw_modules/shell.ts";
+import { GenericOutput } from "../.claude/skills/sssf/factory/adws/adw_modules/dataTypes.ts";
 import { newId, nowIso } from "../.claude/skills/sssf/factory/adws/adw_modules/utils.ts";
 import { Tracer } from "../.claude/skills/sssf/factory/adws/adw_modules/tracer.ts";
 
-describe("compat", () => {
+describe("ids and time", () => {
   test("nowIso uses +00:00 not Z", () => {
     expect(nowIso()).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}\+00:00$/);
   });
 
   test("newId(8) is 8 hex chars", () => {
     expect(newId(8)).toMatch(/^[0-9a-f]{8}$/);
+  });
+});
+
+describe("json, yaml, and shell quoting", () => {
+  test("dumpJson indent 2 keeps declaration order and an em dash", () => {
+    const payload = { status: "success", summary: "hi — there" };
+    expect(GenericOutput.dumpJson(GenericOutput.parse(payload), 2)).toBe(
+      '{\n  "status": "success",\n  "summary": "hi — there",\n  "artifacts": [],\n  "notes_for_next_agent": ""\n}',
+    );
+  });
+
+  test("an empty YAML document parses as null", () => {
+    expect(JSON.stringify(Bun.YAML.parse(""))).toBe("null");
+  });
+
+  test("shlexJoin quotes a space and a single quote", () => {
+    const argv = ["echo", "hello world", "it's"];
+    expect(shlexJoin(argv)).toBe(`echo 'hello world' 'it'"'"'s'`);
   });
 });
 

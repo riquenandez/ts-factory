@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { escape, panel, render } from "../.claude/skills/sssf/factory/adws/adw_modules/console.ts";
 
-describe("markup vs live rich", () => {
+describe("markup", () => {
   test("plain session line", () => {
     const markup = "[bold cyan]adw_id:[/bold cyan] [bold]abcd1234[/bold]   [dim]engineer[/dim] Enrique";
     expect(render(markup, false).ansi + "\n").toBe("adw_id: abcd1234   engineer Enrique\n");
@@ -35,7 +35,7 @@ describe("markup vs live rich", () => {
     );
   });
 
-  test("escaped brackets in dynamic text match rich", () => {
+  test("escaped brackets render as literal brackets", () => {
     const markup = `limited to ${escape("[claimed]")}`;
     expect(render(markup, false).ansi + "\n").toBe("limited to [claimed]\n");
   });

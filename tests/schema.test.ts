@@ -13,13 +13,13 @@ function messageOf(fn: () => void): string {
 }
 
 describe("schema validation errors", () => {
-  test("validate missing status matches pydantic error prefix", () => {
+  test("missing status is required", () => {
     expect(messageOf(() => GenericOutput.parse({ summary: "x" }))).toBe(
       "GenericOutput validation failed:\n- status: required",
     );
   });
 
-  test("validate int summary matches pydantic string_type", () => {
+  test("a non-string summary says expected string", () => {
     expect(messageOf(() => GenericOutput.parse({ status: "success", summary: 3 }))).toBe(
       "GenericOutput validation failed:\n- summary: expected string",
     );
