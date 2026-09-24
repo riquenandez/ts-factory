@@ -154,4 +154,4 @@ bun test ./tests/
 
 ## License
 
-MIT, see [`LICENSE`](LICENSE). This is a Bun/TypeScript port of [Super Simple Software Factory](https://github.com/disler/super-simple-software-factory) by IndyDevDan.
+MIT, see [`LICENSE`](LICENSE).
