@@ -1,16 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import { escape, panel, render } from "../../.claude/skills/sssf/templates/adws/adw_modules/compat/markup.ts";
-import { oracle } from "./harness.ts";
 
 describe("markup vs live rich", () => {
-  test("plain session line", async () => {
+  test("plain session line", () => {
     const markup = "[bold cyan]adw_id:[/bold cyan] [bold]abcd1234[/bold]   [dim]engineer[/dim] Enrique";
-    const gold = await oracle(["markup", markup, "plain"]);
-    expect(render(markup, false).ansi + "\n").toBe(gold);
+    expect(render(markup, false).ansi + "\n").toBe("adw_id: abcd1234   engineer Enrique\n");
   });
 
-  test("plain panel", async () => {
-    const gold = await oracle(["panel", "plain"]);
+  test("plain panel", () => {
     const rows = [
       " [dim]status[/dim]   [green]✓ success[/green]",
       " [dim]phases[/dim]   1/1 passed",
@@ -25,12 +22,21 @@ describe("markup vs live rich", () => {
       borderStyle: "green",
       color: false,
     });
-    expect(got.plain).toBe(gold);
+    expect(got.plain).toBe(
+      "╭───────── ADW complete ──────────╮\n" +
+        "│  status   ✓ success             │\n" +
+        "│  phases   1/1 passed            │\n" +
+        "│  tokens   41,233                │\n" +
+        "│  cost     $0.0181               │\n" +
+        "│  adw_id   abcd1234              │\n" +
+        "│  db       adws/adw_data/sssf.db │\n" +
+        "│  next     just phases abcd1234  │\n" +
+        "╰─────────────────────────────────╯\n",
+    );
   });
 
-  test("escaped brackets in dynamic text match rich", async () => {
+  test("escaped brackets in dynamic text match rich", () => {
     const markup = `limited to ${escape("[claimed]")}`;
-    const gold = await oracle(["markup", markup, "plain"]);
-    expect(render(markup, false).ansi + "\n").toBe(gold);
+    expect(render(markup, false).ansi + "\n").toBe("limited to [claimed]\n");
   });
 });

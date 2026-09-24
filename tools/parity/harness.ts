@@ -23,18 +23,6 @@ export function flagAfter(argv: string[], flag: string): string | undefined {
   return i === -1 ? undefined : argv[i + 1];
 }
 
-export async function oracle(args: string[]): Promise<string> {
-  const proc = Bun.spawn(["uv", "run", `${import.meta.dir}/oracle.py`, ...args], {
-    stdout: "pipe",
-    stderr: "pipe",
-  });
-  const stdout = await new Response(proc.stdout).text();
-  const stderr = await new Response(proc.stderr).text();
-  const code = await proc.exited;
-  if (code !== 0) throw new Error(`oracle ${args[0]} exited ${code}: ${stderr}`);
-  return stdout;
-}
-
 const EXEC_AGENT = join(import.meta.dir, "fixtures/fake_exec/agent.ts");
 
 export function stampAdapter(dir: string): void {
