@@ -1,10 +1,10 @@
-import { basename } from "node:path";
+import { parseArgs as nodeParseArgs } from "node:util";
 
-export class SystemExit extends Error {
+export class ExitError extends Error {
   readonly code: number;
   constructor(message: string, code = 1) {
     super(message);
-    this.name = "SystemExit";
+    this.name = "ExitError";
     this.code = code;
   }
 }
@@ -43,91 +43,66 @@ function destOf(opt: ArgOption): string {
   return opt.name.replace(/^--/, "").replace(/-/g, "_");
 }
 
-function flagUsage(opt: ArgOption): string {
-  if (opt.action === "store_true") return `[${opt.name}]`;
-  return `[${opt.name} ${destOf(opt).toUpperCase()}]`;
+function optionKey(opt: ArgOption): string {
+  return opt.name.replace(/^--/, "");
 }
 
-function usageLine(spec: ArgSpec, prog: string): string {
-  const bits = ["usage:", prog, "[-h]"];
-  for (const opt of spec.options) bits.push(flagUsage(opt));
-  for (const pos of spec.positional) bits.push(pos.name);
-  const joined = bits.join(" ");
-  if (joined.length <= 78) return joined;
-  const head = ["usage:", prog, "[-h]", ...spec.options.map(flagUsage)].join(" ");
-  const indent = " ".repeat(Math.min(prog.length + 7, 21));
-  return `${head}\n${indent}${spec.positional.map((p) => p.name).join(" ")}`;
-}
-
-function printHelp(spec: ArgSpec, prog: string): never {
-  const lines = [usageLine(spec, prog), "", spec.description.trim(), ""];
-  lines.push("positional arguments:");
-  for (const pos of spec.positional) {
-    lines.push(`  ${pos.name.padEnd(24)}${pos.help}`);
-  }
-  lines.push("", "options:");
-  lines.push(`  ${"-h, --help".padEnd(24)}show this help message and exit`);
-  for (const opt of spec.options) {
-    const label = opt.action === "store_true" ? opt.name : `${opt.name} ${destOf(opt).toUpperCase()}`;
-    const help = opt.help ?? "";
-    lines.push(`  ${label.padEnd(24)}${help}`);
-  }
-  process.stdout.write(lines.join("\n") + "\n");
-  process.exit(0);
-}
-
-function splitFlag(tok: string): [name: string, inline: string | undefined] {
-  const eq = tok.indexOf("=");
-  if (eq === -1) return [tok, undefined];
-  return [tok.slice(0, eq), tok.slice(eq + 1)];
+function die(code: number, line: string): never {
+  process.stderr.write(line.endsWith("\n") ? line : line + "\n");
+  process.exit(code);
 }
 
 export function parseArgs(spec: ArgSpec, argv: string[] = process.argv.slice(2)): ParsedArgs {
-  const prog = spec.prog ?? basename(process.argv[1] ?? "adw");
+  const options: Record<string, { type: "string" | "boolean"; default?: string | boolean; short?: string }> = {
+    help: { type: "boolean", short: "h", default: false },
+  };
+  for (const opt of spec.options) {
+    const key = optionKey(opt);
+    if (opt.action === "store_true") {
+      options[key] = { type: "boolean", default: false };
+    } else if (typeof opt.default === "string") {
+      options[key] = { type: "string", default: opt.default };
+    } else {
+      options[key] = { type: "string" };
+    }
+  }
+
+  let values: Record<string, string | boolean | undefined>;
+  let positionals: string[];
+  try {
+    const parsed = nodeParseArgs({ args: argv, options, strict: true, allowPositionals: true });
+    values = parsed.values;
+    positionals = parsed.positionals;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    die(2, `error: ${message}`);
+  }
+
+  if (values.help === true) {
+    const text = spec.description.endsWith("\n") ? spec.description : `${spec.description}\n`;
+    process.stdout.write(text);
+    process.exit(0);
+  }
+
   const out: Record<string, CliValue> = {};
   for (const opt of spec.options) {
-    out[destOf(opt)] = opt.action === "store_true" ? false : (opt.default ?? null);
-  }
-  const positionals: string[] = [];
-  for (let i = 0; i < argv.length; i++) {
-    const tok = argv[i]!;
-    if (tok === "-h" || tok === "--help") printHelp(spec, prog);
-    if (tok === "--") {
-      positionals.push(...argv.slice(i + 1));
-      break;
-    }
-    if (tok.startsWith("--")) {
-      const [raw, inline] = splitFlag(tok);
-      const opt = spec.options.find((o) => o.name === raw);
-      if (!opt) {
-        process.stderr.write(`${usageLine(spec, prog)}\n${prog}: error: unrecognized arguments: ${tok}\n`);
-        process.exit(2);
-      }
-      if (opt.action === "store_true") {
-        out[destOf(opt)] = true;
-        continue;
-      }
-      const value = inline !== undefined ? inline : argv[++i];
-      if (value === undefined) {
-        process.stderr.write(`${usageLine(spec, prog)}\n${prog}: error: argument ${raw}: expected one argument\n`);
-        process.exit(2);
-      }
-      out[destOf(opt)] = value;
+    const key = optionKey(opt);
+    const dest = destOf(opt);
+    const value = values[key];
+    if (opt.action === "store_true") {
+      out[dest] = value === true;
       continue;
     }
-    positionals.push(tok);
+    if (opt.required && value === undefined) die(2, `error: missing required argument: ${opt.name}`);
+    out[dest] = value === undefined ? (opt.default ?? null) : (value as string);
   }
   if (positionals.length < spec.positional.length) {
     const missing = spec.positional.slice(positionals.length).map((p) => p.name);
-    process.stderr.write(
-      `${usageLine(spec, prog)}\n${prog}: error: the following arguments are required: ${missing.join(", ")}\n`,
-    );
-    process.exit(2);
+    die(2, `error: missing required argument: ${missing.join(", ")}`);
   }
   if (positionals.length > spec.positional.length) {
     const extra = positionals.slice(spec.positional.length).join(" ");
-    process.stderr.write(`${usageLine(spec, prog)}\n${prog}: error: unrecognized arguments: ${extra}\n`);
-    process.exit(2);
+    die(2, `error: unrecognized arguments: ${extra}`);
   }
   spec.positional.forEach((p, i) => {
     out[p.name] = positionals[i]!;
@@ -140,7 +115,7 @@ export async function runMain(fn: () => Promise<number> | number): Promise<never
     const code = await fn();
     process.exit(code);
   } catch (error) {
-    if (error instanceof SystemExit) {
+    if (error instanceof ExitError) {
       if (error.message) process.stderr.write(error.message + (error.message.endsWith("\n") ? "" : "\n"));
       process.exit(error.code);
     }

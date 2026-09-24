@@ -206,8 +206,8 @@ export class Run {
   }
 
   /**
-   * SIGTERM / SIGINT. Python's handler closes the session, then raises
-   * SystemExit(128+signum) inside the open phase, so that phase fails too.
+   * SIGTERM / SIGINT. The handler closes the session, then exits 128+signum
+   * from inside the open phase, so that phase fails too.
    */
   signalDoor(signum: number): never {
     const live = this.tracer.conn

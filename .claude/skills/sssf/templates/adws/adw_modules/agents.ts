@@ -4,7 +4,7 @@ import * as agentCc from "./agentCc.ts";
 import * as agentCopilot from "./agentCopilot.ts";
 import * as agentExec from "./agentExec.ts";
 import * as agentPi from "./agentPi.ts";
-import { SystemExit } from "./compat/cli.ts";
+import { ExitError } from "./compat/cli.ts";
 import { pyRepr, pyStr, pyTail, removePrefix } from "./compat/format.ts";
 import { modelValidate } from "./compat/schema.ts";
 import { pyYamlLoad } from "./compat/yaml.ts";
@@ -60,7 +60,7 @@ export function resolve(cfg: SSSFConfig, name: string): AgentConfig {
   for (const agent of cfg.agents) {
     if (agent.name === name) return agent;
   }
-  throw new SystemExit(
+  throw new ExitError(
     `agent ${pyRepr(name)} is not defined in the config — ` +
       `available: ${pyStr(cfg.agents.map((a) => a.name))}`,
   );
@@ -96,7 +96,7 @@ function unknownRuntime(agent: AgentConfig): string {
 
 function interfaceFor(agent: AgentConfig): AgentInterface {
   const iface = INTERFACES[agent.coding_agent];
-  if (!iface) throw new SystemExit(unknownRuntime(agent));
+  if (!iface) throw new ExitError(unknownRuntime(agent));
   return iface;
 }
 
@@ -107,7 +107,7 @@ export function validate(cfg: SSSFConfig, required: string[]): void {
     try {
       agent = resolve(cfg, name);
     } catch (error) {
-      if (!(error instanceof SystemExit)) throw error;
+      if (!(error instanceof ExitError)) throw error;
       problems.push(error.message);
       continue;
     }
@@ -119,7 +119,7 @@ export function validate(cfg: SSSFConfig, required: string[]): void {
     else problems.push(...iface.validate(agent));
   }
   if (problems.length) {
-    throw new SystemExit("config validation failed:\n- " + problems.join("\n- "));
+    throw new ExitError("config validation failed:\n- " + problems.join("\n- "));
   }
 }
 

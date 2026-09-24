@@ -4,8 +4,7 @@ exports[`pinned ADW runs missing prompt is argparse exit 2: stdout 1`] = `""`;
 
 exports[`pinned ADW runs missing prompt is argparse exit 2: exit+stderr 1`] = `
 "exit 2
-usage: adw_quality.ts [-h] [--config CONFIG] [--adw-id ADW_ID] prompt
-adw_quality.ts: error: the following arguments are required: prompt
+error: missing required argument: prompt
 "
 `;
 
@@ -275,8 +274,7 @@ exports[`pinned ADW runs -- ends options so later flags become positionals: stdo
 
 exports[`pinned ADW runs -- ends options so later flags become positionals: exit+stderr 1`] = `
 "exit 2
-usage: adw_quality.ts [-h] [--config CONFIG] [--adw-id ADW_ID] prompt
-adw_quality.ts: error: unrecognized arguments: --adw-id abcd1234
+error: unrecognized arguments: --adw-id abcd1234
 "
 `;
 

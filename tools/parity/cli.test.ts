@@ -1,6 +1,37 @@
 import { describe, expect, test } from "bun:test";
 import { parseArgs } from "../../.claude/skills/sssf/templates/adws/adw_modules/compat/cli.ts";
 
+function captureExit(fn: () => void): { code: number; stderr: string; stdout: string } {
+  let code = -1;
+  let stderr = "";
+  let stdout = "";
+  const exit = process.exit;
+  const errWrite = process.stderr.write;
+  const outWrite = process.stdout.write;
+  process.exit = ((c?: number) => {
+    code = c ?? 0;
+    throw new Error(`__exit__${code}`);
+  }) as typeof process.exit;
+  process.stderr.write = ((chunk: string | Uint8Array) => {
+    stderr += String(chunk);
+    return true;
+  }) as typeof process.stderr.write;
+  process.stdout.write = ((chunk: string | Uint8Array) => {
+    stdout += String(chunk);
+    return true;
+  }) as typeof process.stdout.write;
+  try {
+    fn();
+  } catch (error) {
+    if (!(error instanceof Error) || !error.message.startsWith("__exit__")) throw error;
+  } finally {
+    process.exit = exit;
+    process.stderr.write = errWrite;
+    process.stdout.write = outWrite;
+  }
+  return { code, stderr, stdout };
+}
+
 const SPEC = {
   prog: "adw_prompt.ts",
   description: "ADW Prompt — the smallest ADW: one agent, one prompt, traced end-to-end.",
@@ -35,6 +66,28 @@ describe("cli argparse shape", () => {
   test("bare -- ends option parsing", () => {
     expect(parseArgs(SPEC, ["--", "hello"]).prompt).toBe("hello");
     expect(parseArgs(SPEC, ["--", "--not-a-flag"]).prompt).toBe("--not-a-flag");
+  });
+
+  test("missing prompt is one stderr line and exit 2", () => {
+    const got = captureExit(() => parseArgs(SPEC, []));
+    expect(got.code).toBe(2);
+    expect(got.stderr).toBe("error: missing required argument: prompt\n");
+    expect(got.stdout).toBe("");
+  });
+
+  test("unknown flag uses the parser message and exit 2", () => {
+    const got = captureExit(() => parseArgs(SPEC, ["hello", "--nope"]));
+    expect(got.code).toBe(2);
+    expect(got.stderr).toBe(
+      "error: Unknown option '--nope'. To specify a positional argument starting with a '-', place it at the end of the command after '--', as in '-- \"--nope\"\n",
+    );
+  });
+
+  test("-h prints the description and exits 0", () => {
+    const got = captureExit(() => parseArgs(SPEC, ["-h"]));
+    expect(got.code).toBe(0);
+    expect(got.stdout).toBe(`${SPEC.description}\n`);
+    expect(got.stderr).toBe("");
   });
 
   test("store_true writes a boolean, not the string true", () => {
