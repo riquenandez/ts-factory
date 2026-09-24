@@ -1,5 +1,4 @@
 import { describe, expect, test } from "bun:test";
-import { pyJson } from "../../.claude/skills/sssf/templates/adws/adw_modules/compat/json.ts";
 import { comma, fixed, pyStr } from "../../.claude/skills/sssf/templates/adws/adw_modules/compat/format.ts";
 import { shlexJoin } from "../../.claude/skills/sssf/templates/adws/adw_modules/compat/shell.ts";
 import { pyYamlLoad } from "../../.claude/skills/sssf/templates/adws/adw_modules/compat/yaml.ts";
@@ -15,16 +14,6 @@ function messageOf(fn: () => void): string {
 }
 
 describe("compat vs live Python", () => {
-  test("pyJson matches json.dumps including em dash escape", () => {
-    const payload = { s: "a — b", n: 1 };
-    expect(pyJson(payload)).toBe('{"s": "a \\u2014 b", "n": 1}');
-  });
-
-  test("pyJson indent=2 matches json.dumps indent=2", () => {
-    const payload = { s: "a — b" };
-    expect(pyJson(payload, 2)).toBe('{\n  "s": "a \\u2014 b"\n}');
-  });
-
   test("serdeJson indent=2 matches pydantic modelDumpJson", () => {
     const payload = { status: "success", summary: "hi — there" };
     expect(GenericOutput.dumpJson(GenericOutput.parse(payload), 2)).toBe(

@@ -1,5 +1,5 @@
 import { collapseWhitespace, pyHead, pyLen } from "./compat/format.ts";
-import { isDict } from "./compat/json.ts";
+import { isDict } from "./utils.ts";
 
 export const RESULT_SNIPPET_CHARS = 20_000;
 export const ARG_VALUE_CHARS = 20_000;

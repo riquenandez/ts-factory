@@ -2,7 +2,6 @@ import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { pyRepr, pyTail } from "./compat/format.ts";
-import { isDict, pyLoads } from "./compat/json.ts";
 import { operatorEnv, spawnCaptured, spawnJsonl } from "./compat/shell.ts";
 import {
   finiteOr0,
@@ -15,7 +14,7 @@ import {
   type ToolCallRecord,
 } from "./dataTypes.ts";
 import { ARG_VALUE_CHARS, RESULT_SNIPPET_CHARS, clip, labelFor } from "./toolCalls.ts";
-import { nowIso, registerCleanup, RuntimeError } from "./utils.ts";
+import { isDict, nowIso, registerCleanup, RuntimeError } from "./utils.ts";
 
 export const COPILOT_PATH = process.env.COPILOT_PATH ?? "copilot";
 
@@ -229,7 +228,7 @@ export async function run(
 
     if (existsSync(usagePath)) {
       try {
-        const parsed = pyLoads(readFileSync(usagePath, "utf8"));
+        const parsed = JSON.parse(readFileSync(usagePath, "utf8"));
         const { shaped, totalTokens, totalCost } = shapeUsageFile(parsed);
         result.usage.addTurn(shaped, totalTokens);
         result.tokens = totalTokens;

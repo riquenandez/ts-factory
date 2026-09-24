@@ -28,7 +28,6 @@ exports[`install stamps the same dests, with .ts scripts and a compat ring on th
   "adws/adw_modules/changes.ts",
   "adws/adw_modules/compat/cli.ts",
   "adws/adw_modules/compat/format.ts",
-  "adws/adw_modules/compat/json.ts",
   "adws/adw_modules/compat/markup.ts",
   "adws/adw_modules/compat/schema.ts",
   "adws/adw_modules/compat/shell.ts",

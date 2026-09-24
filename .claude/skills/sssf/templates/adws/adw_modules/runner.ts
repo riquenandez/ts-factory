@@ -13,7 +13,6 @@ import {
 } from "./dataTypes.ts";
 import { repoRoot } from "./gitHelper.ts";
 import { Tracer } from "./tracer.ts";
-import { pyJson, pyLoads } from "./compat/json.ts";
 import { collapseWhitespace, pyRepr, pyStr } from "./compat/format.ts";
 import { nowIso, runCleanups } from "./utils.ts";
 
@@ -99,14 +98,14 @@ export class Run {
     mkdirSync(this.contextHandoffDir, { recursive: true });
     const mapPath = join(this.sessionDir, "agent_map.json");
     this.agentMap = existsSync(mapPath)
-      ? pyLoads(readFileSync(mapPath, "utf8")) as Run["agentMap"]
+      ? JSON.parse(readFileSync(mapPath, "utf8")) as Run["agentMap"]
       : {};
     this.seq = this.tracer.maxPhaseSeq(args.adwId);
   }
 
   saveAgentMap(agent: string, entry: { session_id: string; model: string; coding_agent: string }): void {
     this.agentMap[agent] = entry;
-    writeFileSync(join(this.sessionDir, "agent_map.json"), pyJson(this.agentMap, 2));
+    writeFileSync(join(this.sessionDir, "agent_map.json"), JSON.stringify(this.agentMap, null, 2));
   }
 
   addUsage(tokens: number, cost: number): void {

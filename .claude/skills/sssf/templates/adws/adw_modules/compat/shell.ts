@@ -1,7 +1,7 @@
 import { appendFileSync } from "node:fs";
 import { constants as osConstants } from "node:os";
 import { join } from "node:path";
-import { isDict, pyLoads } from "./json.ts";
+import { isDict } from "../utils.ts";
 
 const PATHSEP = ":";
 
@@ -106,7 +106,7 @@ export async function spawnJsonl(opts: SpawnJsonlOpts): Promise<{ returncode: nu
     if (!line) return;
     let event: unknown;
     try {
-      event = pyLoads(line);
+      event = JSON.parse(line);
     } catch {
       return;
     }

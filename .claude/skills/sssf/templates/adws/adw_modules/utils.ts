@@ -15,6 +15,10 @@ export function nowIso(): string {
   return new Date().toISOString().replace("Z", "+00:00");
 }
 
+export function isDict(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
 export function ensureDir(path: string): string {
   mkdirSync(path, { recursive: true });
   return path;

@@ -1,7 +1,6 @@
 import { mkdirSync } from "node:fs";
 import { dirname, isAbsolute, join } from "node:path";
 import { pyRepr, pyTail } from "./compat/format.ts";
-import { isDict, pyJson } from "./compat/json.ts";
 import { operatorEnv, shlexJoin, spawnCaptured, spawnJsonl } from "./compat/shell.ts";
 import {
   finiteOr0,
@@ -15,7 +14,7 @@ import {
   type ToolCallTracker,
 } from "./dataTypes.ts";
 import { ARG_VALUE_CHARS, RESULT_SNIPPET_CHARS, clip, labelFor } from "./toolCalls.ts";
-import { nowIso, RuntimeError } from "./utils.ts";
+import { isDict, nowIso, RuntimeError } from "./utils.ts";
 
 const PROTOCOL = "sssf-exec/1";
 
@@ -97,7 +96,7 @@ export async function run(
       SSSF_SESSION_ID: request.session_id,
       SSSF_SESSION_DIR: request.session_dir,
     },
-    stdin: pyJson(buildRequest(request)),
+    stdin: JSON.stringify(buildRequest(request)),
     rawOutputPath: request.raw_output_path,
     onEvent: (event) => {
       if (event.type === "message") {

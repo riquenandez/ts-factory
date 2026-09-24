@@ -1,4 +1,3 @@
-import { serdeJson } from "./json.ts";
 import { pyRepr } from "./format.ts";
 
 export type FieldKind =
@@ -196,7 +195,7 @@ export function modelDump(schema: Schema, obj: Record<string, unknown>): Record<
 }
 
 export function modelDumpJson(schema: Schema, obj: Record<string, unknown>, indent?: number): string {
-  return serdeJson(modelDump(schema, obj), indent);
+  return JSON.stringify(modelDump(schema, obj), null, indent);
 }
 
 export function fieldNames(schema: Schema): string[] {

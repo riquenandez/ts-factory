@@ -1,7 +1,6 @@
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { extname } from "node:path";
 import { fixed, pyTail } from "./compat/format.ts";
-import { pyLoads } from "./compat/json.ts";
 import { spawnShell } from "./compat/shell.ts";
 import { GateReport, type EnvelopeBase, type GateFn } from "./dataTypes.ts";
 
@@ -55,7 +54,7 @@ export function jsonParses(envelope: EnvelopeBase, _run: unknown): GateReport {
     }
     try {
       const text = readFileSync(a, "utf8");
-      const parsed = pyLoads(text);
+      const parsed = JSON.parse(text);
       report.check(a, true, `parses, ${pyJsonTypename(parsed, text)}`);
     } catch (e) {
       report.check(a, false, `declared JSON artifact does not parse: ${e instanceof Error ? e.message : e}`);

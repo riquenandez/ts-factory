@@ -2,7 +2,6 @@ import { mkdirSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { pyRepr, pyStr, pyTail } from "./compat/format.ts";
-import { isDict, pyLoads } from "./compat/json.ts";
 import { operatorEnv, spawnCaptured, spawnJsonl } from "./compat/shell.ts";
 import {
   newAgentResult,
@@ -14,7 +13,7 @@ import {
   type ToolCallRecord,
 } from "./dataTypes.ts";
 import { ARG_VALUE_CHARS, RESULT_SNIPPET_CHARS, clip, labelFor, textOf } from "./toolCalls.ts";
-import { nowIso, newId, RuntimeError, ValueError } from "./utils.ts";
+import { isDict, nowIso, newId, RuntimeError, ValueError } from "./utils.ts";
 
 export const PI_PATH = process.env.PI_PATH ?? "pi";
 export const MODELS_JSON = process.env.PI_MODELS_PATH ?? join(homedir(), ".pi", "agent", "models.json");
@@ -110,7 +109,7 @@ function _contextTokens(usage: Dict): number {
 }
 
 export function contextWindow(provider: string, modelId: string): number {
-  const registry = pyLoads(readFileSync(MODELS_JSON, "utf8")) as Dict;
+  const registry = JSON.parse(readFileSync(MODELS_JSON, "utf8")) as Dict;
   const providers = isDict(registry.providers) ? registry.providers : {};
   const entry = isDict(providers[provider]) ? providers[provider] : {};
   const models = Array.isArray(entry.models) ? entry.models : [];

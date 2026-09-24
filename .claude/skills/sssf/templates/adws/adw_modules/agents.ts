@@ -6,7 +6,6 @@ import * as agentExec from "./agentExec.ts";
 import * as agentPi from "./agentPi.ts";
 import { SystemExit } from "./compat/cli.ts";
 import { pyRepr, pyStr, pyTail, removePrefix } from "./compat/format.ts";
-import { isDict, pyJson, pyLoads, serdeJson } from "./compat/json.ts";
 import { modelValidate } from "./compat/schema.ts";
 import { pyYamlLoad } from "./compat/yaml.ts";
 import {
@@ -27,7 +26,7 @@ import {
 import { PermissionBreach, enforce, snapshot } from "./permissions.ts";
 import * as prompts from "./prompts.ts";
 import type { Run } from "./runner.ts";
-import { RuntimeError } from "./utils.ts";
+import { isDict, RuntimeError } from "./utils.ts";
 
 export const JSON_FIX_ATTEMPTS = 2;
 
@@ -136,7 +135,7 @@ export async function execute(run: Run, phase: Phase, call: AgentCall): Promise<
 
   const variables = {
     prompt: call.prompt,
-    previous_envelope: call.previous ? serdeJson(call.previous, 2) : "(none)",
+    previous_envelope: call.previous ? JSON.stringify(call.previous, null, 2) : "(none)",
     context_handoff_dir: run.contextHandoffDir,
   };
   const systemText = prompts.render(agent.prompt_engineering.system, variables);
@@ -357,7 +356,7 @@ export function extractJson(text: string): unknown {
   const start = candidate.indexOf("{");
   const end = candidate.lastIndexOf("}");
   if (start === -1 || end <= start) throw new Error("no JSON object found in the response");
-  return pyLoads(candidate.slice(start, end + 1));
+  return JSON.parse(candidate.slice(start, end + 1));
 }
 
 async function parseWithRetries(
@@ -407,7 +406,7 @@ function persistEnvelope(
 ): void {
   const payloadJson = envelope
     ? call.outputType.dumpJson(envelope, 2)
-    : pyJson({ raw: pyTail(raw, 2000) });
+    : JSON.stringify({ raw: pyTail(raw, 2000) });
   run.tracer.envelopeRow(phase, agentName, call.outputType.name, payloadJson, valid, attempt);
   if (envelope) {
     const record = {
@@ -417,6 +416,6 @@ function persistEnvelope(
       attempt,
       ...call.outputType.dump(envelope),
     };
-    writeFileSync(join(run.sessionDir, agentName, "envelope.json"), pyJson(record, 2));
+    writeFileSync(join(run.sessionDir, agentName, "envelope.json"), JSON.stringify(record, null, 2));
   }
 }

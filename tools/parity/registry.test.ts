@@ -131,7 +131,13 @@ describe("agent registry", () => {
     expect(names.length).toBeGreaterThan(0);
     for (const name of names) {
       const text = readFileSync(join(dir, name), "utf8");
-      expect(text).not.toContain('from "../');
+      const parents = text.match(/from "\.\.\//g) ?? [];
+      if (name === "shell.ts") {
+        expect(text).toContain('from "../utils.ts"');
+        expect(parents).toEqual(['from "../']);
+      } else {
+        expect(parents).toEqual([]);
+      }
     }
   });
 

@@ -2,24 +2,11 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { pyJson, serdeJson } from "../../.claude/skills/sssf/templates/adws/adw_modules/compat/json.ts";
 import { pyHead, pyStr, pyTail } from "../../.claude/skills/sssf/templates/adws/adw_modules/compat/format.ts";
 import { newId, nowIso } from "../../.claude/skills/sssf/templates/adws/adw_modules/utils.ts";
 import { Tracer } from "../../.claude/skills/sssf/templates/adws/adw_modules/tracer.ts";
 
 describe("compat", () => {
-  test("pyJson escapes em dashes the way json.dumps does", () => {
-    expect(pyJson({ s: "a — b" })).toBe('{"s": "a \\u2014 b"}');
-  });
-
-  test("serdeJson keeps the em dash as UTF-8", () => {
-    expect(serdeJson({ s: "a — b" })).toBe('{"s": "a — b"}');
-  });
-
-  test("pyJson uses Python default separators", () => {
-    expect(pyJson({ a: 1, b: 2 })).toBe('{"a": 1, "b": 2}');
-  });
-
   test("nowIso uses +00:00 not Z", () => {
     expect(nowIso()).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}\+00:00$/);
   });
@@ -54,11 +41,11 @@ describe("tracer", () => {
       payload: { message: "hello — world", level: "info" },
     });
     const line = readFileSync(jsonl, "utf8").trim();
-    expect(line).toContain('"event_id": "evt_');
-    expect(line).toContain("\\u2014");
+    expect(line).toContain('"event_id":"evt_');
+    expect(line).toContain("—");
     expect(line).not.toContain("payload_json");
     const row = tracer.conn.query("SELECT payload_json FROM events").get() as { payload_json: string };
-    expect(row.payload_json).toContain("\\u2014");
+    expect(row.payload_json).toContain("—");
     const mode = tracer.conn.query("PRAGMA journal_mode").get() as { journal_mode: string };
     expect(mode.journal_mode.toLowerCase()).toBe("wal");
     const session = tracer.conn.query("SELECT adw_name, status FROM sessions").get() as {

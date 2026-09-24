@@ -1,5 +1,4 @@
 import { fieldNames, modelDump, modelDumpJson, modelValidate, type Schema } from "./compat/schema.ts";
-import { PyFloat } from "./compat/json.ts";
 
 export type PhaseKind = "engineer" | "agent" | "code";
 export type PhaseStatus = "queued" | "running" | "success" | "fail";
@@ -530,11 +529,11 @@ export class UsageBreakdown {
       cache_write_tokens: this.cache_write_tokens,
       reasoning_tokens: this.reasoning_tokens,
       total_tokens: this.total_tokens,
-      input_cost: new PyFloat(this.input_cost),
-      output_cost: new PyFloat(this.output_cost),
-      cache_read_cost: new PyFloat(this.cache_read_cost),
-      cache_write_cost: new PyFloat(this.cache_write_cost),
-      total_cost: new PyFloat(this.total_cost),
+      input_cost: this.input_cost,
+      output_cost: this.output_cost,
+      cache_read_cost: this.cache_read_cost,
+      cache_write_cost: this.cache_write_cost,
+      total_cost: this.total_cost,
     };
   }
 }

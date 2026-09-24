@@ -6,7 +6,6 @@
 import { Database } from "bun:sqlite";
 import { dirname } from "node:path";
 import { appendFileSync } from "node:fs";
-import { pyJson } from "./compat/json.ts";
 import { pyHead } from "./compat/format.ts";
 import { ensureDir, newId, nowIso } from "./utils.ts";
 
@@ -188,7 +187,7 @@ export class Tracer {
       ended_at: record.ended_at ?? null,
     };
     const line = { event_id: eventId, ts, ...dumped };
-    appendFileSync(this.eventsJsonl, pyJson(line) + "\n");
+    appendFileSync(this.eventsJsonl, JSON.stringify(line) + "\n");
     this.conn.run(
       "INSERT INTO events (event_id, adw_id, phase_id, parent_id, type, name," +
         " payload_json, tokens, started_at, ended_at) VALUES (?,?,?,?,?,?,?,?,?,?)",
@@ -199,7 +198,7 @@ export class Tracer {
         dumped.parent_id,
         dumped.type,
         dumped.name,
-        pyJson(dumped.payload),
+        JSON.stringify(dumped.payload),
         dumped.tokens,
         dumped.started_at ?? ts,
         dumped.ended_at,
@@ -313,7 +312,7 @@ export class Tracer {
         " violations_json, checks_json, created_at) VALUES (?,?,?,?,?,?,?,?)",
       [
         phase.adw_id, phase.phase_id, attempt, gate, report.passed ? 1 : 0,
-        pyJson(report.violations), pyJson(report.checks), nowIso(),
+        JSON.stringify(report.violations), JSON.stringify(report.checks), nowIso(),
       ],
     );
   }

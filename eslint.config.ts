@@ -37,17 +37,4 @@ export default tseslint.config(
       ],
     },
   },
-  {
-    files: [".claude/skills/sssf/templates/adws/**/*.ts"],
-    ignores: [".claude/skills/sssf/templates/adws/**/compat/**"],
-    rules: {
-      "no-restricted-syntax": [
-        "error",
-        {
-          selector: "CallExpression[callee.object.name='JSON'][callee.property.name='stringify']",
-          message: "Use pyJson or serdeJson. PORT_CONTRACT forbids JSON.stringify outside compat/.",
-        },
-      ],
-    },
-  },
 );
