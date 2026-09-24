@@ -86,7 +86,7 @@ Recorded. Used in the thrown message when the run fails.
 
 ## Exit
 
-0 is success. A non-zero exit with no message text throws `RuntimeError("exec exited N: <last error message, else stderr tail 800>")`. A non-zero exit with text returns the result, as the other runtimes do.
+0 is success. A non-zero exit with no message text throws `Error("exec exited N: <last error message, else stderr tail 800>")`. A non-zero exit with text returns the result, as the other runtimes do.
 
 ## Write an adapter
 

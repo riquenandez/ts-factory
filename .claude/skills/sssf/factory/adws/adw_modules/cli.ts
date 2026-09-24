@@ -1,4 +1,6 @@
 import { parseArgs as nodeParseArgs } from "node:util";
+import { loadConfig, type SSSFConfig } from "./agents.ts";
+import { resolvePrompt } from "./utils.ts";
 
 export class ExitError extends Error {
   readonly code: number;
@@ -108,6 +110,37 @@ export function parseArgs(spec: ArgSpec, argv: string[] = process.argv.slice(2))
     out[p.name] = positionals[i]!;
   });
   return out;
+}
+
+export interface AdwContext {
+  cfg: SSSFConfig;
+  prompt: string;
+  adwId: string | null;
+  args: ParsedArgs;
+}
+
+const CONFIG_DEFAULT = "adws/adw_sssf_config/sssf.config.yaml";
+
+export async function adw(
+  doc: string,
+  main: (ctx: AdwContext) => Promise<number>,
+  extraOptions: ArgOption[] = [],
+): Promise<never> {
+  return runMain(async () => {
+    const args = parseArgs({
+      description: doc,
+      positional: [{ name: "prompt", help: "inline text or a path to a prompt file" }],
+      options: [
+        ...extraOptions,
+        { name: "--config", default: CONFIG_DEFAULT },
+        { name: "--adw-id", default: null, help: "join or pin an existing session" },
+      ],
+    });
+    const prompt = resolvePrompt(args.prompt!);
+    const cfg = loadConfig(args.config ?? CONFIG_DEFAULT);
+    const adwId = args.adw_id ?? null;
+    return main({ cfg, prompt, adwId, args });
+  });
 }
 
 export async function runMain(fn: () => Promise<number> | number): Promise<never> {

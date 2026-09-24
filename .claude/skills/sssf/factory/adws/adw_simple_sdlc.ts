@@ -1,9 +1,6 @@
 #!/usr/bin/env bun
 const DOC = `ADW Simple SDLC — plan, build, test, review, document, committing as it goes.
 
-Usage:
-    bun adws/adw_simple_sdlc.ts "<prompt or path/to/prompt.md>" [--config adws/adw_sssf_config/sssf.config.yaml] [--adw-id a1b2c3d4]
-
 Phases: engineer(request) -> planner -> git(commit_plan)
         -> builder -> code(test) [-> builder(fix) -> code(test) ... bounded]
         -> reviewer [-> builder(revise) -> reviewer ... bounded]
@@ -44,8 +41,7 @@ import * as gates from "./adw_modules/gates.ts";
 import * as gitHelper from "./adw_modules/gitHelper.ts";
 import * as quality from "./adw_modules/quality.ts";
 import * as session from "./adw_modules/session.ts";
-import * as utils from "./adw_modules/utils.ts";
-import { parseArgs, runMain } from "./adw_modules/cli.ts";
+import { adw } from "./adw_modules/cli.ts";
 import {
   BuildOutput,
   DocumentOutput,
@@ -53,7 +49,6 @@ import {
   ReviewOutput,
 } from "./adw_modules/dataTypes.ts";
 import type { QualityResult } from "./adw_modules/quality.ts";
-import { RuntimeError } from "./adw_modules/utils.ts";
 
 const REQUIRED_AGENTS = ["planner", "builder", "reviewer", "documenter"];
 const MAX_FIX_LOOPS = 3;
@@ -65,12 +60,7 @@ const DOCUMENT_NOTES = (
   + "describes."
 );
 
-async function main(
-  prompt: string,
-  config: string = "adws/adw_sssf_config/sssf.config.yaml",
-  adwId: string | null = null,
-): Promise<number> {
-  const cfg = agents.loadConfig(config);
+await adw(DOC, async ({ cfg, prompt, adwId }) => {
   agents.validate(cfg, REQUIRED_AGENTS);
   const run = session.ensure(cfg, adwId);
   const baseline = gitHelper.rev("HEAD");
@@ -252,7 +242,7 @@ async function main(
         diff: captured.diff_path,
       });
       if (captured.empty) {
-        throw new RuntimeError(
+        throw new Error(
           `nothing changed since ${captured.base.label} `
           + `(${captured.base.reason}) — there is nothing to document.`,
         );
@@ -289,16 +279,4 @@ async function main(
     accepted: verified,
     reason: "the suite or the review never came back clean",
   });
-}
-
-await runMain(async () => {
-  const args = parseArgs({
-    description: DOC,
-    positional: [{ name: "prompt", help: "inline text or a path to a prompt file" }],
-    options: [
-      { name: "--config", default: "adws/adw_sssf_config/sssf.config.yaml" },
-      { name: "--adw-id", default: null, help: "join or pin an existing session" },
-    ],
-  });
-  return main(utils.resolvePrompt(args.prompt!), args.config!, args.adw_id);
 });

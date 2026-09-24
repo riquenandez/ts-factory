@@ -154,6 +154,32 @@ describe("agent registry", () => {
     }
   });
 
+  test("ADW scripts stay on the public surface", () => {
+    const allowed = new Set([
+      "./adw_modules/cli.ts",
+      "./adw_modules/agents.ts",
+      "./adw_modules/session.ts",
+      "./adw_modules/dataTypes.ts",
+      "./adw_modules/gates.ts",
+      "./adw_modules/quality.ts",
+      "./adw_modules/changes.ts",
+      "./adw_modules/gitHelper.ts",
+    ]);
+    const names = readdirSync(join(MODULES, "..")).filter((name) => /^adw_.*\.ts$/.test(name)).sort();
+    expect(names).toHaveLength(12);
+    for (const name of names) {
+      const text = readFileSync(join(MODULES, "..", name), "utf8");
+      const specs = [...text.matchAll(/from "([^"]+)"/g)].map((match) => match[1]!);
+      expect(specs.length, name).toBeGreaterThan(0);
+      for (const spec of specs) expect(allowed.has(spec), `${name} imports ${spec}`).toBe(true);
+      expect(text, name).toContain("REQUIRED_AGENTS");
+      expect(text, name).toContain("agents.validate(cfg, REQUIRED_AGENTS)");
+      expect(text, name).toContain("session.ensure(");
+      expect(text, name).toContain("run.finish(");
+      expect(text, name).toContain("Phases:");
+    }
+  });
+
   test("pi labels unchanged", () => {
     expect(labelFor("bash", { command: "ls -la src" })).toBe("bash: ls -la src");
     const command = "x".repeat(200);

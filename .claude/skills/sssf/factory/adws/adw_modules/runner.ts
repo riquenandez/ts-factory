@@ -139,6 +139,17 @@ export class Run {
     this.tracer.sessionAddUsage(this.adwId, tokens, cost);
   }
 
+  async request(prompt: string, description = "Capture the incoming ask"): Promise<void> {
+    await this.phase({
+      name: "request",
+      kind: "engineer",
+      owner: this.engineer,
+      description,
+    }, async (ph) => {
+      ph.log({ input: prompt });
+    });
+  }
+
   phase<T>(params: PhaseParams & { kind: "agent" }, body: (ph: AgentPhaseHandle) => T | Promise<T>): Promise<T>;
   phase<T>(params: PhaseParams & { kind: "engineer" | "code" }, body: (ph: PhaseHandle) => T | Promise<T>): Promise<T>;
   async phase<T>(params: PhaseParams, body: (ph: AgentPhaseHandle) => T | Promise<T>): Promise<T> {
