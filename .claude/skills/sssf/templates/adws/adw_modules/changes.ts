@@ -3,8 +3,6 @@ import { join } from "node:path";
 import * as gitHelper from "./gitHelper.ts";
 import { baseRef, changeSet, type ChangeCapture, type ChangeSet, type ChangesOutput } from "./dataTypes.ts";
 import type { Run } from "./runner.ts";
-import { RuntimeError } from "./utils.ts";
-import { pyRepr } from "./compat/format.ts";
 
 const DIFF_FILENAME = "changes.diff";
 
@@ -18,14 +16,14 @@ function splitlines(text: string): string[] {
 
 export function resolveBase(ref: string) {
   if (!gitHelper.isRepo()) {
-    throw new RuntimeError(
+    throw new Error(
       "not a git repository — change capture needs one. Run `git init` in " +
         "the repo root before running an ADW that documents a change.",
     );
   }
   if (!gitHelper.refExists(ref)) {
-    throw new RuntimeError(
-      `base ref ${pyRepr(ref)} does not exist in this repository — pass --base ` +
+    throw new Error(
+      `base ref '${ref}' does not exist in this repository — pass --base ` +
         `with a ref that does (e.g. --base master, --base HEAD~1).`,
     );
   }

@@ -6,7 +6,6 @@
 import { Database } from "bun:sqlite";
 import { dirname } from "node:path";
 import { appendFileSync } from "node:fs";
-import { pyHead } from "./compat/format.ts";
 import { ensureDir, newId, nowIso } from "./utils.ts";
 
 export const SCHEMA = `
@@ -225,7 +224,7 @@ export class Tracer {
   }
 
   sessionRequest(adwId: string, request: string): void {
-    this.conn.run("UPDATE sessions SET request=? WHERE adw_id=?", [pyHead(request, 500), adwId]);
+    this.conn.run("UPDATE sessions SET request=? WHERE adw_id=?", [request.slice(0, 500), adwId]);
   }
 
   sessionFinish(adwId: string, ok: boolean): void {
@@ -246,7 +245,7 @@ export class Tracer {
   processStart(adwId: string, kind: string, name: string, pid: number, command: string): void {
     this.conn.run(
       "INSERT INTO processes (adw_id, kind, name, pid, command, started_at) VALUES (?,?,?,?,?,?)",
-      [adwId, kind, name, pid, pyHead(command, 500), nowIso()],
+      [adwId, kind, name, pid, command.slice(0, 500), nowIso()],
     );
   }
 

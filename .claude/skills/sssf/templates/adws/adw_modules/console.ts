@@ -1,4 +1,3 @@
-import { collapseWhitespace, comma, fixed, pyHead, pyLen, pyStr } from "./compat/format.ts";
 import { escape, panel, render } from "./compat/markup.ts";
 import type { EnvelopeBase, GateReport, Phase } from "./dataTypes.ts";
 import type { Tracer } from "./tracer.ts";
@@ -7,8 +6,8 @@ const KIND_COLOR: Record<string, string> = { engineer: "cyan", agent: "magenta",
 const MAX_LINE = 160;
 
 function _clip(text: string, limit = MAX_LINE): string {
-  const collapsed = collapseWhitespace(text);
-  return pyLen(collapsed) <= limit ? collapsed : pyHead(collapsed, limit - 1) + "…";
+  const collapsed = text.replace(/\s+/g, " ").trim();
+  return collapsed.length <= limit ? collapsed : collapsed.slice(0, limit - 1) + "…";
 }
 
 export class Console {
@@ -46,8 +45,8 @@ export class Console {
     const rows = [
       ` [dim]status[/dim]   ${status}`,
       ` [dim]phases[/dim]   ${passed}/${this.results.length} passed`,
-      ` [dim]tokens[/dim]   ${comma(tokens)}`,
-      ` [dim]cost[/dim]     $${fixed(cost, 4)}`,
+      ` [dim]tokens[/dim]   ${tokens.toLocaleString("en-US")}`,
+      ` [dim]cost[/dim]     $${cost.toFixed(4)}`,
       ` [dim]adw_id[/dim]   ${escape(this.adwId)}`,
       ` [dim]db[/dim]       ${escape(dbPath)}`,
       ` [dim]next[/dim]     [bold]just phases ${escape(this.adwId)}[/bold]`,
@@ -58,7 +57,7 @@ export class Console {
     });
     const plain =
       `session ${this.adwId} ${ok ? "success" : "fail"} · ` +
-      `${passed}/${this.results.length} phases · ${comma(tokens)} tokens · $${fixed(cost, 4)}`;
+      `${passed}/${this.results.length} phases · ${tokens.toLocaleString("en-US")} tokens · $${cost.toFixed(4)}`;
     this._emit(escape(plain), ok ? "info" : "error", box);
   }
 
@@ -77,7 +76,7 @@ export class Console {
   phaseEnded(phase: Phase, seconds: number): void {
     const ok = phase.status === "success";
     this.results.push(phase.status);
-    let line = `  ${ok ? "[green]✓[/green]" : "[red]✗[/red]"} ${escape(phase.params.name)} [dim]${fixed(seconds, 1)}s[/dim]`;
+    let line = `  ${ok ? "[green]✓[/green]" : "[red]✗[/red]"} ${escape(phase.params.name)} [dim]${seconds.toFixed(1)}s[/dim]`;
     if (!ok && phase.error) line += `  [red]${escape(_clip(phase.error))}[/red]`;
     this._emit(line, ok ? "info" : "error");
     this.phaseId = "";
@@ -96,7 +95,7 @@ export class Console {
   }
 
   agentFinished(name: string, tokens: number, cost: number): void {
-    this._emit(`  [dim]└ ${escape(name)} used ${comma(tokens)} tokens · $${fixed(cost, 4)}[/dim]`);
+    this._emit(`  [dim]└ ${escape(name)} used ${tokens.toLocaleString("en-US")} tokens · $${cost.toFixed(4)}[/dim]`);
   }
 
   retry(name: string, attempt: number, limit: number, reason: string): void {
@@ -138,5 +137,5 @@ export class Console {
 
 /** `str(error)[:1000]`, the shape `phases.error` stores. */
 export function errorText(error: unknown): string {
-  return pyHead(error instanceof Error ? error.message : pyStr(error), 1000);
+  return (error instanceof Error ? error.message : String(error)).slice(0, 1000);
 }

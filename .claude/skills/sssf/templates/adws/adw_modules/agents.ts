@@ -5,9 +5,7 @@ import * as agentCopilot from "./agentCopilot.ts";
 import * as agentExec from "./agentExec.ts";
 import * as agentPi from "./agentPi.ts";
 import { ExitError } from "./compat/cli.ts";
-import { pyRepr, pyStr, pyTail, removePrefix } from "./compat/format.ts";
 import { modelValidate } from "./compat/schema.ts";
-import { pyYamlLoad } from "./compat/yaml.ts";
 import {
   GateReport,
   SSSF_CONFIG,
@@ -26,11 +24,11 @@ import {
 import { PermissionBreach, enforce, snapshot } from "./permissions.ts";
 import * as prompts from "./prompts.ts";
 import type { Run } from "./runner.ts";
-import { isDict, RuntimeError } from "./utils.ts";
+import { isDict } from "./utils.ts";
 
 export const JSON_FIX_ATTEMPTS = 2;
 
-export class GateFailure extends RuntimeError {
+export class GateFailure extends Error {
   constructor(message: string) {
     super(message);
     this.name = "GateFailure";
@@ -40,7 +38,7 @@ export class GateFailure extends RuntimeError {
 const INHERITED_KEYS = ["coding_agent", "model", "thinking", "color", "tools", "writes"];
 
 export function loadConfig(path = "adws/adw_sssf_config/sssf.config.yaml"): SSSFConfig {
-  const loaded = pyYamlLoad(readFileSync(path, "utf8"));
+  const loaded = Bun.YAML.parse(readFileSync(path, "utf8"));
   const raw: Record<string, unknown> = isDict(loaded) ? loaded : {};
   const defaults = isDict(raw.defaults) ? raw.defaults : {};
   const agents = Array.isArray(raw.agents) ? raw.agents : [];
@@ -61,8 +59,8 @@ export function resolve(cfg: SSSFConfig, name: string): AgentConfig {
     if (agent.name === name) return agent;
   }
   throw new ExitError(
-    `agent ${pyRepr(name)} is not defined in the config — ` +
-      `available: ${pyStr(cfg.agents.map((a) => a.name))}`,
+    `agent '${name}' is not defined in the config — ` +
+      `available: ${String(cfg.agents.map((a) => a.name))}`,
   );
 }
 
@@ -89,7 +87,7 @@ function reuseOrMint(run: Run, agent: AgentConfig, mint: () => string): string {
 
 function unknownRuntime(agent: AgentConfig): string {
   return (
-    `agent ${pyRepr(agent.name)}: unknown coding_agent ${pyRepr(agent.coding_agent)}; ` +
+    `agent '${agent.name}': unknown coding_agent '${agent.coding_agent}'; ` +
     `known: ${Object.keys(INTERFACES).join(", ")}`
   );
 }
@@ -112,7 +110,7 @@ export function validate(cfg: SSSFConfig, required: string[]): void {
       continue;
     }
     for (const [label, ref] of [["system", agent.prompt_engineering.system], ["user", agent.prompt_engineering.user]]) {
-      if (!isFile(ref!)) problems.push(`agent ${pyRepr(name)}: ${label} prompt not found: ${ref}`);
+      if (!isFile(ref!)) problems.push(`agent '${name}': ${label} prompt not found: ${ref}`);
     }
     const iface = INTERFACES[agent.coding_agent];
     if (!iface) problems.push(unknownRuntime(agent));
@@ -301,7 +299,7 @@ export async function execute(run: Run, phase: Phase, call: AgentCall): Promise<
   });
   run.console.agentFinished(agent.name, spent.total_tokens, spent.total_cost);
   if (envelope.status !== "success") {
-    throw new RuntimeError(`${agent.name} reported status=${pyRepr(envelope.status)}: ${envelope.summary}`);
+    throw new Error(`${agent.name} reported status='${envelope.status}': ${envelope.summary}`);
   }
   return envelope;
 }
@@ -309,13 +307,13 @@ export async function execute(run: Run, phase: Phase, call: AgentCall): Promise<
 // ── internals ────────────────────────────────────────────────────────────────
 
 function messageOf(error: unknown): string {
-  return error instanceof Error ? error.message : pyStr(error);
+  return error instanceof Error ? error.message : String(error);
 }
 
 function asReport(result: GateReport | string[] | null | undefined): GateReport {
   if (result instanceof GateReport) return result;
   const report = new GateReport();
-  for (const violation of result ?? []) report.check(pyStr(violation), false);
+  for (const violation of result ?? []) report.check(String(violation), false);
   return report;
 }
 
@@ -333,7 +331,7 @@ function eventForwarder(
       adw_id: run.adwId,
       phase_id: phase.phase_id,
       type: "tool_call",
-      name: pyStr(label),
+      name: String(label),
       started_at: started_at ?? null,
       ended_at: ended_at ?? null,
       payload: { ...rest, agent: agentName },
@@ -346,7 +344,8 @@ export function extractJson(text: string): unknown {
   if (text.includes("```")) {
     const blocks = text.split("```");
     for (let i = 1; i < blocks.length; i += 2) {
-      const block = removePrefix(blocks[i]!, "json").trim();
+      const rawBlock = blocks[i]!;
+      const block = (rawBlock.startsWith("json") ? rawBlock.slice("json".length) : rawBlock).trim();
       if (block.startsWith("{")) {
         candidate = block;
         break;
@@ -376,7 +375,7 @@ async function parseWithRetries(
     }
     persistEnvelope(run, phase, phase.params.owner, call, null, attempt, false, result.text);
     if (attempt > JSON_FIX_ATTEMPTS) {
-      throw new RuntimeError(
+      throw new Error(
         `${phase.params.owner} never produced valid ${call.outputType.name} JSON: ${messageOf(error)}`,
       );
     }
@@ -391,7 +390,7 @@ async function parseWithRetries(
         `fields: ${fields}. No prose, no code fences.`,
     );
   }
-  throw new RuntimeError("unreachable");
+  throw new Error("unreachable");
 }
 
 function persistEnvelope(
@@ -406,7 +405,7 @@ function persistEnvelope(
 ): void {
   const payloadJson = envelope
     ? call.outputType.dumpJson(envelope, 2)
-    : JSON.stringify({ raw: pyTail(raw, 2000) });
+    : JSON.stringify({ raw: raw.slice(-2000) });
   run.tracer.envelopeRow(phase, agentName, call.outputType.name, payloadJson, valid, attempt);
   if (envelope) {
     const record = {

@@ -1,7 +1,6 @@
 import { unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { spawnCaptured } from "./compat/shell.ts";
-import { pySorted, pyStr } from "./compat/format.ts";
 import type { AgentConfig, SSSFConfig } from "./dataTypes.ts";
 import type { Run } from "./runner.ts";
 
@@ -36,7 +35,7 @@ export function snapshot(run: Run): Map<string, string> {
 
 export function changedPaths(before: Map<string, string>, after: Map<string, string>): string[] {
   const keys = new Set([...before.keys(), ...after.keys()]);
-  return pySorted([...keys].filter((p) => before.get(p) !== after.get(p)));
+  return [...keys].filter((p) => before.get(p) !== after.get(p)).sort();
 }
 
 function _reEscape(char: string): string {
@@ -141,8 +140,8 @@ export function enforce(run: Run, _phase: unknown, agent: AgentConfig, before: M
     agent.writes !== null && agent.writes.length === 0
       ? "read-only"
       : agent.writes
-        ? `limited to ${pyStr(agent.writes)}`
-        : `barred from ${pyStr(run.cfg.defaults.protected_files)}`;
+        ? `limited to ${String(agent.writes)}`
+        : `barred from ${String(run.cfg.defaults.protected_files)}`;
   const detail = [...outcomes.entries()].map(([p, outcome]) => `  - ${p} — ${outcome}`).join("\n");
   throw new PermissionBreach(
     `${agent.name} is ${scope} but modified ${breaches.length} path(s):\n${detail}`,

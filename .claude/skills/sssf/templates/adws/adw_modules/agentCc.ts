@@ -1,6 +1,5 @@
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { pyRepr, pyTail } from "./compat/format.ts";
 import { operatorEnv, spawnCaptured, spawnJsonl } from "./compat/shell.ts";
 import {
   newAgentResult,
@@ -12,7 +11,7 @@ import {
   type ToolCallRecord,
 } from "./dataTypes.ts";
 import { ARG_VALUE_CHARS, RESULT_SNIPPET_CHARS, clip, labelFor, textOf } from "./toolCalls.ts";
-import { isDict, nowIso, RuntimeError } from "./utils.ts";
+import { isDict, nowIso } from "./utils.ts";
 
 export const CLAUDE_CODE_PATH = process.env.CLAUDE_CODE_PATH ?? "claude";
 
@@ -246,10 +245,10 @@ export async function run(
   if (first && result.returncode === 0) writeFileSync(marker, "");
 
   if (errorSubtype && !result.text) {
-    throw new RuntimeError(`claude ${errorSubtype}`);
+    throw new Error(`claude ${errorSubtype}`);
   }
   if (result.returncode !== 0 && !result.text) {
-    throw new RuntimeError(`claude exited ${result.returncode}: ${pyTail(stderr.trim(), 800)}`);
+    throw new Error(`claude exited ${result.returncode}: ${stderr.trim().slice(-800)}`);
   }
   return result;
 }
@@ -276,18 +275,18 @@ function mintSessionId(_adwId: string, _agentName: string): string {
 function validate(agent: AgentConfig): string[] {
   const problems: string[] = [];
   if (!agent.model.trim()) {
-    problems.push(`agent ${pyRepr(agent.name)}: model is empty`);
+    problems.push(`agent '${agent.name}': model is empty`);
   }
   const binary = claudeBinaryStatus();
   if (!binary.ok) {
     problems.push(
-      `agent ${pyRepr(agent.name)}: claude_code binary not runnable: ${CLAUDE_CODE_PATH} (${pyTail(binary.detail, 200)})`,
+      `agent '${agent.name}': claude_code binary not runnable: ${CLAUDE_CODE_PATH} (${binary.detail.slice(-200)})`,
     );
   }
   for (const entry of agent.harness_engineering) {
     if (!entry.endsWith(".json")) {
       problems.push(
-        `agent ${pyRepr(agent.name)}: harness_engineering entry ${entry} is a pi extension; claude_code takes MCP config JSON files`,
+        `agent '${agent.name}': harness_engineering entry ${entry} is a pi extension; claude_code takes MCP config JSON files`,
       );
     }
   }

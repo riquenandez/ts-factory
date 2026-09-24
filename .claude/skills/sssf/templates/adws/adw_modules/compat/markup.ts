@@ -1,5 +1,3 @@
-import { pyLen } from "./format.ts";
-
 const ANSI: Record<string, string> = {
   bold: "\x1b[1m",
   dim: "\x1b[2m",
@@ -80,7 +78,7 @@ export function stdoutTty(): boolean {
 
 function visibleWidth(text: string): number {
   // eslint-disable-next-line no-control-regex -- CSI SGR sequences start with ESC
-  return pyLen(text.replace(/\x1b\[[0-9;]*m/g, ""));
+  return text.replace(/\x1b\[[0-9;]*m/g, "").length;
 }
 
 export function panel(
@@ -108,7 +106,7 @@ export function panel(
     const fill = inner - pad * 2 - visibleWidth(line.ansi);
     const rightSpaces = pad + Math.max(0, fill);
     mid.push(`${border}│${reset}${" ".repeat(pad)}${line.ansi}${" ".repeat(rightSpaces)}${border}│${reset}`);
-    const fillPlain = inner - pad * 2 - pyLen(line.plain);
+    const fillPlain = inner - pad * 2 - line.plain.length;
     midPlain.push(`│${" ".repeat(pad)}${line.plain}${" ".repeat(pad + Math.max(0, fillPlain))}│`);
   }
   const bot = `${border}╰${"─".repeat(inner)}╯${reset}`;

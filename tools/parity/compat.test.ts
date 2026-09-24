@@ -2,7 +2,6 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { pyHead, pyStr, pyTail } from "../../.claude/skills/sssf/templates/adws/adw_modules/compat/format.ts";
 import { newId, nowIso } from "../../.claude/skills/sssf/templates/adws/adw_modules/utils.ts";
 import { Tracer } from "../../.claude/skills/sssf/templates/adws/adw_modules/tracer.ts";
 
@@ -13,17 +12,6 @@ describe("compat", () => {
 
   test("newId(8) is 8 hex chars", () => {
     expect(newId(8)).toMatch(/^[0-9a-f]{8}$/);
-  });
-
-  test("pyStr prints Python booleans", () => {
-    expect(pyStr(true)).toBe("True");
-    expect(pyStr(false)).toBe("False");
-    expect(pyStr(null)).toBe("None");
-  });
-
-  test("slices count code points", () => {
-    expect(pyHead("éééé", 2)).toBe("éé");
-    expect(pyTail("éééé", 1)).toBe("é");
   });
 });
 

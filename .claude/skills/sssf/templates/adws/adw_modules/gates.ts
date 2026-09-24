@@ -1,6 +1,5 @@
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { extname } from "node:path";
-import { fixed, pyTail } from "./compat/format.ts";
 import { spawnShell } from "./compat/shell.ts";
 import { GateReport, type EnvelopeBase, type GateFn } from "./dataTypes.ts";
 
@@ -8,10 +7,10 @@ const TAIL_CHARS = 1000;
 
 function _size(path: string): string {
   const n = statSync(path).size;
-  return n < 1024 ? `${n}B` : `${fixed(n / 1024, 1)}KB`;
+  return n < 1024 ? `${n}B` : `${(n / 1024).toFixed(1)}KB`;
 }
 
-function pyJsonTypename(value: unknown, raw: string): string {
+function jsonTypeName(value: unknown, raw: string): string {
   if (value === null) return "NoneType";
   if (typeof value === "boolean") return "bool";
   if (typeof value === "string") return "str";
@@ -55,7 +54,7 @@ export function jsonParses(envelope: EnvelopeBase, _run: unknown): GateReport {
     try {
       const text = readFileSync(a, "utf8");
       const parsed = JSON.parse(text);
-      report.check(a, true, `parses, ${pyJsonTypename(parsed, text)}`);
+      report.check(a, true, `parses, ${jsonTypeName(parsed, text)}`);
     } catch (e) {
       report.check(a, false, `declared JSON artifact does not parse: ${e instanceof Error ? e.message : e}`);
     }
@@ -127,7 +126,7 @@ export function testsPass(command: string): GateFn {
     const ok = result.returncode === 0;
     let note = `exit ${result.returncode}`;
     if (!ok) {
-      note += "\n" + pyTail(result.stdout + result.stderr, TAIL_CHARS);
+      note += "\n" + (result.stdout + result.stderr).slice(-TAIL_CHARS);
     }
     return new GateReport().check(command, ok, note);
   }

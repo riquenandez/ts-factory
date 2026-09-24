@@ -1,7 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import { pyRepr, pyTail } from "./compat/format.ts";
 import { operatorEnv, spawnCaptured, spawnJsonl } from "./compat/shell.ts";
 import {
   finiteOr0,
@@ -14,7 +13,7 @@ import {
   type ToolCallRecord,
 } from "./dataTypes.ts";
 import { ARG_VALUE_CHARS, RESULT_SNIPPET_CHARS, clip, labelFor } from "./toolCalls.ts";
-import { isDict, nowIso, registerCleanup, RuntimeError } from "./utils.ts";
+import { isDict, nowIso, registerCleanup } from "./utils.ts";
 
 export const COPILOT_PATH = process.env.COPILOT_PATH ?? "copilot";
 
@@ -239,8 +238,8 @@ export async function run(
     }
 
     if (result.returncode !== 0 && !result.text) {
-      throw new RuntimeError(
-        `copilot exited ${result.returncode}: ${errorMessage || pyTail(stderr.trim(), 800)}`,
+      throw new Error(
+        `copilot exited ${result.returncode}: ${errorMessage || stderr.trim().slice(-800)}`,
       );
     }
     return result;
@@ -272,18 +271,18 @@ function mintSessionId(_adwId: string, _agentName: string): string {
 function validate(agent: AgentConfig): string[] {
   const problems: string[] = [];
   if (!agent.model.trim()) {
-    problems.push(`agent ${pyRepr(agent.name)}: model is empty`);
+    problems.push(`agent '${agent.name}': model is empty`);
   }
   const binary = copilotBinaryStatus();
   if (!binary.ok) {
     problems.push(
-      `agent ${pyRepr(agent.name)}: copilot binary not runnable: ${COPILOT_PATH} (${pyTail(binary.detail, 200)})`,
+      `agent '${agent.name}': copilot binary not runnable: ${COPILOT_PATH} (${binary.detail.slice(-200)})`,
     );
   }
   for (const entry of agent.harness_engineering) {
     if (!entry.endsWith(".json")) {
       problems.push(
-        `agent ${pyRepr(agent.name)}: harness_engineering entry ${entry} is a pi extension; copilot takes MCP config JSON files`,
+        `agent '${agent.name}': harness_engineering entry ${entry} is a pi extension; copilot takes MCP config JSON files`,
       );
     }
   }

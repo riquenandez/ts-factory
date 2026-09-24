@@ -1,6 +1,5 @@
 import { mkdirSync } from "node:fs";
 import { dirname, isAbsolute, join } from "node:path";
-import { pyRepr, pyTail } from "./compat/format.ts";
 import { operatorEnv, shlexJoin, spawnCaptured, spawnJsonl } from "./compat/shell.ts";
 import {
   finiteOr0,
@@ -14,7 +13,7 @@ import {
   type ToolCallTracker,
 } from "./dataTypes.ts";
 import { ARG_VALUE_CHARS, RESULT_SNIPPET_CHARS, clip, labelFor } from "./toolCalls.ts";
-import { isDict, nowIso, RuntimeError } from "./utils.ts";
+import { isDict, nowIso } from "./utils.ts";
 
 const PROTOCOL = "sssf-exec/1";
 
@@ -130,8 +129,8 @@ export async function run(
   result.returncode = returncode;
 
   if (result.returncode !== 0 && !result.text) {
-    throw new RuntimeError(
-      `exec exited ${result.returncode}: ${lastError || pyTail(stderr.trim(), 800)}`,
+    throw new Error(
+      `exec exited ${result.returncode}: ${lastError || stderr.trim().slice(-800)}`,
     );
   }
   return result;
@@ -160,13 +159,13 @@ function validate(agent: AgentConfig): string[] {
   const problems: string[] = [];
   const command = agent.command;
   if (!Array.isArray(command) || command.length === 0 || command.some((token) => typeof token !== "string")) {
-    problems.push(`agent ${pyRepr(agent.name)}: exec runtime needs a non-empty command list`);
+    problems.push(`agent '${agent.name}': exec runtime needs a non-empty command list`);
     return problems;
   }
   const checked = checkCommand(command);
   if (!checked.ok) {
     problems.push(
-      `agent ${pyRepr(agent.name)}: exec command failed --check: ${shlexJoin(command)} (${pyTail(checked.detail, 200)})`,
+      `agent '${agent.name}': exec command failed --check: ${shlexJoin(command)} (${checked.detail.slice(-200)})`,
     );
   }
   return problems;

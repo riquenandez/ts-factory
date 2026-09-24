@@ -1,12 +1,11 @@
 import { cwd } from "node:process";
 import { resolve } from "node:path";
 import { spawnCaptured } from "./compat/shell.ts";
-import { RuntimeError } from "./utils.ts";
 
 function git(...args: string[]): string {
   const result = spawnCaptured(["git", ...args]);
   if (result.returncode !== 0) {
-    throw new RuntimeError(`git ${args.join(" ")} failed: ${result.stderr.trim()}`);
+    throw new Error(`git ${args.join(" ")} failed: ${result.stderr.trim()}`);
   }
   return result.stdout.trim();
 }
@@ -32,14 +31,14 @@ export function repoRoot(): string {
 
 export function commitAll(message: string): string {
   if (!isRepo()) {
-    throw new RuntimeError(
+    throw new Error(
       "not a git repository — a commit phase needs one. Run `git init` in the " +
         "repo root (and make a first commit) before running an ADW that commits.",
     );
   }
   git("add", "-A");
   if (!git("status", "--porcelain")) {
-    throw new RuntimeError("nothing to commit — the preceding phases changed no files");
+    throw new Error("nothing to commit — the preceding phases changed no files");
   }
   git("commit", "-m", message);
   return git("rev-parse", "--short", "HEAD");

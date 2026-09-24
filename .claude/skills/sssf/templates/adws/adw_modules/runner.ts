@@ -13,23 +13,22 @@ import {
 } from "./dataTypes.ts";
 import { repoRoot } from "./gitHelper.ts";
 import { Tracer } from "./tracer.ts";
-import { collapseWhitespace, pyRepr, pyStr } from "./compat/format.ts";
 import { nowIso, runCleanups } from "./utils.ts";
 
 export { registerCleanup, runCleanups } from "./utils.ts";
 
 export function validatePhaseParams(params: PhaseParams): Required<PhaseParams> {
-  const text = collapseWhitespace(params.description);
+  const text = params.description.replace(/\s+/g, " ").trim();
   const name = params.name;
   if (!text) {
     throw new Error(
-      `phase ${pyRepr(name)}: description is required — one sentence on what this ` +
+      `phase '${name}': description is required — one sentence on what this ` +
         `phase does and why. It is what the trace and the UI show.`,
     );
   }
   if (text.replace(/\.$/, "").toLowerCase() === name.replaceAll("_", " ").toLowerCase()) {
     throw new Error(
-      `phase ${pyRepr(name)}: description ${pyRepr(text)} only restates the phase name — ` +
+      `phase '${name}': description '${text}' only restates the phase name — ` +
         `say what it does and why instead.`,
     );
   }
@@ -48,10 +47,10 @@ export class PhaseHandle {
       payload,
     });
     this.run.console.note(
-      Object.entries(payload).map(([k, v]) => `${k}: ${pyStr(v)}`).join(", "),
+      Object.entries(payload).map(([k, v]) => `${k}: ${String(v)}`).join(", "),
     );
     if (this.phase.params.kind === "engineer" && "input" in payload) {
-      this.run.tracer.sessionRequest(this.run.adwId, pyStr(payload.input));
+      this.run.tracer.sessionRequest(this.run.adwId, String(payload.input));
     }
   }
 }

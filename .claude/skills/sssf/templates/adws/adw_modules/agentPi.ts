@@ -1,7 +1,6 @@
 import { mkdirSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import { pyRepr, pyStr, pyTail } from "./compat/format.ts";
 import { operatorEnv, spawnCaptured, spawnJsonl } from "./compat/shell.ts";
 import {
   newAgentResult,
@@ -13,7 +12,14 @@ import {
   type ToolCallRecord,
 } from "./dataTypes.ts";
 import { ARG_VALUE_CHARS, RESULT_SNIPPET_CHARS, clip, labelFor, textOf } from "./toolCalls.ts";
-import { isDict, nowIso, newId, RuntimeError, ValueError } from "./utils.ts";
+import { isDict, nowIso, newId } from "./utils.ts";
+
+class ModelLookupError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ModelLookupError";
+  }
+}
 
 export const PI_PATH = process.env.PI_PATH ?? "pi";
 export const MODELS_JSON = process.env.PI_MODELS_PATH ?? join(homedir(), ".pi", "agent", "models.json");
@@ -30,13 +36,13 @@ function pyTruthy(value: unknown): boolean {
 }
 
 function pyInt(value: string): number {
-  if (!/^\s*[+-]?\d+\s*$/.test(value)) throw new Error(`invalid literal for int() with base 10: ${pyRepr(value)}`);
+  if (!/^\s*[+-]?\d+\s*$/.test(value)) throw new Error(`invalid literal for int() with base 10: '${value}'`);
   return Number(value);
 }
 
 function pyFloat(value: string): number {
   const n = value.trim() === "" ? NaN : Number(value);
-  if (Number.isNaN(n)) throw new Error(`could not convert string to float: ${pyRepr(value)}`);
+  if (Number.isNaN(n)) throw new Error(`could not convert string to float: '${value}'`);
   return n;
 }
 
@@ -89,13 +95,13 @@ export function resolveModel(pattern: string): [provider: string, modelId: strin
   if (exact.length === 1) return exact[0]!;
   if (matches.length === 1) return matches[0]!;
   if (matches.length === 0) {
-    throw new ValueError(
-      `model pattern ${pyRepr(pattern)} not found in pi --list-models — ` +
+    throw new ModelLookupError(
+      `model pattern '${pattern}' not found in pi --list-models — ` +
         "authenticate/register it or fix the config",
     );
   }
-  const shown = matches.map(([p, m]) => `(${pyRepr(p)}, ${pyRepr(m)})`).join(", ");
-  throw new ValueError(`model pattern ${pyRepr(pattern)} is ambiguous: [${shown}]`);
+  const shown = matches.map(([p, m]) => `('${p}', '${m}')`).join(", ");
+  throw new ModelLookupError(`model pattern '${pattern}' is ambiguous: [${shown}]`);
 }
 
 function _contextTokens(usage: Dict): number {
@@ -150,10 +156,10 @@ export class ToolCallTracker {
     }
     if (etype !== "tool_execution_end") return null;
 
-    const callId = pyTruthy(event.toolCallId) ? pyStr(event.toolCallId) : "";
+    const callId = pyTruthy(event.toolCallId) ? String(event.toolCallId) : "";
     const opened = this._open.get(callId);
     this._open.delete(callId);
-    const tool = pyStr(
+    const tool = String(
       pyTruthy(event.toolName) ? event.toolName : pyTruthy(opened?.tool) ? opened!.tool : "tool",
     );
     const rawArgs = pyTruthy(event.args) ? event.args : pyTruthy(opened?.args) ? opened!.args : {};
@@ -180,7 +186,7 @@ export class ToolCallTracker {
 
   private _announce(callId: unknown, tool: unknown, args: unknown): void {
     if (!pyTruthy(callId)) return;
-    const key = pyStr(callId);
+    const key = String(callId);
     const known = this._open.get(key);
     this._open.set(key, {
       tool: pyTruthy(tool) ? tool : known?.tool ?? "",
@@ -242,7 +248,7 @@ export async function run(
   });
   result.returncode = returncode;
   if (result.returncode !== 0 && !result.text) {
-    throw new RuntimeError(`pi exited ${result.returncode}: ${pyTail(stderr.trim(), 800)}`);
+    throw new Error(`pi exited ${result.returncode}: ${stderr.trim().slice(-800)}`);
   }
   return result;
 }
@@ -255,15 +261,15 @@ function validate(agent: AgentConfig): string[] {
   const probe = piProbe();
   if (!probe.ok) {
     return [
-      `agent ${pyRepr(agent.name)}: pi binary not runnable: ${PI_PATH} (${pyTail(probe.detail, 200)})`,
+      `agent '${agent.name}': pi binary not runnable: ${PI_PATH} (${probe.detail.slice(-200)})`,
     ];
   }
   try {
     resolveModel(agent.model);
     return [];
   } catch (error) {
-    if (!(error instanceof ValueError)) throw error;
-    return [`agent ${pyRepr(agent.name)}: ${error.message}`];
+    if (!(error instanceof ModelLookupError)) throw error;
+    return [`agent '${agent.name}': ${error.message}`];
   }
 }
 

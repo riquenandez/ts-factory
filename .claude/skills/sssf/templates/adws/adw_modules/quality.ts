@@ -1,6 +1,5 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { fixed, pyTail } from "./compat/format.ts";
 import { operatorEnv, shlexJoin, spawnCaptured } from "./compat/shell.ts";
 import type {
   QualityCheckResult,
@@ -50,7 +49,7 @@ function _run(spec: QualityCheckSpec, run: Run): QualityCheckResult {
   const duration = (performance.now() - clock) / 1000;
   writeFileSync(
     outputArtifact,
-    `$ ${command}\nexit: ${returncode}\nduration_seconds: ${fixed(duration, 3)}\n` +
+    `$ ${command}\nexit: ${returncode}\nduration_seconds: ${duration.toFixed(3)}\n` +
       `\n--- stdout ---\n${stdout}\n--- stderr ---\n${stderr}\n`,
   );
   const passed = returncode === 0;
@@ -72,7 +71,7 @@ function _run(spec: QualityCheckSpec, run: Run): QualityCheckResult {
   });
   run.console.note(
     `quality ${spec.name}: ${passed ? "passed" : "failed"} ` +
-      `(exit ${returncode}, ${fixed(duration, 1)}s)`,
+      `(exit ${returncode}, ${duration.toFixed(1)}s)`,
   );
   return {
     name: spec.name,
@@ -83,7 +82,7 @@ function _run(spec: QualityCheckSpec, run: Run): QualityCheckResult {
     passed,
     duration_seconds: duration,
     output_artifact: outputArtifact,
-    output_tail: pyTail(stdout + stderr, TAIL_CHARS),
+    output_tail: (stdout + stderr).slice(-TAIL_CHARS),
   };
 }
 
