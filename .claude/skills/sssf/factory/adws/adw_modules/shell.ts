@@ -1,7 +1,7 @@
 import { appendFileSync } from "node:fs";
 import { constants as osConstants } from "node:os";
 import { join } from "node:path";
-import { isDict } from "../utils.ts";
+import { isDict } from "./utils.ts";
 
 const PATHSEP = ":";
 

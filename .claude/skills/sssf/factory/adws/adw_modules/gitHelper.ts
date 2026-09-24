@@ -1,6 +1,6 @@
 import { cwd } from "node:process";
 import { resolve } from "node:path";
-import { spawnCaptured } from "./compat/shell.ts";
+import { spawnCaptured } from "./shell.ts";
 
 function git(...args: string[]): string {
   const result = spawnCaptured(["git", ...args]);

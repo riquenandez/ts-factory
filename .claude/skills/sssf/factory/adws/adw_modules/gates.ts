@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { extname } from "node:path";
-import { spawnShell } from "./compat/shell.ts";
+import { spawnShell } from "./shell.ts";
 import { GateReport, type EnvelopeBase, type GateFn } from "./dataTypes.ts";
 
 const TAIL_CHARS = 1000;

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { parseArgs } from "../.claude/skills/sssf/factory/adws/adw_modules/compat/cli.ts";
+import { parseArgs } from "../.claude/skills/sssf/factory/adws/adw_modules/cli.ts";
 
 function captureExit(fn: () => void): { code: number; stderr: string; stdout: string } {
   let code = -1;

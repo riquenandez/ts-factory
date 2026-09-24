@@ -1,6 +1,6 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { operatorEnv, shlexJoin, spawnCaptured } from "./compat/shell.ts";
+import { operatorEnv, shlexJoin, spawnCaptured } from "./shell.ts";
 import type {
   QualityCheckResult,
   QualityCheckSpec,

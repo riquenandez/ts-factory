@@ -1,6 +1,6 @@
 import { mkdirSync } from "node:fs";
 import { dirname, isAbsolute, join } from "node:path";
-import { operatorEnv, shlexJoin, spawnCaptured, spawnJsonl } from "./compat/shell.ts";
+import { operatorEnv, shlexJoin, spawnCaptured, spawnJsonl } from "./shell.ts";
 import {
   finiteOr0,
   newAgentResult,

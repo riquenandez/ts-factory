@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { INTERFACES } from "../.claude/skills/sssf/factory/adws/adw_modules/agents.ts";
 import { labelFor } from "../.claude/skills/sssf/factory/adws/adw_modules/toolCalls.ts";
@@ -126,19 +126,14 @@ describe("agent registry", () => {
   });
 
   test("compat imports nothing outside compat", () => {
-    const dir = join(MODULES, "compat");
-    const names = readdirSync(dir).filter((name) => name.endsWith(".ts"));
-    expect(names.length).toBeGreaterThan(0);
-    for (const name of names) {
-      const text = readFileSync(join(dir, name), "utf8");
-      const parents = text.match(/from "\.\.\//g) ?? [];
-      if (name === "shell.ts") {
-        expect(text).toContain('from "../utils.ts"');
-        expect(parents).toEqual(['from "../']);
-      } else {
-        expect(parents).toEqual([]);
-      }
+    for (const name of ["cli.ts", "schema.ts"]) {
+      const text = readFileSync(join(MODULES, name), "utf8");
+      expect(text.match(/from "\.\.\//g) ?? []).toEqual([]);
+      expect(text).not.toContain('from "./');
     }
+    const shell = readFileSync(join(MODULES, "shell.ts"), "utf8");
+    expect(shell.match(/from "\.\.\//g) ?? []).toEqual([]);
+    expect(shell).toContain('from "./utils.ts"');
   });
 
   test("pi labels unchanged", () => {

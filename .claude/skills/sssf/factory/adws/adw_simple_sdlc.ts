@@ -45,7 +45,7 @@ import * as gitHelper from "./adw_modules/gitHelper.ts";
 import * as quality from "./adw_modules/quality.ts";
 import * as session from "./adw_modules/session.ts";
 import * as utils from "./adw_modules/utils.ts";
-import { parseArgs, runMain } from "./adw_modules/compat/cli.ts";
+import { parseArgs, runMain } from "./adw_modules/cli.ts";
 import {
   BuildOutput,
   DocumentOutput,

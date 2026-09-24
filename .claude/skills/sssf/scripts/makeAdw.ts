@@ -3,7 +3,7 @@
 
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { parseArgs } from "../factory/adws/adw_modules/compat/cli.ts";
+import { parseArgs } from "../factory/adws/adw_modules/cli.ts";
 
 const OUTPUT_TYPES: Record<string, string> = {
   planner: "PlanOutput",
@@ -86,7 +86,7 @@ import * as agents from "./adw_modules/agents.ts";
 import * as gates from "./adw_modules/gates.ts";
 import * as session from "./adw_modules/session.ts";
 import * as utils from "./adw_modules/utils.ts";
-import { parseArgs, runMain } from "./adw_modules/compat/cli.ts";
+import { parseArgs, runMain } from "./adw_modules/cli.ts";
 import { ${types.join(", ")} } from "./adw_modules/dataTypes.ts";
 
 const REQUIRED_AGENTS = [${required}];

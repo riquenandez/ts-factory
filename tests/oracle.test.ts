@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { shlexJoin } from "../.claude/skills/sssf/factory/adws/adw_modules/compat/shell.ts";
+import { shlexJoin } from "../.claude/skills/sssf/factory/adws/adw_modules/shell.ts";
 import { GenericOutput } from "../.claude/skills/sssf/factory/adws/adw_modules/dataTypes.ts";
 
 describe("compat vs live Python", () => {

@@ -4,8 +4,8 @@ import * as agentCc from "./agentCc.ts";
 import * as agentCopilot from "./agentCopilot.ts";
 import * as agentExec from "./agentExec.ts";
 import * as agentPi from "./agentPi.ts";
-import { ExitError } from "./compat/cli.ts";
-import { modelValidate } from "./compat/schema.ts";
+import { ExitError } from "./cli.ts";
+import { modelValidate } from "./schema.ts";
 import {
   GateReport,
   SSSF_CONFIG,

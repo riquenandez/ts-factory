@@ -11,7 +11,7 @@ import * as agents from "./adw_modules/agents.ts";
 import * as quality from "./adw_modules/quality.ts";
 import * as session from "./adw_modules/session.ts";
 import * as utils from "./adw_modules/utils.ts";
-import { parseArgs, runMain } from "./adw_modules/compat/cli.ts";
+import { parseArgs, runMain } from "./adw_modules/cli.ts";
 import { RuntimeError } from "./adw_modules/utils.ts";
 
 const REQUIRED_AGENTS: string[] = [];

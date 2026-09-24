@@ -21,7 +21,7 @@ import * as changes from "./adw_modules/changes.ts";
 import * as gates from "./adw_modules/gates.ts";
 import * as session from "./adw_modules/session.ts";
 import * as utils from "./adw_modules/utils.ts";
-import { parseArgs, runMain } from "./adw_modules/compat/cli.ts";
+import { parseArgs, runMain } from "./adw_modules/cli.ts";
 import { DocumentOutput } from "./adw_modules/dataTypes.ts";
 import { RuntimeError } from "./adw_modules/utils.ts";
 

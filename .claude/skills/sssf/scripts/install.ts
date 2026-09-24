@@ -12,7 +12,7 @@ Existing files are skipped unless --force.
 
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, appendFileSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { parseArgs } from "../factory/adws/adw_modules/compat/cli.ts";
+import { parseArgs } from "../factory/adws/adw_modules/cli.ts";
 
 const TEMPLATES = join(dirname(import.meta.dir), "factory");
 

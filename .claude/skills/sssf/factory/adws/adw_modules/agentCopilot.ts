@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import { operatorEnv, spawnCaptured, spawnJsonl } from "./compat/shell.ts";
+import { operatorEnv, spawnCaptured, spawnJsonl } from "./shell.ts";
 import {
   finiteOr0,
   newAgentResult,

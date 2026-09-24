@@ -1,4 +1,4 @@
-import { fieldNames, modelDump, modelValidate, type Schema } from "./compat/schema.ts";
+import { fieldNames, modelDump, modelValidate, type Schema } from "./schema.ts";
 
 export type PhaseKind = "engineer" | "agent" | "code";
 export type PhaseStatus = "queued" | "running" | "success" | "fail";

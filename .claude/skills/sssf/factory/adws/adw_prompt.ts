@@ -10,7 +10,7 @@ Phases: engineer(request) -> <agent>
 import * as agents from "./adw_modules/agents.ts";
 import * as session from "./adw_modules/session.ts";
 import * as utils from "./adw_modules/utils.ts";
-import { parseArgs, runMain } from "./adw_modules/compat/cli.ts";
+import { parseArgs, runMain } from "./adw_modules/cli.ts";
 import { GenericOutput } from "./adw_modules/dataTypes.ts";
 
 async function main(
