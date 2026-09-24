@@ -1,7 +1,6 @@
 # Frozen observable contracts
 
-The Python is the spec. Every line here is a test under `tools/parity/`. A change to
-any line is a spec change, not a refactor.
+TypeScript is the spec. These observables are pinned by the snapshots and contract tests under `tools/parity/`. A change to any line is a spec change: update the snapshot in the same commit and describe the bytes in the commit body.
 
 ## CLI
 
@@ -10,8 +9,8 @@ any line is a spec change, not a refactor.
   adws/adw_sssf_config/sssf.config.yaml`, `--adw-id` unset, `--agent builder`,
   `--base main`.
 - Positional prompt is a file path if it resolves to a readable file, else inline text.
-- Bad/missing args: argparse-shaped `usage: ...` + `<prog>: error: ...` on stderr,
-  exit **2**.
+- Bad/missing args: one stderr line, `error: <what>`, exit **2**. A missing prompt is
+  `error: missing required argument: prompt`.
 - justfile recipe names and targets unchanged: `demo`, `prompt`, `scout`, `plan`,
   `plan-build`, `sdlc` → **`adw_plan_build_test`**, `simple-sdlc` →
   `adw_simple_sdlc`, `sessions`, `phases`, `tail`, `procs`, `obs`.
@@ -25,8 +24,8 @@ any line is a spec change, not a refactor.
 | `finish()` with all phases green and `accepted` true | 0 |
 | `finish()` otherwise | 1 |
 | throw inside a phase (propagates) | 1, plus a stack trace on stderr |
-| `SystemExit` (bad config, unknown agent) | 1, message on stderr, **no** stack |
-| argparse failure | 2 |
+| `ExitError` (bad config, unknown agent) | 1, message on stderr, **no** stack |
+| usage error | 2 |
 | `SIGTERM` / `SIGINT` | 143 / 130 |
 
 ## Filesystem
@@ -144,7 +143,7 @@ pi -p --mode json --provider <P> --model <M> --thinking <T>
 
 - 3 parse attempts per send (`JSON_FIX_ATTEMPTS = 2`); attempts 1 and 2 send a
   correction naming the output type's fields **in declaration order**; attempt 3's
-  failure throws `<owner> never produced valid <Type> JSON: <pydantic error>`.
+  failure throws `<owner> never produced valid <Type> JSON: <validation error>`.
 - Each failed parse writes an `envelopes` row with `valid=0` and
   `payload_json = {"raw": <last 2000 code points of the response>}`.
 - Gate rounds: `for attempt in 1..max(1, retries+1)+1`, break when clean, and throw
@@ -193,7 +192,7 @@ adw_id: a1b2c3d4   engineer Enrique
   ✓ BuildOutput implemented the endpoint
     artifacts: specs/plan.md
   └ builder used 41,233 tokens · $0.0181
-  · passed: True, checks: 1/1, artifacts: adws/adw_data/…/command.log
+  · passed: true, checks: 1/1, artifacts: adws/adw_data/…/command.log
   ✓ build 12.4s
   ✗ test_1 0.3s  quality failed: …
 ```
@@ -205,13 +204,13 @@ accepted: <reason>` prints as a `note` before the panel.
 
 ## Config
 
-`yaml.safe_load` → for each agent, inherit `coding_agent, model, thinking, color,
+`Bun.YAML.parse` → for each agent, inherit `coding_agent, model, thinking, color,
 tools, writes` from `defaults` **only when the key is present in `defaults`** (via
 `setdefault`), then always `setdefault("harness_engineering", defaults.harness_engineering
 or [])`. Unknown keys anywhere are ignored. `coding_agent` is a string, default `pi`.
 `command` is a list of strings, default `[]`, and is not inherited from `defaults`.
 `validate()` collects **all** problems and
-raises one `SystemExit` listing them: unknown agent name, an unknown `coding_agent`,
+raises one `ExitError` listing them: unknown agent name, an unknown `coding_agent`,
 plus whatever the named runtime's own `validate()` reports (for `exec`: a missing/empty
 `command`, or a non-zero `--check`), a missing prompt file.
 
@@ -226,8 +225,6 @@ plus whatever the named runtime's own `validate()` reports (for `exec`: a missin
 
 ### The one deliberate divergence
 
-`GITIGNORE_ENTRIES` drops `__pycache__/` and `*.pyc`. They exist because importing
-`adw_modules` writes Python bytecode next to the source and `commit_all()` runs
-`git add -A`. TypeScript emits no such artifact, and there is no analogue to substitute.
-Everything else in the install output is unchanged except the three commands that name
-the runtime (`uv run … .py` → `bun … .ts`).
+`GITIGNORE_ENTRIES` drops `__pycache__/` and `*.pyc`. TypeScript emits no such artifact,
+and there is no analogue to substitute. The install output names the runtime as
+`bun … .ts`.

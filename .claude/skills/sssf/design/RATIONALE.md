@@ -2,25 +2,25 @@
 
 ## Problem
 
-Port the factory from Python to TypeScript with zero behaviour drift. The Python under `templates/` is the spec: same just recipes, flags, exit codes, sqlite the existing visualizer already polls, Pi argv, session layout, nested retries, stamp-into-cwd install. The hard part is that the Python *runtime* is part of the contract (`+00:00` timestamps, two disagreeing JSON encoders, pydantic error prose, `True`/`False` on the console). Docs that disagree with code lose. Known bugs stay bugs.
+The port is done. The TypeScript is the product and the spec. The Python original is at tag `python-gold-final` for archaeology. Docs that disagree with code lose. Known bugs stay bugs until a snapshot update says otherwise.
 
 ## Usage (caller's view)
 
-See [README.md](../../../README.md) and [cookbooks/create_adw.md](../cookbooks/create_adw.md). Four calls: `agents.loadConfig` / `agents.validate` → `session.ensure` → `run.phase(params, body)` → `run.finish`. `ph.call` only on agent phases. ADW scripts stay thin; loop shapes A and B stay in separate files. Interpreter is `bun adws/adw_*.ts` where Python used `uv run adws/adw_*.py`.
+See [README.md](../../../README.md) and [cookbooks/create_adw.md](../cookbooks/create_adw.md). Four calls: `agents.loadConfig` / `agents.validate` → `session.ensure` → `run.phase(params, body)` → `run.finish`. `ph.call` only on agent phases. ADW scripts stay thin; loop shapes A and B stay in separate files. Interpreter is `bun adws/adw_*.ts`.
 
 ## Shape
 
-Stamped host engine, Bun, **zero npm dependencies**. `adws/adw_modules/` is a module-for-module port of the Python modules (camelCase file names) plus a `compat/` ring that owns every Python-runtime observable (json, format, schema, markup, shell, cli, yaml). Field names that hit sqlite/JSON/prompts stay snake_case. Public ADW functions are camelCase (`loadConfig`, `runTests`, `artifactsExist`, `commitAll`).
+Stamped host engine, Bun, **zero npm dependencies**. `adws/adw_modules/` is the engine (camelCase file names). `compat/` owns parsing and rendering: CLI, schema validation, subprocess helpers, console markup. Field names that hit sqlite/JSON/prompts stay snake_case. Public ADW functions are camelCase (`loadConfig`, `runTests`, `artifactsExist`, `commitAll`).
 
 `run.phase(params, body)` is a callback that returns the body's value and observes throws (the only TS shape that preserves "success must be earned"). Overloads give agent phases an `AgentPhaseHandle` with `call`; other kinds do not. Three finalization doors stay separate: throw, `finish()`, SIGTERM/SIGINT. `execute` always calls Pi. Permission `enforce` stays on the happy path. `tools: []` omits `--tools`. Cwd split stays split.
 
-Envelopes are branded plain objects (`Envelope<F>`) so `previous.commit_message` reads like Python while the engine re-serializes in declaration order. Schemas at the two trust boundaries (agent JSON, config YAML); plain records inside.
+Envelopes are branded plain objects (`Envelope<F>`) so `previous.commit_message` reads as a field while the engine re-serializes in declaration order. Schemas at the two trust boundaries (agent JSON, config YAML); plain records inside.
 
-Parity is structural: `tools/parity/` runs Python gold and TS against `fake_pi`, with negative tests that fail if a preserved bug is "fixed".
+Behavior is pinned by the snapshots and contract tests in `tools/parity/`. The limitations in [KNOWN_ISSUES.md](KNOWN_ISSUES.md) are not protected.
 
 ## Isomorphic translations
 
-`protected_files` glob `adws/adw_*.py` → `adws/adw_*.ts` because the scripts *are* `.ts`. `makeAdw` emits `return run.finish()` because `run.succeeded` is a *compile* error in TS (a new failure mode); the Python generator is already stale against SKILL.md rule 10. Drop `__pycache__/` / `*.pyc` from the TS gitignore list; add nothing about `node_modules` because there is no package install.
+`protected_files` glob `adws/adw_*.py` → `adws/adw_*.ts` because the scripts *are* `.ts`. `makeAdw` emits `return run.finish()` because `run.succeeded` is a *compile* error (a new failure mode). Drop `__pycache__/` / `*.pyc` from the TS gitignore list; add nothing about `node_modules` because there is no package install.
 
 ## Tradeoffs accepted
 
@@ -34,4 +34,4 @@ Parity is structural: `tools/parity/` runs Python gold and TS against `fake_pi`,
 
 - **Engine as a published package.** Rejected: `update_modules.md` edits `adw_modules/`; `protected_files` defends that path; install would gain a package step.
 - **Declarative phase manifest.** Rejected: the twelve ADWs differ in control flow, not configuration.
-- **Zod + stamped package.json.** Rejected: pydantic error prose and key order are observables; install would no longer be a file copy.
+- **Zod + stamped package.json.** Rejected: validation error text and key order are observables; install would no longer be a file copy.

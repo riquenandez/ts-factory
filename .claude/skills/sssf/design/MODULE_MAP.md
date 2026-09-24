@@ -27,14 +27,11 @@ The twelve `adw_*.ts` scripts sit beside `adw_modules/`. They declare agents, se
 | `adw_modules/session.ts` | `ensure()`: pin or create `adw_id`, build `Run`, install signal doors |
 | `adw_modules/toolCalls.ts` | `labelFor`, `clip`, `textOf`: the one tool-call record shape every runtime emits |
 | `adw_modules/tracer.ts` | `SCHEMA`, `MIGRATIONS`, every INSERT/UPDATE, JSONL append |
-| `adw_modules/utils.ts` | ids, timestamps, prompt resolution, engineer name, cleanup hooks |
-| `adw_modules/compat/cli.ts` | argparse-shaped parsing: usage line, error text, exit 2, `SystemExit` |
-| `adw_modules/compat/format.ts` | code-point slicing, Python `str()` of a value, `:,d` and `:.4f` |
-| `adw_modules/compat/json.ts` | `pyJson` (`json.dumps`), `serdeJson` (pydantic), `pyLoads`, `isDict` |
-| `adw_modules/compat/markup.ts` | the rich subset: markup to `(ansi, plain)`, `escape()`, `panel` |
-| `adw_modules/compat/schema.ts` | pydantic-shaped validation: ordered fields, defaults, extra ignored, error strings, `modelDump` / `modelDumpJson` |
+| `adw_modules/utils.ts` | ids, timestamps, prompt resolution, engineer name, cleanup hooks, `isDict`, `RuntimeError` (the ADW scripts throw it) |
+| `adw_modules/compat/cli.ts` | CLI parsing on `node:util` `parseArgs`: help, `error:` lines, exit 2, `ExitError` |
+| `adw_modules/compat/markup.ts` | markup to `(ansi, plain)`, `escape()`, `panel` |
+| `adw_modules/compat/schema.ts` | declarative schemas: ordered fields, defaults, extra ignored, plain validation errors, `modelDump` |
 | `adw_modules/compat/shell.ts` | `spawnCaptured`, `spawnShell`, `spawnJsonl`, `shlexJoin`, `operatorEnv` |
-| `adw_modules/compat/yaml.ts` | `yaml.safe_load` equivalent (`Bun.YAML.parse`, empty doc is null) |
 
 There is no barrel. `spawnJsonl` is the one stdout tail: spawn, drain stderr, append every chunk to `raw_output.jsonl`, parse each JSON object, map a signal to a negative return code.
 
@@ -42,15 +39,15 @@ There is no barrel. `spawnJsonl` is the one stdout tail: spawn, drain stderr, ap
 
 A runtime file (`agentPi.ts`, `agentCc.ts`, `agentCopilot.ts`, `agentExec.ts`) imports Node builtins, `dataTypes.ts`, `toolCalls.ts`, `compat/*`, and `utils.ts`. It does not import `agents.ts`, `runner.ts`, or another runtime. `registry.test.ts` pins that with "runtime files are self-contained".
 
-Nothing under `compat/` imports outside `compat/` (Node builtins are the other imports). `registry.test.ts` pins that with "compat imports nothing outside compat": no `from "../`.
+Nothing under `compat/` imports outside `compat/` except `shell.ts`, which imports `isDict` from `utils.ts`. Node builtins are the other imports. `registry.test.ts` pins that.
 
-Factory modules import the `compat/` file that owns the concern (`pyJson` from `json.ts`, `spawnCaptured` from `shell.ts`). They do not re-export it.
+Factory modules import the `compat/` file that owns the concern (`spawnCaptured` from `shell.ts`). They do not re-export it. Trace, envelope, and handoff bytes are `JSON.stringify`.
 
 ## Naming rule
 
 **Field names are wire. Method names are code. File names are camelCase.**
 
-Anything that reaches sqlite, JSONL, a prompt, or a `payload` keeps its Python snake_case spelling: `adw_id`, `payload_json`, `notes_for_next_agent`, `changed_files`, `output_type`, `phase_id`, `started_at`, `timeout_seconds`, `poll_ms`, `protected_files`. Renaming any of them breaks the visualizer or a `## Report` example.
+Anything that reaches sqlite, JSONL, a prompt, or a `payload` keeps its snake_case spelling: `adw_id`, `payload_json`, `notes_for_next_agent`, `changed_files`, `output_type`, `phase_id`, `started_at`, `timeout_seconds`, `poll_ms`, `protected_files`. Renaming any of them breaks the visualizer or a `## Report` example.
 
 Functions and methods take TypeScript's idiom: `loadConfig`, `sessionFinish`, `phaseUpsert`, `runQuality`, `asEnvelope`. `run.adwId` is a method-side property (never serialized directly) — the tracer writes `adw_id` columns from it.
 
@@ -65,7 +62,7 @@ An ADW script reaches for these.
 | Call | From | Returns |
 |---|---|---|
 | `agents.loadConfig(path?)` | `agents.ts` | `SSSFConfig` |
-| `agents.validate(cfg, required)` | `agents.ts` | `void`, or throws `SystemExit` |
+| `agents.validate(cfg, required)` | `agents.ts` | `void`, or throws `ExitError` |
 | `session.ensure(cfg, adwId?)` | `session.ts` | `Run` |
 | `run.phase(params, body)` | `runner.ts` | `Promise<T>`. `kind: "agent"` passes an `AgentPhaseHandle`; `"engineer"` and `"code"` pass a `PhaseHandle` |
 | `ph.log(payload)` | `PhaseHandle` | `void` |
@@ -96,7 +93,7 @@ An ADW script reaches for these.
 | Writer | Writes | Conflict rule |
 |---|---|---|
 | ADW process `Tracer` | `sessions`, `phases`, `events`, `envelopes`, `gate_results`, `processes`, `agent_sessions`, and `events.jsonl` | WAL + `busy_timeout=5000`. Phases upsert on `phase_id`. `agent_sessions` upserts on `(adw_id, agent)`. `sessions.total_tokens` and `total_cost` accumulate in SQL (`SET x = x + ?`) |
-| ADW process `Run` | `sessions/{adw_id}/agent_map.json` | whole-file rewrite from the in-memory map read at construction. Two processes on the same `adw_id` at the same time clobber each other. Pre-existing in Python; deliberately not fixed |
+| ADW process `Run` | `sessions/{adw_id}/agent_map.json` | whole-file rewrite from the in-memory map read at construction. Two processes on the same `adw_id` at the same time clobber each other. A known limitation; deliberately not fixed |
 | visualizer | `sessions.archived`, one column, its own connection | human-triggered. A rejoined run clears it: `sessionStart` sets `archived=0` |
 
 The visualizer's `agentsFor()` unions finished `agent_sessions` rows with in-flight `agent_start` events and lets the finished row win. Every run owns `sessions/{adw_id}/`. Every agent owns `sessions/{adw_id}/{agent}/`. The port adds no lock, no queue, and no reconciliation pass.
@@ -105,9 +102,9 @@ The visualizer's `agentsFor()` unions finished `agent_sessions` rows with in-fli
 
 Bun, for four reasons that are all contract, not taste:
 
-1. `bun:sqlite` is synchronous, so the tracer writes inside a signal handler and inside a phase transition exactly where Python's `sqlite3` does.
-2. `Bun.spawnSync` (`spawnCaptured`) gives blocking git, quality, gate, and permission subprocesses, so those modules stay synchronous like their Python originals. Async coloring is confined to `ph.call()`.
+1. `bun:sqlite` is synchronous, so the tracer writes inside a signal handler and inside a phase transition.
+2. `Bun.spawnSync` (`spawnCaptured`) gives blocking git, quality, gate, and permission subprocesses, so those modules stay synchronous. Async coloring is confined to `ph.call()`.
 3. `Bun.spawn` (`spawnJsonl`) streams a runtime's stdout while it works. All four runtimes share that loop.
 4. The visualizer is already Bun, and `just obs` is unchanged.
 
-`.env` is loaded by Bun at startup (replacing `python-dotenv`). Like `load_dotenv()`, it does not override a real environment variable.
+`.env` is loaded by Bun at startup. It does not override a real environment variable.

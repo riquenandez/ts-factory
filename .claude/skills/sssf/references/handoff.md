@@ -137,6 +137,6 @@ adws/adw_data/sessions/{adw_id}/
 
 This map lets a later ADW rejoin each agent's existing context window. `adw_build.ts --adw-id a1b2c3d4` after `adw_plan.ts` resumes the builder's own session rather than starting cold. The map records the model each session was created with; if the config now names a different model, that agent starts fresh and the map is updated. `agent_sessions` in `sssf.db` is the queryable mirror.
 
-Two processes joined to the same `adw_id` at the same time overwrite each other's `agent_map.json`. This is inherited from the Python original and deliberately not fixed.
+Two processes joined to the same `adw_id` at the same time overwrite each other's `agent_map.json`. This is a known limitation of this engine and deliberately not fixed.
 
 Files are the raw record; the db is the queryable mirror. Losing `sssf.db` loses nothing that `raw_output.jsonl`, `envelope.json`, and `agent_map.json` cannot rebuild.

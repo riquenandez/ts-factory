@@ -16,14 +16,14 @@ Extend `adws/adw_modules/`. All low-level logic lives here; ADW scripts declare 
 | `changes.ts` | git diff capture into `context_handoff/changes.diff`; `asEnvelope` |
 | `permissions.ts` | before/after repo fingerprint, rollback, `writes` and `protected_files` enforcement |
 | `prompts.ts`, `session.ts`, `tracer.ts`, `console.ts`, `gitHelper.ts`, `utils.ts` | rendering, session dirs and `agent_map.json`, the trace, the narrative, git plumbing, ids and env |
-| `compat/` | Python-runtime observables the parity tests depend on. Do not bypass it |
+| `compat/` | the parsers and renderers the engine owns: CLI, schema validation, subprocess helpers, console markup |
 
 ## Rules
 
 - **Never `console.log`.** Report through `run.console`. Every method prints and writes a `log` event, so terminal and UI cannot drift. New output is a new `Console` method.
 - **Four-param rule.** More than four parameters becomes one object typed in `dataTypes.ts`; `AgentCall` and `PhaseParams` are the pattern.
 - **Naming.** TypeScript identifiers are camelCase. Anything that reaches sqlite, JSON, YAML, or a `## Report` example stays snake_case.
-- **No `JSON.stringify` outside `compat/`.** Use `pyJson` for trace bytes and `serdeJson` for envelopes; lint enforces it.
+- **Trace, envelope, and handoff bytes are `JSON.stringify`.** The snapshot tests in `tools/parity/` pin them.
 
 ## Add an output type
 

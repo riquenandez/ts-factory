@@ -146,9 +146,9 @@ bun run typecheck
 bun test ./tools/parity/
 ```
 
-`.claude/skills/sssf/` is the product an engineer copies into a repo. `tools/parity/` is this repo's harness.
+`.claude/skills/sssf/` is the product an engineer copies into a repo. `tools/parity/` is this repo's harness. The tests need `sqlite3`.
 
-The parity tests pin the TypeScript port. They need `sqlite3`. `tools/parity/PORT_CONTRACT.md` is the rule set for changes to the port.
+`bun test ./tools/parity/` pins whole ADW runs as snapshots of stdout, exit and stderr, the sqlite dump, `events.jsonl`, session files, and git status, plus the contract tests beside them. A snapshot change is deliberate: read the failing diff, then run `bun test --update-snapshots` in the same commit as the code and describe the changed surfaces in the commit body. `tools/parity/PORT_CONTRACT.md` is the rule set.
 
 ## License
 
