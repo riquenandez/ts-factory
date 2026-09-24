@@ -125,6 +125,8 @@ Five starter agents ship: `planner`, `builder`, `scout`, `reviewer`, `documenter
 
 ## How it works
 
+The engine's file map ships with the code: [`adws/adw_modules/README.md`](.claude/skills/sssf/factory/adws/adw_modules/README.md). In this repo that file lives under `factory/` until install copies it next to the scripts.
+
 - **Phases.** A run is a sequence of `run.phase(...)` calls, each owned by the engineer, an agent, or code. Every phase defaults to fail and must earn success. `run.finish({ accepted })` decides the exit code, session status, and banner together.
 - **Envelopes.** An agent's final output must parse against the output type declared at the call site. If it does not parse, the same session is re-prompted with a correction. Nothing restarts. See [references/handoff.md](.claude/skills/sssf/references/handoff.md).
 - **Gates.** After the agent finishes, gates such as `artifactsExist`, `filesNonEmpty`, and `diffMatchesClaims` check what the envelope claims against the repo. Violations go back to the same session.

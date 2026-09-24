@@ -14,13 +14,16 @@ You are the orchestrator: launch ADWs, observe them, report. You never do the wo
 adws/
 ├── adw_sssf_config/sssf.config.yaml   the agent roster: one agent, one prompt, one purpose
 ├── adw_*.ts                           the workflows; each opens with a `Phases:` line
-├── adw_modules/                       all low-level logic; ADW scripts stay thin
-│   ├── dataTypes.ts                   EnvelopeBase, the output types, PhaseParams, AgentCall, GateReport
-│   ├── runner.ts                      run.phase(params, body) and ph.call({ outputType, ... })
+├── adw_modules/                       the engine; the code map is README.md
+│   ├── cli.ts                         adw(): args, prompt, config, exit
 │   ├── agents.ts                      the roster: loadConfig, resolve, validate
-│   ├── execute.ts                     one agent call: render, send, retries, gates
+│   ├── session.ts                     ensure(): pin or mint the session
+│   ├── runner.ts                      run.phase, run.request, run.finish
+│   ├── execute.ts                     one agent call
+│   ├── dataTypes.ts                   EnvelopeBase, output types, PhaseParams, AgentCall, GateReport
 │   ├── gates.ts  quality.ts  changes.ts  permissions.ts  gitHelper.ts
-│   └── runtimes/                      pi.ts, claude.ts, copilot.ts, exec.ts — one interface each
+│   ├── schema.ts  shell.ts  console.ts  tracer.ts  utils.ts
+│   └── runtimes/                      index.ts, types.ts, toolCalls.ts, pi.ts, claude.ts, copilot.ts, exec.ts
 └── adw_data/
     ├── prompt_engineering/<agent>/    system.md + user.md, tracked, edit them here
     ├── harness_engineering/           pi extensions, tracked

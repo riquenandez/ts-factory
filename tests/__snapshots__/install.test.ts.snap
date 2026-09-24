@@ -20,6 +20,7 @@ exports[`install stamps the same dests, with .ts scripts and a compat ring on th
   "adws/adw_data/prompt_engineering/scout/system.md",
   "adws/adw_data/prompt_engineering/scout/user.md",
   "adws/adw_document.ts",
+  "adws/adw_modules/README.md",
   "adws/adw_modules/agents.ts",
   "adws/adw_modules/changes.ts",
   "adws/adw_modules/cli.ts",

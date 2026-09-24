@@ -31,7 +31,9 @@ Do not update snapshots in a commit that has no intended behavior change.
 
 - TypeScript identifiers are camelCase: `loadConfig`, `commitAll`, `artifactsExist`, `runTests`, `asEnvelope`, `run.adwId`. Gate runtime names stay snake_case (`artifactsExist.name === "artifacts_exist"`) because they land in sqlite. CLI dests stay snake_case (`args.adw_id` from `--adw-id`). Field names that hit sqlite, JSON, prompts, or payloads stay snake_case.
 - Zero npm dependencies in stamped code. Bun and Node builtins only. No stamped `package.json` or `tsconfig.json`.
-- `compat/` owns parsing and rendering: CLI, schema validation, subprocess helpers, console markup. `shell.ts` is the one file there that imports `isDict` from `utils.ts`.
+- A runtime file imports only `./types.ts`, `./toolCalls.ts`, `../shell.ts`, `../utils.ts`, and Node or Bun builtins.
+- `runtimes/index.ts` is the only engine file that imports a runtime.
+- `utils.ts`, `shell.ts`, and `schema.ts` import nothing from the engine. Node and Bun builtins only.
 - Trace, envelope, and handoff bytes are `JSON.stringify`.
 - `coding_agent` is an open string validated against `INTERFACES` in `runtimes/index.ts`.
 - Runtime files export `INTERFACE` and never import `agents.ts`, `runner.ts`, or another runtime's file.

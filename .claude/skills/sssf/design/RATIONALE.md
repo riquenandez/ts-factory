@@ -10,7 +10,7 @@ See [README.md](../../../README.md) and [cookbooks/create_adw.md](../cookbooks/c
 
 ## Shape
 
-Stamped host engine, Bun, **zero npm dependencies**. `adws/adw_modules/` is the engine (camelCase file names). `compat/` owns parsing and rendering: CLI, schema validation, subprocess helpers, console markup. Field names that hit sqlite/JSON/prompts stay snake_case. Public ADW functions are camelCase (`loadConfig`, `runTests`, `artifactsExist`, `commitAll`).
+Stamped host engine, Bun, **zero npm dependencies**. `adws/adw_modules/` is the engine (camelCase file names). CLI, schema validation, subprocess helpers, and console markup each live in the file that owns them (`cli.ts`, `schema.ts`, `shell.ts`, `console.ts`). Field names that hit sqlite/JSON/prompts stay snake_case. Public ADW functions are camelCase (`loadConfig`, `runTests`, `artifactsExist`, `commitAll`).
 
 `run.phase(params, body)` is a callback that returns the body's value and observes throws (the only TS shape that preserves "success must be earned"). Overloads give agent phases an `AgentPhaseHandle` with `call`; other kinds do not. Three finalization doors stay separate: throw, `finish()`, SIGTERM/SIGINT. `execute` always calls Pi. Permission `enforce` stays on the happy path. `tools: []` omits `--tools`. Cwd split stays split.
 
@@ -24,7 +24,7 @@ Behavior is pinned by the snapshots and contract tests in `tests/`. The limitati
 
 ## Tradeoffs accepted
 
-- We accept a `compat/` layer in exchange for controlling sqlite, stdout, and prompt bytes.
+- We accept hand-rolled CLI, schema, shell, and markup in exchange for controlling sqlite, stdout, and prompt bytes.
 - We accept callback `phase` in exchange for an un-forgettable failure path.
 - We accept shipping known bugs (permission skip, `tools: []`, quality `operation="build"`, `ok`-less quality tool_call) pinned by negative parity cases.
 - We accept snake_case on the ADW surface against TS convention in exchange for cookbook-identical call sites and sqlite gate names.

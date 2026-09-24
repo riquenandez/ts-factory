@@ -68,7 +68,7 @@ describe("install", () => {
     for (const name of ["cli.ts", "schema.ts", "shell.ts"]) {
       expect(portFiles).toContain(`adws/adw_modules/${name}`);
     }
-    expect(portFiles.some((p) => p.includes("/compat/"))).toBe(false);
+    expect(portFiles.some((p) => p.split("/").includes("compat"))).toBe(false);
     for (const name of ["package.json", "tsconfig.json", "eslint.config.ts", "eslint.config.js"]) {
       expect(portFiles.some((p) => p === name || p.endsWith(`/${name}`))).toBe(false);
     }
