@@ -1,14 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { INTERFACES } from "../../.claude/skills/sssf/factory/adws/adw_modules/agents.ts";
-import { labelFor } from "../../.claude/skills/sssf/factory/adws/adw_modules/toolCalls.ts";
+import { INTERFACES } from "../.claude/skills/sssf/factory/adws/adw_modules/agents.ts";
+import { labelFor } from "../.claude/skills/sssf/factory/adws/adw_modules/toolCalls.ts";
 import { dumpInserts, UUID_RE } from "./harness.ts";
 import { runAdw } from "./runAdw.ts";
 
 const REPO_CLAUDE = join(import.meta.dir, "fixtures/repo_claude");
 const REPO_AGENT = join(import.meta.dir, "fixtures/repo_agent");
-const MODULES = join(import.meta.dir, "../../.claude/skills/sssf/factory/adws/adw_modules");
+const MODULES = join(import.meta.dir, "../.claude/skills/sssf/factory/adws/adw_modules");
 const SESSION_DIRS: Record<string, string> = {
   pi: "pi_sessions",
   claude_code: "claude_sessions",

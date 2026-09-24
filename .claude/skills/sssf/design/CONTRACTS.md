@@ -1,6 +1,6 @@
 # Frozen observable contracts
 
-TypeScript is the spec. These observables are pinned by the snapshots and contract tests under `tools/parity/`. A change to any line is a spec change: update the snapshot in the same commit and describe the bytes in the commit body.
+TypeScript is the spec. These observables are pinned by the snapshots and contract tests under `tests/`. A change to any line is a spec change: update the snapshot in the same commit and describe the bytes in the commit body.
 
 ## CLI
 

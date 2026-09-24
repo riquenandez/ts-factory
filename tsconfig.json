@@ -13,7 +13,7 @@
     "bun-yaml.d.ts",
     ".claude/skills/sssf/factory/adws/**/*.ts",
     ".claude/skills/sssf/scripts/**/*.ts",
-    "tools/parity/**/*.ts"
+    "tests/**/*.ts"
   ],
   "exclude": [
     ".claude/skills/sssf/apps/visualizer/**",

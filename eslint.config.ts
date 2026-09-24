@@ -11,7 +11,7 @@ const ignores = [
 const sources = [
   ".claude/skills/sssf/factory/adws/**/*.ts",
   ".claude/skills/sssf/scripts/**/*.ts",
-  "tools/parity/**/*.ts",
+  "tests/**/*.ts",
 ];
 
 export default tseslint.config(
@@ -24,7 +24,7 @@ export default tseslint.config(
         "error",
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" },
       ],
-      // PORT_CONTRACT: identifiers are camelCase; wire fields (object keys, class fields,
+      // CONTRIBUTING: identifiers are camelCase; wire fields (object keys, class fields,
       // destructured sqlite/JSON columns) keep their Python snake_case spelling.
       "@typescript-eslint/naming-convention": [
         "error",

@@ -23,7 +23,7 @@ Extend `adws/adw_modules/`. All low-level logic lives here; ADW scripts declare 
 - **Never `console.log`.** Report through `run.console`. Every method prints and writes a `log` event, so terminal and UI cannot drift. New output is a new `Console` method.
 - **Four-param rule.** More than four parameters becomes one object typed in `dataTypes.ts`; `AgentCall` and `PhaseParams` are the pattern.
 - **Naming.** TypeScript identifiers are camelCase. Anything that reaches sqlite, JSON, YAML, or a `## Report` example stays snake_case.
-- **Trace, envelope, and handoff bytes are `JSON.stringify`.** The snapshot tests in `tools/parity/` pin them.
+- **Trace, envelope, and handoff bytes are `JSON.stringify`.** The snapshot tests in `tests/` pin them.
 
 ## Add an output type
 

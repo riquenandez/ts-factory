@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { escape, panel, render } from "../../.claude/skills/sssf/factory/adws/adw_modules/compat/markup.ts";
+import { escape, panel, render } from "../.claude/skills/sssf/factory/adws/adw_modules/compat/markup.ts";
 
 describe("markup vs live rich", () => {
   test("plain session line", () => {

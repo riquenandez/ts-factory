@@ -16,7 +16,7 @@ Stamped host engine, Bun, **zero npm dependencies**. `adws/adw_modules/` is the 
 
 Envelopes are branded plain objects (`Envelope<F>`) so `previous.commit_message` reads as a field while the engine re-serializes in declaration order. Schemas at the two trust boundaries (agent JSON, config YAML); plain records inside.
 
-Behavior is pinned by the snapshots and contract tests in `tools/parity/`. The limitations in [KNOWN_ISSUES.md](KNOWN_ISSUES.md) are not protected.
+Behavior is pinned by the snapshots and contract tests in `tests/`. The limitations in [KNOWN_ISSUES.md](KNOWN_ISSUES.md) are not protected.
 
 ## Isomorphic translations
 

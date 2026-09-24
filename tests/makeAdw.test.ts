@@ -3,7 +3,7 @@ import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } f
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const REPO = join(import.meta.dir, "../..");
+const REPO = join(import.meta.dir, "..");
 const MAKE = join(REPO, ".claude/skills/sssf/scripts/makeAdw.ts");
 const GOLDEN = join(import.meta.dir, "fixtures/make_adw/adw_plan_build.golden");
 const MODULES = join(REPO, ".claude/skills/sssf/factory/adws/adw_modules");

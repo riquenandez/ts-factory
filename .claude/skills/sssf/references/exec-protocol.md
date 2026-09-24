@@ -1,6 +1,6 @@
 # Exec Protocol (`sssf-exec/1`)
 
-The `coding_agent: exec` runtime runs an arbitrary command that speaks this stdin/stdout protocol. The command can live in another repository and be written in any language. An adapter is a few dozen lines; the fixture at `tools/parity/fixtures/fake_exec/agent.ts` is the reference example.
+The `coding_agent: exec` runtime runs an arbitrary command that speaks this stdin/stdout protocol. The command can live in another repository and be written in any language. An adapter is a few dozen lines; the fixture at `tests/fixtures/fake_exec/agent.ts` is the reference example.
 
 Everything that makes a node trustworthy stays on the factory side. See [What the factory keeps](#what-the-factory-keeps).
 
@@ -96,7 +96,7 @@ The command must handle two invocations.
 
 **A send.** Refuse to run unless `SSSF_EXEC_PROTOCOL` is `sssf-exec/1`. Read the request from stdin (then stdin is already closed), persist whatever you need under `session_dir` keyed by `session_id`, write JSONL events to stdout, exit 0 when the turn produced assistant text the harness can parse.
 
-`tools/parity/fixtures/fake_exec/agent.ts` is a complete adapter. `--check` is the ready probe; the protocol env is the send-path pin; `session_dir` holds a per-session call counter so a later send with the same `session_id` can continue:
+`tests/fixtures/fake_exec/agent.ts` is a complete adapter. `--check` is the ready probe; the protocol env is the send-path pin; `session_dir` holds a per-session call counter so a later send with the same `session_id` can continue:
 
 ```ts
 if (process.argv.includes("--check")) {

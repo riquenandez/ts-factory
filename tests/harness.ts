@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-export const SKILL = join(import.meta.dir, "../../.claude/skills/sssf");
+export const SKILL = join(import.meta.dir, "../.claude/skills/sssf");
 
 export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 

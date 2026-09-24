@@ -5,7 +5,7 @@
   "scripts": {
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "bun test ./tools/parity/"
+    "test": "bun test ./tests/"
   },
   "devDependencies": {
     "@eslint/js": "9",

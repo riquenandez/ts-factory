@@ -3,7 +3,7 @@ import { Database } from "bun:sqlite";
 import { existsSync, mkdtempSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { registerCleanup, runCleanups } from "../../.claude/skills/sssf/factory/adws/adw_modules/runner.ts";
+import { registerCleanup, runCleanups } from "../.claude/skills/sssf/factory/adws/adw_modules/runner.ts";
 import { stampAdapter } from "./harness.ts";
 import { stampAdw } from "./runAdw.ts";
 

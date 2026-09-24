@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { modelValidate, type Schema } from "../../.claude/skills/sssf/factory/adws/adw_modules/compat/schema.ts";
-import { GenericOutput, ScoutOutput, SSSF_CONFIG } from "../../.claude/skills/sssf/factory/adws/adw_modules/dataTypes.ts";
+import { modelValidate, type Schema } from "../.claude/skills/sssf/factory/adws/adw_modules/compat/schema.ts";
+import { GenericOutput, ScoutOutput, SSSF_CONFIG } from "../.claude/skills/sssf/factory/adws/adw_modules/dataTypes.ts";
 
 function messageOf(fn: () => void): string {
   try {
