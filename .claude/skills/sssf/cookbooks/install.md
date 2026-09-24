@@ -16,12 +16,12 @@ If the skill is in user scope, the path is `~/.claude/skills/sssf/scripts/instal
 
 | Stamped | From | Tracked |
 |---|---|---|
-| `adws/adw_sssf_config/sssf.config.yaml` | `templates/sssf.config.yaml` | yes, the roster |
-| `adws/adw_*.ts` | `templates/adws/` | yes, twelve starter ADWs |
-| `adws/adw_modules/` | `templates/adws/adw_modules/` | yes |
-| `adws/adw_data/prompt_engineering/<agent>/` | `templates/prompt_engineering/` | yes, the user-owned prompts |
-| `adws/adw_data/harness_engineering/` | `templates/harness_engineering/` | yes, pi extensions (`subagents.ts`) |
-| `.env.sample`, `justfile` | `templates/` | yes |
+| `adws/adw_sssf_config/sssf.config.yaml` | `factory/sssf.config.yaml` | yes, the roster |
+| `adws/adw_*.ts` | `factory/adws/` | yes, twelve starter ADWs |
+| `adws/adw_modules/` | `factory/adws/adw_modules/` | yes |
+| `adws/adw_data/prompt_engineering/<agent>/` | `factory/prompt_engineering/` | yes, the user-owned prompts |
+| `adws/adw_data/harness_engineering/` | `factory/harness_engineering/` | yes, pi extensions (`subagents.ts`) |
+| `.env.sample`, `justfile` | `factory/` | yes |
 | `adws/adw_data/sessions/`, `adws/adw_data/sssf.db` | runtime | no, gitignored by the installer |
 
 Prompts and extensions are the user's the moment they land. Edit them under `adws/adw_data/`, never inside the skill.

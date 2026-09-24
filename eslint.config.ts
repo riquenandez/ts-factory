@@ -3,13 +3,13 @@ import tseslint from "typescript-eslint";
 
 const ignores = [
   ".claude/skills/sssf/apps/visualizer/**",
-  ".claude/skills/sssf/templates/harness_engineering/**",
+  ".claude/skills/sssf/factory/harness_engineering/**",
   "**/node_modules/**",
   "**/fixtures/repo_*/**",
 ];
 
 const sources = [
-  ".claude/skills/sssf/templates/adws/**/*.ts",
+  ".claude/skills/sssf/factory/adws/**/*.ts",
   ".claude/skills/sssf/scripts/**/*.ts",
   "tools/parity/**/*.ts",
 ];

@@ -216,7 +216,7 @@ plus whatever the named runtime's own `validate()` reports (for `exec`: a missin
 
 ## Install
 
-- Copies `templates/**` into cwd, preserving mode, skipping `__pycache__`, skipping any
+- Copies `factory/**` into cwd, preserving mode, skipping `__pycache__`, skipping any
   destination that exists unless `--force`.
 - Appends missing `.gitignore` entries under a `# sssf runtime` heading.
 - Prints `sssf installed into <cwd>`, the stamped count and list, the skipped count,

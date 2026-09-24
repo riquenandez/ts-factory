@@ -150,7 +150,7 @@ temp/
 # sssf runtime
 adws/adw_data/sessions/
 # Unanchored: a trace db is never committed, wherever it turns up. Two empty
-# ones had been tracked — adws/sssf.db and templates/adws/sssf.db, the second
+# ones had been tracked — adws/sssf.db and factory/adws/sssf.db, the second
 # of which would have stamped a fake trace db into every target repo.
 sssf.db*
 

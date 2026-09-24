@@ -9,7 +9,7 @@ function utf8(bytes?: Uint8Array | null): string {
   return Buffer.from(bytes ?? []).toString("utf8");
 }
 
-const TS_ADWS = join(SKILL, "templates/adws");
+const TS_ADWS = join(SKILL, "factory/adws");
 
 export interface Case {
   name: string;

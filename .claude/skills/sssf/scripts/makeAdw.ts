@@ -3,7 +3,7 @@
 
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { parseArgs } from "../templates/adws/adw_modules/compat/cli.ts";
+import { parseArgs } from "../factory/adws/adw_modules/compat/cli.ts";
 
 const OUTPUT_TYPES: Record<string, string> = {
   planner: "PlanOutput",

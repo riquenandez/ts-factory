@@ -12,9 +12,9 @@ Existing files are skipped unless --force.
 
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, appendFileSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { parseArgs } from "../templates/adws/adw_modules/compat/cli.ts";
+import { parseArgs } from "../factory/adws/adw_modules/compat/cli.ts";
 
-const TEMPLATES = join(dirname(import.meta.dir), "templates");
+const TEMPLATES = join(dirname(import.meta.dir), "factory");
 
 const GITIGNORE_ENTRIES = [
   "adws/adw_data/sessions/",

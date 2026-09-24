@@ -2,8 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { ensure } from "../../.claude/skills/sssf/templates/adws/adw_modules/session.ts";
-import { defaultConfig, type SSSFConfig } from "../../.claude/skills/sssf/templates/adws/adw_modules/dataTypes.ts";
+import { ensure } from "../../.claude/skills/sssf/factory/adws/adw_modules/session.ts";
+import { defaultConfig, type SSSFConfig } from "../../.claude/skills/sssf/factory/adws/adw_modules/dataTypes.ts";
 
 function cfgIn(dir: string): SSSFConfig {
   const cfg = defaultConfig();

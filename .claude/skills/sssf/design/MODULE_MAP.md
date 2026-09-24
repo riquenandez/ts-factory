@@ -1,6 +1,6 @@
 # Module map
 
-This repo keeps the engine at `.claude/skills/sssf/templates/adws/`.
+This repo keeps the engine at `.claude/skills/sssf/factory/adws/`.
 `install.ts` stamps it to `adws/` in a host repo.
 Every path below is relative to `adws/`.
 

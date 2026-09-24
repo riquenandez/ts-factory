@@ -2,8 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { newId, nowIso } from "../../.claude/skills/sssf/templates/adws/adw_modules/utils.ts";
-import { Tracer } from "../../.claude/skills/sssf/templates/adws/adw_modules/tracer.ts";
+import { newId, nowIso } from "../../.claude/skills/sssf/factory/adws/adw_modules/utils.ts";
+import { Tracer } from "../../.claude/skills/sssf/factory/adws/adw_modules/tracer.ts";
 
 describe("compat", () => {
   test("nowIso uses +00:00 not Z", () => {

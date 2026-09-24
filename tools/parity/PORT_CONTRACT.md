@@ -1,6 +1,6 @@
 # Maintainer contract
 
-TypeScript under `.claude/skills/sssf/templates/` is the product and the spec. Behavior is pinned by the snapshots and contract tests in `tools/parity/`.
+TypeScript under `.claude/skills/sssf/factory/` is the product and the spec. Behavior is pinned by the snapshots and contract tests in `tools/parity/`.
 
 ## What must NOT change
 
@@ -52,4 +52,4 @@ See `.claude/skills/sssf/design/KNOWN_ISSUES.md`. They are not protected. Fixing
 
 ## Layout
 
-The harness is `tools/parity/`. Write the product into `.claude/skills/sssf/templates/adws/`.
+The harness is `tools/parity/`. Write the product into `.claude/skills/sssf/factory/adws/`.

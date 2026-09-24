@@ -6,7 +6,7 @@ import { join } from "node:path";
 const REPO = join(import.meta.dir, "../..");
 const MAKE = join(REPO, ".claude/skills/sssf/scripts/makeAdw.ts");
 const GOLDEN = join(import.meta.dir, "fixtures/make_adw/adw_plan_build.golden");
-const MODULES = join(REPO, ".claude/skills/sssf/templates/adws/adw_modules");
+const MODULES = join(REPO, ".claude/skills/sssf/factory/adws/adw_modules");
 const TSC = join(REPO, "node_modules/.bin/tsc");
 
 async function run(cmd: string[], cwd: string): Promise<{ exit: number; stdout: string; stderr: string }> {
