@@ -2,41 +2,13 @@ import { describe, expect, test } from "bun:test";
 import { comma, fixed, pyStr } from "../../.claude/skills/sssf/templates/adws/adw_modules/compat/format.ts";
 import { shlexJoin } from "../../.claude/skills/sssf/templates/adws/adw_modules/compat/shell.ts";
 import { pyYamlLoad } from "../../.claude/skills/sssf/templates/adws/adw_modules/compat/yaml.ts";
-import { GenericOutput, ScoutOutput } from "../../.claude/skills/sssf/templates/adws/adw_modules/dataTypes.ts";
-
-function messageOf(fn: () => void): string {
-  try {
-    fn();
-  } catch (error) {
-    return error instanceof Error ? error.message : String(error);
-  }
-  throw new Error("expected throw");
-}
+import { GenericOutput } from "../../.claude/skills/sssf/templates/adws/adw_modules/dataTypes.ts";
 
 describe("compat vs live Python", () => {
   test("serdeJson indent=2 matches pydantic modelDumpJson", () => {
     const payload = { status: "success", summary: "hi — there" };
     expect(GenericOutput.dumpJson(GenericOutput.parse(payload), 2)).toBe(
       '{\n  "status": "success",\n  "summary": "hi — there",\n  "artifacts": [],\n  "notes_for_next_agent": ""\n}',
-    );
-  });
-
-  test("validate missing status matches pydantic error prefix", () => {
-    expect(messageOf(() => GenericOutput.parse({ summary: "x" }))).toBe(
-      "1 validation error for GenericOutput\nstatus\n  Field required [type=missing, input_value={'summary': 'x'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.12/v/missing",
-    );
-  });
-
-  test("validate int summary matches pydantic string_type", () => {
-    expect(messageOf(() => GenericOutput.parse({ status: "success", summary: 3 }))).toBe(
-      "1 validation error for GenericOutput\nsummary\n  Input should be a valid string [type=string_type, input_value=3, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.12/v/string_type",
-    );
-  });
-
-  test("validate nested ScoutOutput finding locates findings.0.file", () => {
-    const payload = { status: "success", findings: [{ note: "x" }] };
-    expect(messageOf(() => ScoutOutput.parse(payload))).toBe(
-      "1 validation error for ScoutOutput\nfindings.0.file\n  Field required [type=missing, input_value={'note': 'x'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.12/v/missing",
     );
   });
 

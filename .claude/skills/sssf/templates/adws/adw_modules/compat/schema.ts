@@ -1,5 +1,3 @@
-import { pyRepr } from "./format.ts";
-
 export type FieldKind =
   | "str"
   | "int"
@@ -28,48 +26,34 @@ export interface Schema {
   fields: FieldSpec[];
 }
 
+export interface SchemaProblem {
+  loc: string;
+  problem: string;
+}
+
 export class ValidationError extends Error {
-  constructor(readonly modelName: string, readonly errors: Array<{ loc: string; msg: string; type: string; input: unknown }>) {
-    super(formatPydantic(modelName, errors));
+  constructor(readonly modelName: string, readonly errors: SchemaProblem[]) {
+    super(formatErrors(modelName, errors));
     this.name = "ValidationError";
   }
 }
 
-function typeName(value: unknown): string {
-  if (value === null || value === undefined) return "NoneType";
-  if (Array.isArray(value)) return "list";
-  if (typeof value === "object") return "dict";
-  if (typeof value === "boolean") return "bool";
-  if (typeof value === "number") return Number.isInteger(value) ? "int" : "float";
-  if (typeof value === "string") return "str";
-  return typeof value;
-}
-
-function formatPydantic(modelName: string, errors: ValidationError["errors"]): string {
-  const n = errors.length;
-  const lines = [`${n} validation error${n === 1 ? "" : "s"} for ${modelName}`];
-  for (const err of errors) {
-    const shown = err.input === undefined ? {} : err.input;
-    lines.push(err.loc);
-    lines.push(`  ${err.msg} [type=${err.type}, input_value=${pyReprInput(shown)}, input_type=${typeName(shown)}]`);
-    lines.push(`    For further information visit https://errors.pydantic.dev/2.12/v/${err.type}`);
-  }
+function formatErrors(modelName: string, errors: SchemaProblem[]): string {
+  const lines = [`${modelName} validation failed:`];
+  for (const err of errors) lines.push(`- ${err.loc}: ${err.problem}`);
   return lines.join("\n");
 }
 
-function pyReprInput(value: unknown): string {
-  if (typeof value === "string") return `'${value.replace(/\\/g, "\\\\").replace(/'/g, "\\'")}'`;
-  if (value === null || value === undefined) return "None";
-  if (value === true) return "True";
-  if (value === false) return "False";
-  if (Array.isArray(value)) return `[${value.map(pyReprInput).join(", ")}]`;
-  if (typeof value === "object") {
-    const entries = Object.entries(value as Record<string, unknown>).map(
-      ([k, v]) => `'${k}': ${pyReprInput(v)}`,
-    );
-    return `{${entries.join(", ")}}`;
-  }
-  return String(value);
+function fail(loc: string, problem: string): never {
+  throw { loc, problem };
+}
+
+function oneOf(literals: unknown[] | undefined): string {
+  return `must be one of: ${(literals ?? []).map((v) => String(v)).join(", ")}`;
+}
+
+function isProblem(value: unknown): value is SchemaProblem {
+  return value !== null && typeof value === "object" && "problem" in value && "loc" in value;
 }
 
 function coerce(field: FieldSpec, value: unknown): unknown {
@@ -77,38 +61,32 @@ function coerce(field: FieldSpec, value: unknown): unknown {
     if (field.defaultFactory) return field.defaultFactory();
     if ("default" in field) return field.default;
     if (field.optional) return null;
-    throw { type: "missing", msg: "Field required", loc: field.name };
+    fail(field.name, "required");
   }
   if (value === null && field.optional) return null;
   switch (field.kind) {
     case "str":
       if (typeof value === "string") return value;
-      throw { type: "string_type", msg: "Input should be a valid string", loc: field.name };
+      return fail(field.name, "expected string");
     case "int":
       if (typeof value === "number" && Number.isInteger(value)) return value;
       if (typeof value === "string" && /^-?\d+$/.test(value)) return Number(value);
       if (typeof value === "boolean") return value ? 1 : 0;
-      throw { type: "int_type", msg: "Input should be a valid integer", loc: field.name };
+      return fail(field.name, "expected integer");
     case "float":
       if (typeof value === "number") return value;
       if (typeof value === "string" && value !== "" && !Number.isNaN(Number(value))) return Number(value);
-      throw { type: "float_type", msg: "Input should be a valid number", loc: field.name };
+      return fail(field.name, "expected number");
     case "bool":
       if (typeof value === "boolean") return value;
       if (value === 1 || value === "true" || value === "True" || value === "1") return true;
       if (value === 0 || value === "false" || value === "False" || value === "0") return false;
-      throw { type: "bool_parsing", msg: "Input should be a valid boolean", loc: field.name };
+      return fail(field.name, "expected boolean");
     case "literal":
       if (field.literals?.includes(value)) return value;
-      throw {
-        type: "literal_error",
-        msg: `Input should be ${field.literals?.map((v) => pyRepr(v)).join(" or ")}`,
-        loc: field.name,
-      };
+      return fail(field.name, oneOf(field.literals));
     case "list": {
-      if (!Array.isArray(value)) {
-        throw { type: "list_type", msg: "Input should be a valid list", loc: field.name };
-      }
+      if (!Array.isArray(value)) fail(field.name, "expected list");
       return value.map((item, index) => {
         if (!field.inner) return item;
         try {
@@ -120,20 +98,17 @@ function coerce(field: FieldSpec, value: unknown): unknown {
               caught.errors.map((err) => ({ ...err, loc: `${index}.${err.loc}` })),
             );
           }
-          if (caught && typeof caught === "object" && "type" in caught) {
-            const c = caught as { type: string; msg: string; loc: string };
-            throw { ...c, loc: `${field.name}.${index}` };
-          }
+          if (isProblem(caught)) fail(`${field.name}.${index}`, caught.problem);
           throw caught;
         }
       });
     }
     case "model":
-      if (!field.model) throw { type: "model_type", msg: "Input should be a valid dictionary", loc: field.name };
+      if (!field.model) fail(field.name, "expected object");
       return modelValidate(field.model, value);
     case "dict":
       if (value === null || typeof value !== "object" || Array.isArray(value)) {
-        throw { type: "dict_type", msg: "Input should be a valid dictionary", loc: field.name };
+        fail(field.name, "expected object");
       }
       return value;
     case "any":
@@ -146,16 +121,11 @@ function coerce(field: FieldSpec, value: unknown): unknown {
 
 export function modelValidate(schema: Schema, raw: unknown): Record<string, unknown> {
   if (raw === null || typeof raw !== "object" || Array.isArray(raw)) {
-    throw new ValidationError(schema.name, [{
-      loc: schema.name,
-      msg: "Input should be a valid dictionary or instance",
-      type: "model_type",
-      input: raw,
-    }]);
+    throw new ValidationError(schema.name, [{ loc: schema.name, problem: "expected object" }]);
   }
   const src = raw as Record<string, unknown>;
   const out: Record<string, unknown> = {};
-  const errors: ValidationError["errors"] = [];
+  const errors: SchemaProblem[] = [];
   for (const field of schema.fields) {
     try {
       out[field.name] = coerce(field, src[field.name]);
@@ -164,9 +134,8 @@ export function modelValidate(schema: Schema, raw: unknown): Record<string, unkn
         for (const err of caught.errors) {
           errors.push({ ...err, loc: `${field.name}.${err.loc}` });
         }
-      } else if (caught && typeof caught === "object" && "type" in caught) {
-        const c = caught as { type: string; msg: string; loc: string };
-        errors.push({ loc: c.loc, msg: c.msg, type: c.type, input: src[field.name] === undefined ? src : src[field.name] });
+      } else if (isProblem(caught)) {
+        errors.push({ loc: caught.loc, problem: caught.problem });
       } else {
         throw caught;
       }
@@ -192,10 +161,6 @@ export function modelDump(schema: Schema, obj: Record<string, unknown>): Record<
     }
   }
   return out;
-}
-
-export function modelDumpJson(schema: Schema, obj: Record<string, unknown>, indent?: number): string {
-  return JSON.stringify(modelDump(schema, obj), null, indent);
 }
 
 export function fieldNames(schema: Schema): string[] {

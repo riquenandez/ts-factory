@@ -1,4 +1,4 @@
-import { fieldNames, modelDump, modelDumpJson, modelValidate, type Schema } from "./compat/schema.ts";
+import { fieldNames, modelDump, modelValidate, type Schema } from "./compat/schema.ts";
 
 export type PhaseKind = "engineer" | "agent" | "code";
 export type PhaseStatus = "queued" | "running" | "success" | "fail";
@@ -41,7 +41,7 @@ function envelopeType<T extends EnvelopeBase>(name: string, extra: Schema["field
       return modelDump(schema, obj as unknown as Record<string, unknown>);
     },
     dumpJson(obj: T, indent?: number): string {
-      return modelDumpJson(schema, obj as unknown as Record<string, unknown>, indent);
+      return JSON.stringify(modelDump(schema, obj as unknown as Record<string, unknown>), null, indent);
     },
   };
 }
