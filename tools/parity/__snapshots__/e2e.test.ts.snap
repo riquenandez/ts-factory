@@ -1,0 +1,575 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`pinned ADW runs missing prompt is argparse exit 2: stdout 1`] = `""`;
+
+exports[`pinned ADW runs missing prompt is argparse exit 2: exit+stderr 1`] = `
+"exit 2
+usage: adw_quality.ts [-h] [--config CONFIG] [--adw-id ADW_ID] prompt
+adw_quality.ts: error: the following arguments are required: prompt
+"
+`;
+
+exports[`pinned ADW runs missing prompt is argparse exit 2: sqlite 1`] = `""`;
+
+exports[`pinned ADW runs missing prompt is argparse exit 2: events.jsonl 1`] = `""`;
+
+exports[`pinned ADW runs missing prompt is argparse exit 2: session files 1`] = `""`;
+
+exports[`pinned ADW runs missing prompt is argparse exit 2: git status 1`] = `""`;
+
+exports[`pinned ADW runs placeholder quality blocks succeed with pinned adw-id: stdout 1`] = `
+"adw_id: abcd1234   engineer enrique
+▶ 01 request  engineer · enrique  Capture why quality verification was requested
+  · input: check
+  ✓ request <DUR>s
+▶ 02 quality  code · quality  Run the deterministic quality blocks
+  · quality test: echo 'PLACEHOLDER test: edit adws/adw_modules/quality.ts and replace this echo with the real test command'
+  · quality test: passed (exit 0, <DUR>s)
+  · quality lint: echo 'PLACEHOLDER lint: edit adws/adw_modules/quality.ts and replace this echo with the real lint command'
+  · quality lint: passed (exit 0, <DUR>s)
+  · quality typecheck: echo 'PLACEHOLDER typecheck: edit adws/adw_modules/quality.ts and replace this echo with the real typecheck command'
+  · quality typecheck: passed (exit 0, <DUR>s)
+  · quality build: echo 'PLACEHOLDER build: edit adws/adw_modules/quality.ts and replace this echo with the real build command'
+  · quality build: passed (exit 0, <DUR>s)
+  · passed: True, checks: 4/4, artifacts: adws/adw_data/sessions/abcd1234/context_handoff/quality/02_test/command.log, adws/adw_data/sessions/abcd1234/context_hand…
+  ✓ quality <DUR>s
+╭───────── ADW complete ──────────╮
+│  status   ✓ success             │
+│  phases   2/2 passed            │
+│  tokens   0                     │
+│  cost     $<COST>               │
+│  adw_id   abcd1234              │
+│  db       adws/adw_data/sssf.db │
+│  next     just phases abcd1234  │
+╰─────────────────────────────────╯
+"
+`;
+
+exports[`pinned ADW runs placeholder quality blocks succeed with pinned adw-id: exit+stderr 1`] = `
+"exit 0
+"
+`;
+
+exports[`pinned ADW runs placeholder quality blocks succeed with pinned adw-id: sqlite 1`] = `
+"PRAGMA foreign_keys=OFF;
+BEGIN TRANSACTION;
+CREATE TABLE sessions (
+  adw_id        TEXT PRIMARY KEY,
+  adw_name      TEXT,                -- ADW script(s) run, e.g. "adw_plan + adw_build_test"
+  request       TEXT,
+  status        TEXT,
+  engineer      TEXT,
+  started_at    TEXT, ended_at TEXT,
+  total_tokens  INTEGER DEFAULT 0, total_cost REAL DEFAULT 0,
+  archived      INTEGER DEFAULT 0   -- review triage, set by the UI; never by a run
+);
+INSERT INTO sessions VALUES('abcd1234','adw_quality','check','success','enrique','<TS>','<TS>',0,0.0,0);
+CREATE TABLE phases (
+  phase_id      TEXT PRIMARY KEY,
+  adw_id        TEXT REFERENCES sessions,
+  seq           INTEGER,
+  name TEXT, kind TEXT, owner TEXT, description TEXT,
+  status        TEXT DEFAULT 'fail',
+  attempt       INTEGER DEFAULT 0, retries INTEGER DEFAULT 0,
+  error         TEXT,
+  started_at    TEXT, ended_at TEXT
+);
+INSERT INTO phases VALUES('abcd1234_01_request','abcd1234',1,'request','engineer','enrique','Capture why quality verification was requested','success',0,0,NULL,'<TS>','<TS>');
+INSERT INTO phases VALUES('abcd1234_02_quality','abcd1234',2,'quality','code','quality','Run the deterministic quality blocks','success',0,0,NULL,'<TS>','<TS>');
+CREATE TABLE events (
+  event_id      TEXT PRIMARY KEY,
+  adw_id        TEXT REFERENCES sessions,
+  phase_id      TEXT REFERENCES phases,
+  parent_id     TEXT,
+  type          TEXT,
+  name          TEXT,
+  payload_json  TEXT,
+  tokens        INTEGER,
+  started_at    TEXT, ended_at TEXT
+);
+INSERT INTO events VALUES('evt_<ID>','abcd1234','','','log','console','{"message": "adw_id: abcd1234   engineer enrique", "level": "info"}',NULL,'<TS>',NULL);
+INSERT INTO events VALUES('evt_<ID>','abcd1234','abcd1234_01_request','','phase_start','request','{"kind": "engineer", "owner": "enrique", "description": "Capture why quality verification was requested"}',NULL,'<TS>',NULL);
+INSERT INTO events VALUES('evt_<ID>','abcd1234','abcd1234_01_request','','log','request','{"message": "\\u25b6 01 request  engineer \\u00b7 enrique  Capture why quality verification was requested", "level": "info"}',NULL,'<TS>',NULL);
+INSERT INTO events VALUES('evt_<ID>','abcd1234','abcd1234_01_request','','log','request','{"input": "check"}',NULL,'<TS>',NULL);
+INSERT INTO events VALUES('evt_<ID>','abcd1234','abcd1234_01_request','','log','request','{"message": "  \\u00b7 input: check", "level": "info"}',NULL,'<TS>',NULL);
+INSERT INTO events VALUES('evt_<ID>','abcd1234','abcd1234_01_request','','phase_end','request','{"status": "success"}',NULL,'<TS>',NULL);
+INSERT INTO events VALUES('evt_<ID>','abcd1234','abcd1234_01_request','','log','request','{"message": "  \\u2713 request <DUR>s", "level": "info"}',NULL,'<TS>',NULL);
+INSERT INTO events VALUES('evt_<ID>','abcd1234','abcd1234_02_quality','','phase_start','quality','{"kind": "code", "owner": "quality", "description": "Run the deterministic quality blocks"}',NULL,'<TS>',NULL);
+INSERT INTO events VALUES('evt_<ID>','abcd1234','abcd1234_02_quality','','log','quality','{"message": "\\u25b6 02 quality  code \\u00b7 quality  Run the deterministic quality blocks", "level": "info"}',NULL,'<TS>',NULL);
+INSERT INTO events VALUES('evt_<ID>','abcd1234','abcd1234_02_quality','','log','quality','{"message": "  \\u00b7 quality test: echo ''PLACEHOLDER test: edit adws/adw_modules/quality.ts and replace this echo with the real test command''", "level": "info"}',NULL,'<TS>',NULL);
+INSERT INTO events VALUES('evt_<ID>','abcd1234','abcd1234_02_quality','','tool_call','quality:test','{"area": "backend", "operation": "build", "command": "echo ''PLACEHOLDER test: edit adws/adw_modules/quality.ts and replace this echo with the real test command''", "returncode": 0, "passed": true, "output_artifact": "adws/adw_data/sessions/abcd1234/context_handoff/quality/02_test/command.log"}',NULL,'<TS>','<TS>');
+INSERT INTO events VALUES('evt_<ID>','abcd1234','abcd1234_02_quality','','log','quality','{"message": "  \\u00b7 quality test: passed (exit 0, <DUR>s)", "level": "info"}',NULL,'<TS>',NULL);
+INSERT INTO events VALUES('evt_<ID>','abcd1234','abcd1234_02_quality','','log','quality','{"message": "  \\u00b7 quality lint: echo ''PLACEHOLDER lint: edit adws/adw_modules/quality.ts and replace this echo with the real lint command''", "level": "info"}',NULL,'<TS>',NULL);
+INSERT INTO events VALUES('evt_<ID>','abcd1234','abcd1234_02_quality','','tool_call','quality:lint','{"area": "backend", "operation": "lint", "command": "echo ''PLACEHOLDER lint: edit adws/adw_modules/quality.ts and replace this echo with the real lint command''", "returncode": 0, "passed": true, "output_artifact": "adws/adw_data/sessions/abcd1234/context_handoff/quality/02_lint/command.log"}',NULL,'<TS>','<TS>');
+INSERT INTO events VALUES('evt_<ID>','abcd1234','abcd1234_02_quality','','log','quality','{"message": "  \\u00b7 quality lint: passed (exit 0, <DUR>s)", "level": "info"}',NULL,'<TS>',NULL);
+INSERT INTO events VALUES('evt_<ID>','abcd1234','abcd1234_02_quality','','log','quality','{"message": "  \\u00b7 quality typecheck: echo ''PLACEHOLDER typecheck: edit adws/adw_modules/quality.ts and replace this echo with the real typecheck command''", "level": "info"}',NULL,'<TS>',NULL);
+INSERT INTO events VALUES('evt_<ID>','abcd1234','abcd1234_02_quality','','tool_call','quality:typecheck','{"area": "backend", "operation": "typecheck", "command": "echo ''PLACEHOLDER typecheck: edit adws/adw_modules/quality.ts and replace this echo with the real typecheck command''", "returncode": 0, "passed": true, "output_artifact": "adws/adw_data/sessions/abcd1234/context_handoff/quality/02_typecheck/command.log"}',NULL,'<TS>','<TS>');
+INSERT INTO events VALUES('evt_<ID>','abcd1234','abcd1234_02_quality','','log','quality','{"message": "  \\u00b7 quality typecheck: passed (exit 0, <DUR>s)", "level": "info"}',NULL,'<TS>',NULL);
+INSERT INTO events VALUES('evt_<ID>','abcd1234','abcd1234_02_quality','','log','quality','{"message": "  \\u00b7 quality build: echo ''PLACEHOLDER build: edit adws/adw_modules/quality.ts and replace this echo with the real build command''", "level": "info"}',NULL,'<TS>',NULL);
+INSERT INTO events VALUES('evt_<ID>','abcd1234','abcd1234_02_quality','','tool_call','quality:build','{"area": "backend", "operation": "build", "command": "echo ''PLACEHOLDER build: edit adws/adw_modules/quality.ts and replace this echo with the real build command''", "returncode": 0, "passed": true, "output_artifact": "adws/adw_data/sessions/abcd1234/context_handoff/quality/02_build/command.log"}',NULL,'<TS>','<TS>');
+INSERT INTO events VALUES('evt_<ID>','abcd1234','abcd1234_02_quality','','log','quality','{"message": "  \\u00b7 quality build: passed (exit 0, <DUR>s)", "level": "info"}',NULL,'<TS>',NULL);
+INSERT INTO events VALUES('evt_<ID>','abcd1234','abcd1234_02_quality','','log','quality','{"passed": true, "checks": "4/4", "artifacts": "adws/adw_data/sessions/abcd1234/context_handoff/quality/02_test/command.log, adws/adw_data/sessions/abcd1234/context_handoff/quality/02_lint/command.log, adws/adw_data/sessions/abcd1234/context_handoff/quality/02_typecheck/command.log, adws/adw_data/sessions/abcd1234/context_handoff/quality/02_build/command.log"}',NULL,'<TS>',NULL);
+INSERT INTO events VALUES('evt_<ID>','abcd1234','abcd1234_02_quality','','log','quality','{"message": "  \\u00b7 passed: True, checks: 4/4, artifacts: adws/adw_data/sessions/abcd1234/context_handoff/quality/02_test/command.log, adws/adw_data/sessions/abcd1234/context_hand\\u2026", "level": "info"}',NULL,'<TS>',NULL);
+INSERT INTO events VALUES('evt_<ID>','abcd1234','abcd1234_02_quality','','phase_end','quality','{"status": "success"}',NULL,'<TS>',NULL);
+INSERT INTO events VALUES('evt_<ID>','abcd1234','abcd1234_02_quality','','log','quality','{"message": "  \\u2713 quality <DUR>s", "level": "info"}',NULL,'<TS>',NULL);
+INSERT INTO events VALUES('evt_<ID>','abcd1234','','','log','console','{"message": "session abcd1234 success \\u00b7 2/2 phases \\u00b7 0 tokens \\u00b7 $<COST>", "level": "info"}',NULL,'<TS>',NULL);
+CREATE TABLE envelopes (
+  envelope_id   TEXT PRIMARY KEY,
+  adw_id        TEXT REFERENCES sessions,
+  phase_id      TEXT REFERENCES phases,
+  agent         TEXT,
+  output_type   TEXT,
+  payload_json  TEXT,
+  valid         INTEGER,
+  attempt       INTEGER,
+  created_at    TEXT
+);
+CREATE TABLE gate_results (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  adw_id        TEXT REFERENCES sessions,
+  phase_id      TEXT REFERENCES phases,
+  attempt       INTEGER,
+  gate          TEXT,
+  passed        INTEGER,
+  violations_json TEXT,
+  checks_json   TEXT,               -- [{item, ok, note}] — WHAT the gate verified
+  created_at    TEXT
+);
+CREATE TABLE processes (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  adw_id        TEXT REFERENCES sessions,
+  kind          TEXT,                -- 'adw' (the workflow process) | 'agent' (a coding-agent child)
+  name          TEXT,                -- '' for the adw, the agent name for a child
+  pid           INTEGER,
+  command       TEXT,                -- what the pid was, so a recycled pid is not killed by mistake
+  started_at    TEXT, ended_at TEXT  -- ended_at NULL = believed alive
+);
+INSERT INTO processes VALUES(1,'abcd1234','adw','',0,'adw_quality.ts check --adw-id abcd1234','<TS>','<TS>');
+CREATE TABLE agent_sessions (
+  adw_id        TEXT REFERENCES sessions,
+  agent         TEXT,
+  coding_agent  TEXT, model TEXT, color TEXT,
+  session_id    TEXT,
+  context_tokens INTEGER,           -- window occupancy after the agent's last turn
+  context_window INTEGER,           -- the model's ceiling; 0/NULL = unknown
+  created_at    TEXT, last_used_at TEXT,
+  PRIMARY KEY (adw_id, agent)
+);
+INSERT INTO sqlite_sequence VALUES('processes',1);
+COMMIT;
+"
+`;
+
+exports[`pinned ADW runs placeholder quality blocks succeed with pinned adw-id: events.jsonl 1`] = `
+"{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "", "type": "log", "name": "console", "payload": {"message": "adw_id: abcd1234   engineer enrique", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_01_request", "type": "phase_start", "name": "request", "payload": {"kind": "engineer", "owner": "enrique", "description": "Capture why quality verification was requested"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_01_request", "type": "log", "name": "request", "payload": {"message": "\\u25b6 01 request  engineer \\u00b7 enrique  Capture why quality verification was requested", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_01_request", "type": "log", "name": "request", "payload": {"input": "check"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_01_request", "type": "log", "name": "request", "payload": {"message": "  \\u00b7 input: check", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_01_request", "type": "phase_end", "name": "request", "payload": {"status": "success"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_01_request", "type": "log", "name": "request", "payload": {"message": "  \\u2713 request <DUR>s", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_quality", "type": "phase_start", "name": "quality", "payload": {"kind": "code", "owner": "quality", "description": "Run the deterministic quality blocks"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_quality", "type": "log", "name": "quality", "payload": {"message": "\\u25b6 02 quality  code \\u00b7 quality  Run the deterministic quality blocks", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_quality", "type": "log", "name": "quality", "payload": {"message": "  \\u00b7 quality test: echo 'PLACEHOLDER test: edit adws/adw_modules/quality.ts and replace this echo with the real test command'", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_quality", "type": "tool_call", "name": "quality:test", "payload": {"area": "backend", "operation": "build", "command": "echo 'PLACEHOLDER test: edit adws/adw_modules/quality.ts and replace this echo with the real test command'", "returncode": 0, "passed": true, "output_artifact": "adws/adw_data/sessions/abcd1234/context_handoff/quality/02_test/command.log"}, "parent_id": "", "tokens": null, "started_at": "<TS>", "ended_at": "<TS>"}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_quality", "type": "log", "name": "quality", "payload": {"message": "  \\u00b7 quality test: passed (exit 0, <DUR>s)", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_quality", "type": "log", "name": "quality", "payload": {"message": "  \\u00b7 quality lint: echo 'PLACEHOLDER lint: edit adws/adw_modules/quality.ts and replace this echo with the real lint command'", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_quality", "type": "tool_call", "name": "quality:lint", "payload": {"area": "backend", "operation": "lint", "command": "echo 'PLACEHOLDER lint: edit adws/adw_modules/quality.ts and replace this echo with the real lint command'", "returncode": 0, "passed": true, "output_artifact": "adws/adw_data/sessions/abcd1234/context_handoff/quality/02_lint/command.log"}, "parent_id": "", "tokens": null, "started_at": "<TS>", "ended_at": "<TS>"}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_quality", "type": "log", "name": "quality", "payload": {"message": "  \\u00b7 quality lint: passed (exit 0, <DUR>s)", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_quality", "type": "log", "name": "quality", "payload": {"message": "  \\u00b7 quality typecheck: echo 'PLACEHOLDER typecheck: edit adws/adw_modules/quality.ts and replace this echo with the real typecheck command'", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_quality", "type": "tool_call", "name": "quality:typecheck", "payload": {"area": "backend", "operation": "typecheck", "command": "echo 'PLACEHOLDER typecheck: edit adws/adw_modules/quality.ts and replace this echo with the real typecheck command'", "returncode": 0, "passed": true, "output_artifact": "adws/adw_data/sessions/abcd1234/context_handoff/quality/02_typecheck/command.log"}, "parent_id": "", "tokens": null, "started_at": "<TS>", "ended_at": "<TS>"}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_quality", "type": "log", "name": "quality", "payload": {"message": "  \\u00b7 quality typecheck: passed (exit 0, <DUR>s)", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_quality", "type": "log", "name": "quality", "payload": {"message": "  \\u00b7 quality build: echo 'PLACEHOLDER build: edit adws/adw_modules/quality.ts and replace this echo with the real build command'", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_quality", "type": "tool_call", "name": "quality:build", "payload": {"area": "backend", "operation": "build", "command": "echo 'PLACEHOLDER build: edit adws/adw_modules/quality.ts and replace this echo with the real build command'", "returncode": 0, "passed": true, "output_artifact": "adws/adw_data/sessions/abcd1234/context_handoff/quality/02_build/command.log"}, "parent_id": "", "tokens": null, "started_at": "<TS>", "ended_at": "<TS>"}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_quality", "type": "log", "name": "quality", "payload": {"message": "  \\u00b7 quality build: passed (exit 0, <DUR>s)", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_quality", "type": "log", "name": "quality", "payload": {"passed": true, "checks": "4/4", "artifacts": "adws/adw_data/sessions/abcd1234/context_handoff/quality/02_test/command.log, adws/adw_data/sessions/abcd1234/context_handoff/quality/02_lint/command.log, adws/adw_data/sessions/abcd1234/context_handoff/quality/02_typecheck/command.log, adws/adw_data/sessions/abcd1234/context_handoff/quality/02_build/command.log"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_quality", "type": "log", "name": "quality", "payload": {"message": "  \\u00b7 passed: True, checks: 4/4, artifacts: adws/adw_data/sessions/abcd1234/context_handoff/quality/02_test/command.log, adws/adw_data/sessions/abcd1234/context_hand\\u2026", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_quality", "type": "phase_end", "name": "quality", "payload": {"status": "success"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_quality", "type": "log", "name": "quality", "payload": {"message": "  \\u2713 quality <DUR>s", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "", "type": "log", "name": "console", "payload": {"message": "session abcd1234 success \\u00b7 2/2 phases \\u00b7 0 tokens \\u00b7 $<COST>", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+"
+`;
+
+exports[`pinned ADW runs placeholder quality blocks succeed with pinned adw-id: session files 1`] = `
+"=== abcd1234/context_handoff/quality/02_build/command.log ===
+$ echo 'PLACEHOLDER build: edit adws/adw_modules/quality.ts and replace this echo with the real build command'
+exit: 0
+duration_seconds: 0
+
+--- stdout ---
+PLACEHOLDER build: edit adws/adw_modules/quality.ts and replace this echo with the real build command
+
+--- stderr ---
+
+
+=== abcd1234/context_handoff/quality/02_lint/command.log ===
+$ echo 'PLACEHOLDER lint: edit adws/adw_modules/quality.ts and replace this echo with the real lint command'
+exit: 0
+duration_seconds: 0
+
+--- stdout ---
+PLACEHOLDER lint: edit adws/adw_modules/quality.ts and replace this echo with the real lint command
+
+--- stderr ---
+
+
+=== abcd1234/context_handoff/quality/02_test/command.log ===
+$ echo 'PLACEHOLDER test: edit adws/adw_modules/quality.ts and replace this echo with the real test command'
+exit: 0
+duration_seconds: 0
+
+--- stdout ---
+PLACEHOLDER test: edit adws/adw_modules/quality.ts and replace this echo with the real test command
+
+--- stderr ---
+
+
+=== abcd1234/context_handoff/quality/02_typecheck/command.log ===
+$ echo 'PLACEHOLDER typecheck: edit adws/adw_modules/quality.ts and replace this echo with the real typecheck command'
+exit: 0
+duration_seconds: 0
+
+--- stdout ---
+PLACEHOLDER typecheck: edit adws/adw_modules/quality.ts and replace this echo with the real typecheck command
+
+--- stderr ---
+
+
+=== abcd1234/events.jsonl ===
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "", "type": "log", "name": "console", "payload": {"message": "adw_id: abcd1234   engineer enrique", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_01_request", "type": "phase_start", "name": "request", "payload": {"kind": "engineer", "owner": "enrique", "description": "Capture why quality verification was requested"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_01_request", "type": "log", "name": "request", "payload": {"message": "\\u25b6 01 request  engineer \\u00b7 enrique  Capture why quality verification was requested", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_01_request", "type": "log", "name": "request", "payload": {"input": "check"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_01_request", "type": "log", "name": "request", "payload": {"message": "  \\u00b7 input: check", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_01_request", "type": "phase_end", "name": "request", "payload": {"status": "success"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_01_request", "type": "log", "name": "request", "payload": {"message": "  \\u2713 request <DUR>s", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_quality", "type": "phase_start", "name": "quality", "payload": {"kind": "code", "owner": "quality", "description": "Run the deterministic quality blocks"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_quality", "type": "log", "name": "quality", "payload": {"message": "\\u25b6 02 quality  code \\u00b7 quality  Run the deterministic quality blocks", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_quality", "type": "log", "name": "quality", "payload": {"message": "  \\u00b7 quality test: echo 'PLACEHOLDER test: edit adws/adw_modules/quality.ts and replace this echo with the real test command'", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_quality", "type": "tool_call", "name": "quality:test", "payload": {"area": "backend", "operation": "build", "command": "echo 'PLACEHOLDER test: edit adws/adw_modules/quality.ts and replace this echo with the real test command'", "returncode": 0, "passed": true, "output_artifact": "adws/adw_data/sessions/abcd1234/context_handoff/quality/02_test/command.log"}, "parent_id": "", "tokens": null, "started_at": "<TS>", "ended_at": "<TS>"}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_quality", "type": "log", "name": "quality", "payload": {"message": "  \\u00b7 quality test: passed (exit 0, <DUR>s)", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_quality", "type": "log", "name": "quality", "payload": {"message": "  \\u00b7 quality lint: echo 'PLACEHOLDER lint: edit adws/adw_modules/quality.ts and replace this echo with the real lint command'", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_quality", "type": "tool_call", "name": "quality:lint", "payload": {"area": "backend", "operation": "lint", "command": "echo 'PLACEHOLDER lint: edit adws/adw_modules/quality.ts and replace this echo with the real lint command'", "returncode": 0, "passed": true, "output_artifact": "adws/adw_data/sessions/abcd1234/context_handoff/quality/02_lint/command.log"}, "parent_id": "", "tokens": null, "started_at": "<TS>", "ended_at": "<TS>"}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_quality", "type": "log", "name": "quality", "payload": {"message": "  \\u00b7 quality lint: passed (exit 0, <DUR>s)", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_quality", "type": "log", "name": "quality", "payload": {"message": "  \\u00b7 quality typecheck: echo 'PLACEHOLDER typecheck: edit adws/adw_modules/quality.ts and replace this echo with the real typecheck command'", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_quality", "type": "tool_call", "name": "quality:typecheck", "payload": {"area": "backend", "operation": "typecheck", "command": "echo 'PLACEHOLDER typecheck: edit adws/adw_modules/quality.ts and replace this echo with the real typecheck command'", "returncode": 0, "passed": true, "output_artifact": "adws/adw_data/sessions/abcd1234/context_handoff/quality/02_typecheck/command.log"}, "parent_id": "", "tokens": null, "started_at": "<TS>", "ended_at": "<TS>"}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_quality", "type": "log", "name": "quality", "payload": {"message": "  \\u00b7 quality typecheck: passed (exit 0, <DUR>s)", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_quality", "type": "log", "name": "quality", "payload": {"message": "  \\u00b7 quality build: echo 'PLACEHOLDER build: edit adws/adw_modules/quality.ts and replace this echo with the real build command'", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_quality", "type": "tool_call", "name": "quality:build", "payload": {"area": "backend", "operation": "build", "command": "echo 'PLACEHOLDER build: edit adws/adw_modules/quality.ts and replace this echo with the real build command'", "returncode": 0, "passed": true, "output_artifact": "adws/adw_data/sessions/abcd1234/context_handoff/quality/02_build/command.log"}, "parent_id": "", "tokens": null, "started_at": "<TS>", "ended_at": "<TS>"}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_quality", "type": "log", "name": "quality", "payload": {"message": "  \\u00b7 quality build: passed (exit 0, <DUR>s)", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_quality", "type": "log", "name": "quality", "payload": {"passed": true, "checks": "4/4", "artifacts": "adws/adw_data/sessions/abcd1234/context_handoff/quality/02_test/command.log, adws/adw_data/sessions/abcd1234/context_handoff/quality/02_lint/command.log, adws/adw_data/sessions/abcd1234/context_handoff/quality/02_typecheck/command.log, adws/adw_data/sessions/abcd1234/context_handoff/quality/02_build/command.log"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_quality", "type": "log", "name": "quality", "payload": {"message": "  \\u00b7 passed: True, checks: 4/4, artifacts: adws/adw_data/sessions/abcd1234/context_handoff/quality/02_test/command.log, adws/adw_data/sessions/abcd1234/context_hand\\u2026", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_quality", "type": "phase_end", "name": "quality", "payload": {"status": "success"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_quality", "type": "log", "name": "quality", "payload": {"message": "  \\u2713 quality <DUR>s", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "", "type": "log", "name": "console", "payload": {"message": "session abcd1234 success \\u00b7 2/2 phases \\u00b7 0 tokens \\u00b7 $<COST>", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+
+"
+`;
+
+exports[`pinned ADW runs placeholder quality blocks succeed with pinned adw-id: git status 1`] = `
+"?? adws/adw_data/
+"
+`;
+
+exports[`pinned ADW runs -- ends options so later flags become positionals: stdout 1`] = `""`;
+
+exports[`pinned ADW runs -- ends options so later flags become positionals: exit+stderr 1`] = `
+"exit 2
+usage: adw_quality.ts [-h] [--config CONFIG] [--adw-id ADW_ID] prompt
+adw_quality.ts: error: unrecognized arguments: --adw-id abcd1234
+"
+`;
+
+exports[`pinned ADW runs -- ends options so later flags become positionals: sqlite 1`] = `""`;
+
+exports[`pinned ADW runs -- ends options so later flags become positionals: events.jsonl 1`] = `""`;
+
+exports[`pinned ADW runs -- ends options so later flags become positionals: session files 1`] = `""`;
+
+exports[`pinned ADW runs -- ends options so later flags become positionals: git status 1`] = `""`;
+
+exports[`pinned ADW runs unknown agent fails validation with no session: stdout 1`] = `""`;
+
+exports[`pinned ADW runs unknown agent fails validation with no session: exit+stderr 1`] = `
+"exit 1
+config validation failed:
+- agent 'builder' is not defined in the config — available: []
+"
+`;
+
+exports[`pinned ADW runs unknown agent fails validation with no session: sqlite 1`] = `""`;
+
+exports[`pinned ADW runs unknown agent fails validation with no session: events.jsonl 1`] = `""`;
+
+exports[`pinned ADW runs unknown agent fails validation with no session: session files 1`] = `""`;
+
+exports[`pinned ADW runs unknown agent fails validation with no session: git status 1`] = `""`;
+
+exports[`pinned ADW runs adw_prompt scout via fake_pi produces matching traces: stdout 1`] = `
+"adw_id: abcd1234   engineer enrique
+▶ 01 request  engineer · enrique  Capture the incoming ask
+  · input: summarize
+  ✓ request <DUR>s
+▶ 02 prompt  agent · scout  Send the request straight to scout and parse its envelope
+  ▸ scout google/gemini-3.6-flash  session sssf-abcd1234-scout-<HEX4>
+  ✓ GenericOutput repo has a README
+  └ scout used 15 tokens · $<COST>
+  ✓ prompt <DUR>s
+╭───────── ADW complete ──────────╮
+│  status   ✓ success             │
+│  phases   2/2 passed            │
+│  tokens   15                    │
+│  cost     $<COST>               │
+│  adw_id   abcd1234              │
+│  db       adws/adw_data/sssf.db │
+│  next     just phases abcd1234  │
+╰─────────────────────────────────╯
+"
+`;
+
+exports[`pinned ADW runs adw_prompt scout via fake_pi produces matching traces: exit+stderr 1`] = `
+"exit 0
+"
+`;
+
+exports[`pinned ADW runs adw_prompt scout via fake_pi produces matching traces: sqlite 1`] = `
+"PRAGMA foreign_keys=OFF;
+BEGIN TRANSACTION;
+CREATE TABLE sessions (
+  adw_id        TEXT PRIMARY KEY,
+  adw_name      TEXT,                -- ADW script(s) run, e.g. "adw_plan + adw_build_test"
+  request       TEXT,
+  status        TEXT,
+  engineer      TEXT,
+  started_at    TEXT, ended_at TEXT,
+  total_tokens  INTEGER DEFAULT 0, total_cost REAL DEFAULT 0,
+  archived      INTEGER DEFAULT 0   -- review triage, set by the UI; never by a run
+);
+INSERT INTO sessions VALUES('abcd1234','adw_prompt','summarize','success','enrique','<TS>','<TS>',15,0.00100000000000000002,0);
+CREATE TABLE phases (
+  phase_id      TEXT PRIMARY KEY,
+  adw_id        TEXT REFERENCES sessions,
+  seq           INTEGER,
+  name TEXT, kind TEXT, owner TEXT, description TEXT,
+  status        TEXT DEFAULT 'fail',
+  attempt       INTEGER DEFAULT 0, retries INTEGER DEFAULT 0,
+  error         TEXT,
+  started_at    TEXT, ended_at TEXT
+);
+INSERT INTO phases VALUES('abcd1234_01_request','abcd1234',1,'request','engineer','enrique','Capture the incoming ask','success',0,0,NULL,'<TS>','<TS>');
+INSERT INTO phases VALUES('abcd1234_02_prompt','abcd1234',2,'prompt','agent','scout','Send the request straight to scout and parse its envelope','success',0,0,NULL,'<TS>','<TS>');
+CREATE TABLE events (
+  event_id      TEXT PRIMARY KEY,
+  adw_id        TEXT REFERENCES sessions,
+  phase_id      TEXT REFERENCES phases,
+  parent_id     TEXT,
+  type          TEXT,
+  name          TEXT,
+  payload_json  TEXT,
+  tokens        INTEGER,
+  started_at    TEXT, ended_at TEXT
+);
+INSERT INTO events VALUES('evt_<ID>','abcd1234','','','log','console','{"message": "adw_id: abcd1234   engineer enrique", "level": "info"}',NULL,'<TS>',NULL);
+INSERT INTO events VALUES('evt_<ID>','abcd1234','abcd1234_01_request','','phase_start','request','{"kind": "engineer", "owner": "enrique", "description": "Capture the incoming ask"}',NULL,'<TS>',NULL);
+INSERT INTO events VALUES('evt_<ID>','abcd1234','abcd1234_01_request','','log','request','{"message": "\\u25b6 01 request  engineer \\u00b7 enrique  Capture the incoming ask", "level": "info"}',NULL,'<TS>',NULL);
+INSERT INTO events VALUES('evt_<ID>','abcd1234','abcd1234_01_request','','log','request','{"input": "summarize"}',NULL,'<TS>',NULL);
+INSERT INTO events VALUES('evt_<ID>','abcd1234','abcd1234_01_request','','log','request','{"message": "  \\u00b7 input: summarize", "level": "info"}',NULL,'<TS>',NULL);
+INSERT INTO events VALUES('evt_<ID>','abcd1234','abcd1234_01_request','','phase_end','request','{"status": "success"}',NULL,'<TS>',NULL);
+INSERT INTO events VALUES('evt_<ID>','abcd1234','abcd1234_01_request','','log','request','{"message": "  \\u2713 request <DUR>s", "level": "info"}',NULL,'<TS>',NULL);
+INSERT INTO events VALUES('evt_<ID>','abcd1234','abcd1234_02_prompt','','phase_start','prompt','{"kind": "agent", "owner": "scout", "description": "Send the request straight to scout and parse its envelope"}',NULL,'<TS>',NULL);
+INSERT INTO events VALUES('evt_<ID>','abcd1234','abcd1234_02_prompt','','log','prompt','{"message": "\\u25b6 02 prompt  agent \\u00b7 scout  Send the request straight to scout and parse its envelope", "level": "info"}',NULL,'<TS>',NULL);
+INSERT INTO events VALUES('evt_<ID>','abcd1234','abcd1234_02_prompt','','agent_start','scout','{"model": "google/gemini-3.6-flash", "thinking": "medium", "color": "", "session_id": "sssf-abcd1234-scout-<HEX4>", "coding_agent": "pi", "purpose": "Find and report where things live; change nothing.", "tools": ["read", "grep", "find", "ls", "bash", "write"], "harness_engineering": []}',NULL,'<TS>',NULL);
+INSERT INTO events VALUES('evt_<ID>','abcd1234','abcd1234_02_prompt','','log','prompt','{"message": "  \\u25b8 scout google/gemini-3.6-flash  session sssf-abcd1234-scout-<HEX4>", "level": "info"}',NULL,'<TS>',NULL);
+INSERT INTO events VALUES('evt_<ID>','abcd1234','abcd1234_02_prompt','','log','paths_touched','{"agent": "scout", "paths": ["adws/adw_data/sessions/abcd1234/scout/raw_output.jsonl"]}',NULL,'<TS>',NULL);
+INSERT INTO events VALUES('evt_<ID>','abcd1234','abcd1234_02_prompt','','log','prompt','{"message": "  \\u2713 GenericOutput repo has a README", "level": "info"}',NULL,'<TS>',NULL);
+INSERT INTO events VALUES('evt_<ID>','abcd1234','abcd1234_02_prompt','','handoff','scout','{"artifacts": [], "summary": "repo has a README"}',NULL,'<TS>',NULL);
+INSERT INTO events VALUES('evt_<ID>','abcd1234','abcd1234_02_prompt','','agent_end','scout','{"cost": 0.001, "usage": {"input_tokens": 10, "output_tokens": 5, "cache_read_tokens": 0, "cache_write_tokens": 0, "reasoning_tokens": 0, "total_tokens": 15, "input_cost": 0.0, "output_cost": 0.0, "cache_read_cost": 0.0, "cache_write_cost": 0.0, "total_cost": 0.001}, "context_tokens": 15, "context_window": 272000}',15,'<TS>',NULL);
+INSERT INTO events VALUES('evt_<ID>','abcd1234','abcd1234_02_prompt','','log','prompt','{"message": "  \\u2514 scout used 15 tokens \\u00b7 $<COST>", "level": "info"}',NULL,'<TS>',NULL);
+INSERT INTO events VALUES('evt_<ID>','abcd1234','abcd1234_02_prompt','','phase_end','prompt','{"status": "success"}',NULL,'<TS>',NULL);
+INSERT INTO events VALUES('evt_<ID>','abcd1234','abcd1234_02_prompt','','log','prompt','{"message": "  \\u2713 prompt <DUR>s", "level": "info"}',NULL,'<TS>',NULL);
+INSERT INTO events VALUES('evt_<ID>','abcd1234','','','log','console','{"message": "session abcd1234 success \\u00b7 2/2 phases \\u00b7 15 tokens \\u00b7 $<COST>", "level": "info"}',NULL,'<TS>',NULL);
+CREATE TABLE envelopes (
+  envelope_id   TEXT PRIMARY KEY,
+  adw_id        TEXT REFERENCES sessions,
+  phase_id      TEXT REFERENCES phases,
+  agent         TEXT,
+  output_type   TEXT,
+  payload_json  TEXT,
+  valid         INTEGER,
+  attempt       INTEGER,
+  created_at    TEXT
+);
+INSERT INTO envelopes VALUES('env_<ID>','abcd1234','abcd1234_02_prompt','scout','GenericOutput',unistr('{\\u000a  "status": "success",\\u000a  "summary": "repo has a README",\\u000a  "artifacts": [],\\u000a  "notes_for_next_agent": ""\\u000a}'),1,1,'<TS>');
+CREATE TABLE gate_results (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  adw_id        TEXT REFERENCES sessions,
+  phase_id      TEXT REFERENCES phases,
+  attempt       INTEGER,
+  gate          TEXT,
+  passed        INTEGER,
+  violations_json TEXT,
+  checks_json   TEXT,               -- [{item, ok, note}] — WHAT the gate verified
+  created_at    TEXT
+);
+CREATE TABLE processes (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  adw_id        TEXT REFERENCES sessions,
+  kind          TEXT,                -- 'adw' (the workflow process) | 'agent' (a coding-agent child)
+  name          TEXT,                -- '' for the adw, the agent name for a child
+  pid           INTEGER,
+  command       TEXT,                -- what the pid was, so a recycled pid is not killed by mistake
+  started_at    TEXT, ended_at TEXT  -- ended_at NULL = believed alive
+);
+INSERT INTO processes VALUES(1,'abcd1234','adw','',0,'adw_prompt.ts summarize --agent scout --adw-id abcd1234','<TS>','<TS>');
+INSERT INTO processes VALUES(2,'abcd1234','agent','scout',0,'pi scout google/gemini-3.6-flash','<TS>','<TS>');
+CREATE TABLE agent_sessions (
+  adw_id        TEXT REFERENCES sessions,
+  agent         TEXT,
+  coding_agent  TEXT, model TEXT, color TEXT,
+  session_id    TEXT,
+  context_tokens INTEGER,           -- window occupancy after the agent's last turn
+  context_window INTEGER,           -- the model's ceiling; 0/NULL = unknown
+  created_at    TEXT, last_used_at TEXT,
+  PRIMARY KEY (adw_id, agent)
+);
+INSERT INTO agent_sessions VALUES('abcd1234','scout','pi','google/gemini-3.6-flash','','sssf-abcd1234-scout-<HEX4>',15,272000,'<TS>','<TS>');
+INSERT INTO sqlite_sequence VALUES('processes',2);
+COMMIT;
+"
+`;
+
+exports[`pinned ADW runs adw_prompt scout via fake_pi produces matching traces: events.jsonl 1`] = `
+"{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "", "type": "log", "name": "console", "payload": {"message": "adw_id: abcd1234   engineer enrique", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_01_request", "type": "phase_start", "name": "request", "payload": {"kind": "engineer", "owner": "enrique", "description": "Capture the incoming ask"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_01_request", "type": "log", "name": "request", "payload": {"message": "\\u25b6 01 request  engineer \\u00b7 enrique  Capture the incoming ask", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_01_request", "type": "log", "name": "request", "payload": {"input": "summarize"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_01_request", "type": "log", "name": "request", "payload": {"message": "  \\u00b7 input: summarize", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_01_request", "type": "phase_end", "name": "request", "payload": {"status": "success"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_01_request", "type": "log", "name": "request", "payload": {"message": "  \\u2713 request <DUR>s", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_prompt", "type": "phase_start", "name": "prompt", "payload": {"kind": "agent", "owner": "scout", "description": "Send the request straight to scout and parse its envelope"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_prompt", "type": "log", "name": "prompt", "payload": {"message": "\\u25b6 02 prompt  agent \\u00b7 scout  Send the request straight to scout and parse its envelope", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_prompt", "type": "agent_start", "name": "scout", "payload": {"model": "google/gemini-3.6-flash", "thinking": "medium", "color": "", "session_id": "sssf-abcd1234-scout-<HEX4>", "coding_agent": "pi", "purpose": "Find and report where things live; change nothing.", "tools": ["read", "grep", "find", "ls", "bash", "write"], "harness_engineering": []}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_prompt", "type": "log", "name": "prompt", "payload": {"message": "  \\u25b8 scout google/gemini-3.6-flash  session sssf-abcd1234-scout-<HEX4>", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_prompt", "type": "log", "name": "paths_touched", "payload": {"agent": "scout", "paths": ["adws/adw_data/sessions/abcd1234/scout/raw_output.jsonl"]}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_prompt", "type": "log", "name": "prompt", "payload": {"message": "  \\u2713 GenericOutput repo has a README", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_prompt", "type": "handoff", "name": "scout", "payload": {"artifacts": [], "summary": "repo has a README"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_prompt", "type": "agent_end", "name": "scout", "payload": {"cost": 0.001, "usage": {"input_tokens": 10, "output_tokens": 5, "cache_read_tokens": 0, "cache_write_tokens": 0, "reasoning_tokens": 0, "total_tokens": 15, "input_cost": 0.0, "output_cost": 0.0, "cache_read_cost": 0.0, "cache_write_cost": 0.0, "total_cost": 0.001}, "context_tokens": 15, "context_window": 272000}, "parent_id": "", "tokens": 15, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_prompt", "type": "log", "name": "prompt", "payload": {"message": "  \\u2514 scout used 15 tokens \\u00b7 $<COST>", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_prompt", "type": "phase_end", "name": "prompt", "payload": {"status": "success"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_prompt", "type": "log", "name": "prompt", "payload": {"message": "  \\u2713 prompt <DUR>s", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "", "type": "log", "name": "console", "payload": {"message": "session abcd1234 success \\u00b7 2/2 phases \\u00b7 15 tokens \\u00b7 $<COST>", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+"
+`;
+
+exports[`pinned ADW runs adw_prompt scout via fake_pi produces matching traces: session files 1`] = `
+"=== abcd1234/agent_map.json ===
+{
+  "scout": {
+    "session_id": "sssf-abcd1234-scout-<HEX4>",
+    "model": "google/gemini-3.6-flash",
+    "coding_agent": "pi"
+  }
+}
+=== abcd1234/events.jsonl ===
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "", "type": "log", "name": "console", "payload": {"message": "adw_id: abcd1234   engineer enrique", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_01_request", "type": "phase_start", "name": "request", "payload": {"kind": "engineer", "owner": "enrique", "description": "Capture the incoming ask"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_01_request", "type": "log", "name": "request", "payload": {"message": "\\u25b6 01 request  engineer \\u00b7 enrique  Capture the incoming ask", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_01_request", "type": "log", "name": "request", "payload": {"input": "summarize"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_01_request", "type": "log", "name": "request", "payload": {"message": "  \\u00b7 input: summarize", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_01_request", "type": "phase_end", "name": "request", "payload": {"status": "success"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_01_request", "type": "log", "name": "request", "payload": {"message": "  \\u2713 request <DUR>s", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_prompt", "type": "phase_start", "name": "prompt", "payload": {"kind": "agent", "owner": "scout", "description": "Send the request straight to scout and parse its envelope"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_prompt", "type": "log", "name": "prompt", "payload": {"message": "\\u25b6 02 prompt  agent \\u00b7 scout  Send the request straight to scout and parse its envelope", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_prompt", "type": "agent_start", "name": "scout", "payload": {"model": "google/gemini-3.6-flash", "thinking": "medium", "color": "", "session_id": "sssf-abcd1234-scout-<HEX4>", "coding_agent": "pi", "purpose": "Find and report where things live; change nothing.", "tools": ["read", "grep", "find", "ls", "bash", "write"], "harness_engineering": []}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_prompt", "type": "log", "name": "prompt", "payload": {"message": "  \\u25b8 scout google/gemini-3.6-flash  session sssf-abcd1234-scout-<HEX4>", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_prompt", "type": "log", "name": "paths_touched", "payload": {"agent": "scout", "paths": ["adws/adw_data/sessions/abcd1234/scout/raw_output.jsonl"]}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_prompt", "type": "log", "name": "prompt", "payload": {"message": "  \\u2713 GenericOutput repo has a README", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_prompt", "type": "handoff", "name": "scout", "payload": {"artifacts": [], "summary": "repo has a README"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_prompt", "type": "agent_end", "name": "scout", "payload": {"cost": 0.001, "usage": {"input_tokens": 10, "output_tokens": 5, "cache_read_tokens": 0, "cache_write_tokens": 0, "reasoning_tokens": 0, "total_tokens": 15, "input_cost": 0.0, "output_cost": 0.0, "cache_read_cost": 0.0, "cache_write_cost": 0.0, "total_cost": 0.001}, "context_tokens": 15, "context_window": 272000}, "parent_id": "", "tokens": 15, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_prompt", "type": "log", "name": "prompt", "payload": {"message": "  \\u2514 scout used 15 tokens \\u00b7 $<COST>", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_prompt", "type": "phase_end", "name": "prompt", "payload": {"status": "success"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "abcd1234_02_prompt", "type": "log", "name": "prompt", "payload": {"message": "  \\u2713 prompt <DUR>s", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+{"event_id": "evt_<ID>", "ts": "<TS>", "adw_id": "abcd1234", "phase_id": "", "type": "log", "name": "console", "payload": {"message": "session abcd1234 success \\u00b7 2/2 phases \\u00b7 15 tokens \\u00b7 $<COST>", "level": "info"}, "parent_id": "", "tokens": null, "started_at": null, "ended_at": null}
+
+=== abcd1234/scout/envelope.json ===
+{
+  "agent_name": "scout",
+  "purpose": "Find and report where things live; change nothing.",
+  "output_type": "GenericOutput",
+  "attempt": 1,
+  "status": "success",
+  "summary": "repo has a README",
+  "artifacts": [],
+  "notes_for_next_agent": ""
+}
+=== abcd1234/scout/prompts/system.md ===
+# Scout Agent
+
+## Purpose
+
+Find and report where things live. Change nothing.
+
+## Instructions
+
+- Read-only: search, read, and report — never write to the codebase.
+- Cite exact file paths (with line hints where useful).
+- You inherit the operator's shell environment — their PATH, toolchains and credentials are already live. Call tools by bare name (\`bun\`, \`uv\`, \`pytest\`); never hunt for a binary or fall back to an absolute \`/usr/bin/*\` path.
+- Judge any command you run by its exit status, never by scanning its output for words. \`error\` or \`not found\` inside passing output is text, not a failure.
+- Write your findings to \`<context_handoff_dir>/scout_findings.md\` for agents that follow.
+- If you find nothing, say so plainly — an empty finding is a valid finding.
+
+## Subagents
+
+\`subagent_create\` / \`_continue\` / \`_list\` / \`_remove\` search several directions at once — one per lead or directory — instead of walking the codebase serially. Give each a self-contained task and hold it to read-only work; omit \`model\`.
+
+They run in the background. **Wait for every one you spawned to report before writing \`scout_findings.md\` or your Report JSON.** Skip them when a couple of greps would do.
+
+=== abcd1234/scout/prompts/user.md ===
+# Scout Task
+
+## Variables
+
+### prompt
+
+summarize
+
+### previous_envelope
+
+(none)
+
+### context_handoff_dir
+
+adws/adw_data/sessions/abcd1234/context_handoff
+
+## Task
+
+Find what \`prompt\` asks about. Write findings into \`context_handoff_dir\`, then emit your \`Report\` JSON.
+
+## Report
+
+Respond with ONLY valid JSON matching \`ScoutOutput\` — no prose before or after:
+
+\`\`\`json
+{
+  "status": "success",
+  "summary": "<one sentence on what you found>",
+  "findings": [
+    { "file": "src/server.ts", "note": "<why this file matters>" }
+  ],
+  "artifacts": ["<context_handoff_dir>/scout_findings.md"]
+}
+\`\`\`
+
+=== abcd1234/scout/raw_output.jsonl ===
+{"type": "message_end", "message": {"role": "assistant", "content": [{"type": "text", "text": "{\\"status\\": \\"success\\", \\"summary\\": \\"repo has a README\\", \\"artifacts\\": [], \\"notes_for_next_agent\\": \\"\\"}"}], "usage": {"input": 10, "output": 5, "totalTokens": 15, "cost": {"total": 0.001}}, "stopReason": "stop"}}
+
+"
+`;
+
+exports[`pinned ADW runs adw_prompt scout via fake_pi produces matching traces: git status 1`] = `
+"?? adws/adw_data/sessions/
+?? adws/adw_data/sssf.db
+?? adws/adw_data/sssf.db-shm
+?? adws/adw_data/sssf.db-wal
+"
+`;

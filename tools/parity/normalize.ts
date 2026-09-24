@@ -6,13 +6,9 @@ const DURATION_MS = /"duration_ms": \d+/g;
 const DURATION_SECONDS = /duration_seconds: \d+\.\d+/g;
 const PID = /"pid": \d+/g;
 const COST = /\$\d+\.\d{4}/g;
-const UV_INSTALL = /^Installed \d+ packages in \d+ms\n*/gm;
-
-const PYDANTIC_URL = /https:\/\/errors\.pydantic\.dev\/\d+\.\d+\/v\//g;
 
 export function normalizeText(s: string): string {
   return s
-    .replace(UV_INSTALL, "")
     .replace(/adws\/adw_modules\/quality\.py/g, "adws/adw_modules/quality.ts")
     .replace(/adw_\*\.py/g, "adw_*.ts")
     .replace(/\b(adw_[a-z0-9_]+)\.py\b/g, "$1.ts")
@@ -25,6 +21,5 @@ export function normalizeText(s: string): string {
     .replace(DURATION, "<DUR>s")
     .replace(PID, '"pid": 0')
     .replace(/INSERT INTO processes VALUES\((\d+),('(?:[^']|'')*'),('(?:[^']|'')*'),('(?:[^']|'')*'),(\d+)/g, "INSERT INTO processes VALUES($1,$2,$3,$4,0")
-    .replace(COST, "$<COST>")
-    .replace(PYDANTIC_URL, "https://errors.pydantic.dev/<VER>/v/");
+    .replace(COST, "$<COST>");
 }

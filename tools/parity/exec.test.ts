@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { buildRequest, ExecToolCallTracker, resolveCommand } from "../../.claude/skills/sssf/templates/adws/adw_modules/agentExec.ts";
 import type { AgentRequest } from "../../.claude/skills/sssf/templates/adws/adw_modules/dataTypes.ts";
 import { dumpInserts, eventsOf, stampAdapter, UUID_RE } from "./harness.ts";
-import { runSide } from "./runBoth.ts";
+import { runAdw } from "./runAdw.ts";
 
 const REPO_EXEC = join(import.meta.dir, "fixtures/repo_exec");
 const EXEC_AGENT = join(import.meta.dir, "fixtures/fake_exec/agent.ts");
@@ -54,8 +54,7 @@ describe("exec via fake_exec", () => {
   test("scout via fake_exec", async () => {
     const scratch = mkdtempSync(join(tmpdir(), "sssf-exec-"));
     const requestLog = join(scratch, "request.jsonl");
-    const side = await runSide(
-      "port",
+    const side = await runAdw(
       {
         name: "scout-fake-exec",
         script: "adw_prompt.ts",
@@ -122,8 +121,7 @@ describe("exec via fake_exec", () => {
     const scratch = mkdtempSync(join(tmpdir(), "sssf-exec-join-"));
     const requestLog = join(scratch, "request.jsonl");
     const env = fakeEnv({ FAKE_EXEC_REQUEST_LOG: requestLog });
-    const first = await runSide(
-      "port",
+    const first = await runAdw(
       {
         name: "scout-fake-exec-join-1",
         script: "adw_prompt.ts",
@@ -137,8 +135,7 @@ describe("exec via fake_exec", () => {
     const sessionId = (JSON.parse(first.files["abcd1234/agent_map.json"]!) as {
       scout: { session_id: string };
     }).scout.session_id;
-    const second = await runSide(
-      "port",
+    const second = await runAdw(
       {
         name: "scout-fake-exec-join-2",
         script: "adw_prompt.ts",
@@ -170,8 +167,7 @@ describe("exec via fake_exec", () => {
       FAKE_EXEC_REQUEST_LOG: requestLog,
     });
     delete env.FAKE_EXEC_JSONL;
-    const side = await runSide(
-      "port",
+    const side = await runAdw(
       {
         name: "scout-fake-exec-retry",
         script: "adw_prompt.ts",
@@ -196,8 +192,7 @@ describe("exec via fake_exec", () => {
   }, 60_000);
 
   test("validation fails when command is empty", async () => {
-    const side = await runSide(
-      "port",
+    const side = await runAdw(
       {
         name: "scout-exec-empty-command",
         script: "adw_prompt.ts",
@@ -213,8 +208,7 @@ describe("exec via fake_exec", () => {
   }, 60_000);
 
   test("validation fails when --check exits non-zero", async () => {
-    const side = await runSide(
-      "port",
+    const side = await runAdw(
       {
         name: "scout-exec-check-fail",
         script: "adw_prompt.ts",
@@ -230,8 +224,7 @@ describe("exec via fake_exec", () => {
   }, 60_000);
 
   test("adapter error surfaces", async () => {
-    const side = await runSide(
-      "port",
+    const side = await runAdw(
       {
         name: "scout-fake-exec-error",
         script: "adw_prompt.ts",
@@ -268,8 +261,7 @@ describe("exec via fake_exec", () => {
         "",
       ].join("\n"),
     );
-    const side = await runSide(
-      "port",
+    const side = await runAdw(
       {
         name: "scout-fake-exec-bad-usage",
         script: "adw_prompt.ts",

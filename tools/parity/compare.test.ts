@@ -1,29 +1,20 @@
 import { describe, expect, test } from "bun:test";
-import { diffSides, type Side } from "./compare.ts";
+import { joinSessionFiles } from "./runAdw.ts";
 
-function side(over: Partial<Side> = {}): Side {
-  return {
-    exit: 0,
-    stdout: "",
-    stderr: "",
-    dump: "",
-    jsonl: "",
-    files: { "abcd1234/envelope.json": '{"ok": true}' },
-    porcelain: "",
-    ...over,
-  };
+function files(envelope: string): Record<string, string> {
+  return { "abcd1234/envelope.json": envelope };
 }
 
-describe("diffSides session files", () => {
-  test("identical sides return no misses", () => {
-    expect(diffSides(side(), side())).toEqual([]);
+describe("session file snapshot text", () => {
+  test("identical file maps join to the same text", () => {
+    const body = '{"ok": true}';
+    expect(joinSessionFiles(files(body))).toBe(joinSessionFiles(files(body)));
   });
 
-  test("a differing envelope.json is one miss naming that path", () => {
-    const gold = side();
-    const port = side({ files: { "abcd1234/envelope.json": '{"ok": false}' } });
-    const misses = diffSides(gold, port);
-    expect(misses).toHaveLength(1);
-    expect(misses[0]).toContain("session file abcd1234/envelope.json");
+  test("a differing envelope.json changes the joined text and names that path", () => {
+    const joined = joinSessionFiles(files('{"ok": false}'));
+    expect(joined).not.toBe(joinSessionFiles(files('{"ok": true}')));
+    expect(joined).toContain("=== abcd1234/envelope.json ===");
+    expect(joined).toContain('{"ok": false}');
   });
 });

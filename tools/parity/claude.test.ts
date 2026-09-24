@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { buildArgv } from "../../.claude/skills/sssf/templates/adws/adw_modules/agentCc.ts";
 import type { AgentRequest } from "../../.claude/skills/sssf/templates/adws/adw_modules/dataTypes.ts";
 import { dumpInserts, eventsOf, flagAfter, UUID_RE } from "./harness.ts";
-import { runSide } from "./runBoth.ts";
+import { runAdw } from "./runAdw.ts";
 
 const REPO_CLAUDE = join(import.meta.dir, "fixtures/repo_claude");
 const CLAUDE = join(import.meta.dir, "fixtures/fake_claude/claude.ts");
@@ -42,8 +42,7 @@ function fakeEnv(extra: Record<string, string> = {}): Record<string, string> {
 
 describe("claude_code via fake_claude", () => {
   test("scout via fake_claude", async () => {
-    const side = await runSide(
-      "port",
+    const side = await runAdw(
       {
         name: "scout-fake-claude",
         script: "adw_prompt.ts",
@@ -97,8 +96,7 @@ describe("claude_code via fake_claude", () => {
   }, 60_000);
 
   test("argv on first call", async () => {
-    const side = await runSide(
-      "port",
+    const side = await runAdw(
       {
         name: "scout-fake-claude-argv",
         script: "adw_prompt.ts",
@@ -113,8 +111,7 @@ describe("claude_code via fake_claude", () => {
   test("resume on a joined run", async () => {
     const argvLog = join(mkdtempSync(join(tmpdir(), "sssf-claude-argv-")), "argv.jsonl");
     const env = fakeEnv({ FAKE_CLAUDE_ARGV_LOG: argvLog });
-    const first = await runSide(
-      "port",
+    const first = await runAdw(
       {
         name: "scout-fake-claude-join-1",
         script: "adw_prompt.ts",
@@ -128,8 +125,7 @@ describe("claude_code via fake_claude", () => {
     const sessionId = (JSON.parse(first.files["abcd1234/agent_map.json"]!) as {
       scout: { session_id: string };
     }).scout.session_id;
-    const second = await runSide(
-      "port",
+    const second = await runAdw(
       {
         name: "scout-fake-claude-join-2",
         script: "adw_prompt.ts",
@@ -161,8 +157,7 @@ describe("claude_code via fake_claude", () => {
     mkdirSync(replayDir);
     writeFileSync(join(replayDir, "any.1.jsonl"), readFileSync(BAD_JSONL));
     writeFileSync(join(replayDir, "any.2.jsonl"), readFileSync(JSONL));
-    const side = await runSide(
-      "port",
+    const side = await runAdw(
       {
         name: "scout-fake-claude-retry",
         script: "adw_prompt.ts",
@@ -196,8 +191,7 @@ describe("claude_code via fake_claude", () => {
   }, 60_000);
 
   test("validation fails before any session when binary is missing", async () => {
-    const side = await runSide(
-      "port",
+    const side = await runAdw(
       {
         name: "scout-claude-missing-binary",
         script: "adw_prompt.ts",
@@ -212,8 +206,7 @@ describe("claude_code via fake_claude", () => {
   }, 60_000);
 
   test("validation fails for a pi extension on a claude_code agent", async () => {
-    const side = await runSide(
-      "port",
+    const side = await runAdw(
       {
         name: "scout-claude-pi-extension",
         script: "adw_prompt.ts",

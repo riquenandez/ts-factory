@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { INTERFACES } from "../../.claude/skills/sssf/templates/adws/adw_modules/agents.ts";
 import { labelFor } from "../../.claude/skills/sssf/templates/adws/adw_modules/toolCalls.ts";
 import { dumpInserts, UUID_RE } from "./harness.ts";
-import { runSide } from "./runBoth.ts";
+import { runAdw } from "./runAdw.ts";
 
 const REPO_CLAUDE = join(import.meta.dir, "fixtures/repo_claude");
 const REPO_AGENT = join(import.meta.dir, "fixtures/repo_agent");
@@ -54,8 +54,7 @@ describe("agent registry", () => {
   });
 
   test("unknown coding_agent fails validation before any session", async () => {
-    const side = await runSide(
-      "port",
+    const side = await runAdw(
       {
         name: "unknown-coding-agent",
         script: "adw_prompt.ts",
@@ -84,8 +83,7 @@ describe("agent registry", () => {
   }, 60_000);
 
   test("missing pi binary fails validation before any session", async () => {
-    const side = await runSide(
-      "port",
+    const side = await runAdw(
       {
         name: "missing-pi",
         script: "adw_prompt.ts",

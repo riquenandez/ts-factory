@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { registerCleanup, runCleanups } from "../../.claude/skills/sssf/templates/adws/adw_modules/runner.ts";
 import { stampAdapter } from "./harness.ts";
-import { stampSide } from "./runBoth.ts";
+import { stampAdw } from "./runAdw.ts";
 
 const REPO_EXEC = join(import.meta.dir, "fixtures/repo_exec");
 const REPO_COPILOT = join(import.meta.dir, "fixtures/repo_copilot");
@@ -61,7 +61,7 @@ function spawnAdw(dir: string, env: Record<string, string>) {
 
 describe("signalDoor", () => {
   test("exec child dies with the ADW", async () => {
-    const dir = stampSide("port", REPO_EXEC, { prepare: stampAdapter });
+    const dir = stampAdw(REPO_EXEC, { prepare: stampAdapter });
     const dbPath = join(dir, "adws/adw_data/sssf.db");
     const adw = spawnAdw(dir, {
       FAKE_SLEEP_SECONDS: "30",
@@ -101,7 +101,7 @@ describe("signalDoor", () => {
 
   test("copilot cleanup runs on a signal", async () => {
     const home = mkdtempSync(join(tmpdir(), "sssf-copilot-home-"));
-    const dir = stampSide("port", REPO_COPILOT);
+    const dir = stampAdw(REPO_COPILOT);
     const dbPath = join(dir, "adws/adw_data/sssf.db");
     const adw = spawnAdw(dir, {
       FAKE_SLEEP_SECONDS: "30",

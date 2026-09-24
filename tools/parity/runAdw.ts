@@ -1,14 +1,14 @@
-import { mkdtempSync, readFileSync, rmSync, cpSync, existsSync, readdirSync } from "node:fs";
+import { expect } from "bun:test";
+import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { diffSides, type Side } from "./compare.ts";
 import { SKILL } from "./harness.ts";
+import { normalizeText } from "./normalize.ts";
 
 function utf8(bytes?: Uint8Array | null): string {
   return Buffer.from(bytes ?? []).toString("utf8");
 }
 
-const GOLD_ADWS = join(import.meta.dir, "python-gold/templates/adws");
 const TS_ADWS = join(SKILL, "templates/adws");
 
 export interface Case {
@@ -16,6 +16,26 @@ export interface Case {
   script: string;
   args: string[];
   env?: Record<string, string>;
+}
+
+export interface AdwRun {
+  exit: number;
+  stdout: string;
+  stderr: string;
+  dump: string;
+  jsonl: string;
+  files: Record<string, string>;
+  porcelain: string;
+  dir: string;
+}
+
+export interface RunAdwOpts {
+  /** Keep the work dir and return it as `dir`. Caller deletes it. */
+  keep?: boolean;
+  /** Reuse an already-stamped dir: skip copy/init/stamp, do not delete. */
+  reuseDir?: string;
+  /** Mutate the stamped dir after copy, before the command. Ignored with reuseDir. */
+  prepare?: (dir: string) => void;
 }
 
 function collectFiles(dir: string, prefix = ""): Record<string, string> {
@@ -30,8 +50,17 @@ function collectFiles(dir: string, prefix = ""): Record<string, string> {
   return out;
 }
 
-async function runCmd(cmd: string[], cwd: string, env: Record<string, string>): Promise<{ exit: number; stdout: string; stderr: string }> {
-  const proc = Bun.spawn(cmd, { cwd, env: { ...process.env, ...env, TERM: "dumb" }, stdout: "pipe", stderr: "pipe" });
+async function runCmd(
+  cmd: string[],
+  cwd: string,
+  env: Record<string, string>,
+): Promise<{ exit: number; stdout: string; stderr: string }> {
+  const proc = Bun.spawn(cmd, {
+    cwd,
+    env: { ...process.env, ...env, TERM: "dumb" },
+    stdout: "pipe",
+    stderr: "pipe",
+  });
   const stdout = await new Response(proc.stdout).text();
   const stderr = await new Response(proc.stderr).text();
   const exit = await proc.exited;
@@ -51,8 +80,8 @@ function gitCommit(dir: string, message: string): void {
   );
 }
 
-// Fixtures are plain tracked files, not nested repos: each side gets its own
-// fresh git history so both gold and port see the same porcelain.
+// Fixtures are plain tracked files, not nested repos. Each run gets a fresh
+// git history so porcelain starts from the same commit.
 function initRepo(dir: string): void {
   Bun.spawnSync(["git", "init", "-q"], { cwd: dir, stdout: "pipe", stderr: "pipe" });
   gitCommit(dir, "fixture");
@@ -62,29 +91,15 @@ function stampCommit(dir: string): void {
   gitCommit(dir, "stamp adws");
 }
 
-export interface RunSideOpts {
-  /** Keep the work dir and return it as `dir`. Caller deletes it. */
-  keep?: boolean;
-  /** Reuse an already-stamped dir: skip copy/init/stamp, do not delete. */
-  reuseDir?: string;
-  /** Mutate the stamped dir after copy, before the command. Ignored with reuseDir. */
-  prepare?: (dir: string) => void;
-}
-
-export function stampSide(
-  kind: "gold" | "port",
-  fixture: string,
-  opts?: RunSideOpts,
-): string {
+export function stampAdw(fixture: string, opts?: RunAdwOpts): string {
   if (opts?.reuseDir) return opts.reuseDir;
-  const dir = mkdtempSync(join(tmpdir(), `sssf-${kind}-`));
+  const dir = mkdtempSync(join(tmpdir(), "sssf-port-"));
   try {
     cpSync(fixture, dir, { recursive: true });
     initRepo(dir);
-    const src = kind === "gold" ? GOLD_ADWS : TS_ADWS;
     const dest = join(dir, "adws");
     rmSync(dest, { recursive: true, force: true });
-    cpSync(src, dest, { recursive: true });
+    cpSync(TS_ADWS, dest, { recursive: true });
     for (const rel of ["adws/adw_sssf_config", "adws/adw_data"]) {
       const keep = join(fixture, rel);
       if (existsSync(keep)) cpSync(keep, join(dir, rel), { recursive: true });
@@ -98,22 +113,14 @@ export function stampSide(
   }
 }
 
-export async function runSide(
-  kind: "gold" | "port",
-  c: Case,
-  fixture: string,
-  opts?: RunSideOpts,
-): Promise<Side & { dir: string }> {
-  const dir = stampSide(kind, fixture, opts);
+export async function runAdw(c: Case, fixture: string, opts?: RunAdwOpts): Promise<AdwRun> {
+  const dir = stampAdw(fixture, opts);
   try {
     const dest = join(dir, "adws");
-    const cmd = kind === "gold"
-      ? ["uv", "run", "-q", join(dest, c.script.replace(/\.ts$/, ".py")), ...c.args]
-      // bun swallows a leading "--" in script args unless one "--" precedes them.
-      : ["bun", join(dest, c.script), "--", ...c.args];
+    // bun swallows a leading "--" in script args unless one "--" precedes them.
+    const cmd = ["bun", join(dest, c.script), "--", ...c.args];
     const env = {
       ENGINEER_NAME: "enrique",
-      PYTHONDONTWRITEBYTECODE: "1",
       ...(c.env ?? {}),
     };
     const result = await runCmd(cmd, dir, env);
@@ -135,8 +142,21 @@ export async function runSide(
   }
 }
 
-export async function runBoth(c: Case, fixture: string): Promise<string[]> {
-  const gold = await runSide("gold", c, fixture);
-  const port = await runSide("port", c, fixture);
-  return diffSides(gold, port);
+/** Every session file as `=== <path> ===\n<content>\n`, sorted by path. */
+export function joinSessionFiles(files: Record<string, string>): string {
+  return Object.keys(files)
+    .sort()
+    .map((path) => `=== ${path} ===\n${files[path]}\n`)
+    .join("");
+}
+
+export async function snapshotAdw(c: Case, fixture: string, opts?: RunAdwOpts): Promise<void> {
+  const side = await runAdw(c, fixture, opts);
+  const norm = normalizeText;
+  expect(norm(side.stdout)).toMatchSnapshot("stdout");
+  expect(`exit ${side.exit}\n${norm(side.stderr)}`).toMatchSnapshot("exit+stderr");
+  expect(norm(side.dump)).toMatchSnapshot("sqlite");
+  expect(norm(side.jsonl)).toMatchSnapshot("events.jsonl");
+  expect(norm(joinSessionFiles(side.files))).toMatchSnapshot("session files");
+  expect(side.porcelain).toMatchSnapshot("git status");
 }

@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { buildArgv, shapeUsageFile } from "../../.claude/skills/sssf/templates/adws/adw_modules/agentCopilot.ts";
 import type { AgentRequest } from "../../.claude/skills/sssf/templates/adws/adw_modules/dataTypes.ts";
 import { dumpInserts, eventsOf, flagAfter, UUID_RE } from "./harness.ts";
-import { runSide } from "./runBoth.ts";
+import { runAdw } from "./runAdw.ts";
 
 const REPO_COPILOT = join(import.meta.dir, "fixtures/repo_copilot");
 const COPILOT = join(import.meta.dir, "fixtures/fake_copilot/copilot.ts");
@@ -54,8 +54,7 @@ function fakeEnv(extra: Record<string, string> = {}): Record<string, string> {
 describe("copilot via fake_copilot", () => {
   test("scout via fake_copilot", async () => {
     const env = fakeEnv();
-    const side = await runSide(
-      "port",
+    const side = await runAdw(
       {
         name: "scout-fake-copilot",
         script: "adw_prompt.ts",
@@ -114,8 +113,7 @@ describe("copilot via fake_copilot", () => {
 
   test("argv on first call", async () => {
     const env = fakeEnv({ FAKE_COPILOT_EXPECT: JSON.stringify(FIRST_ARGV) });
-    const side = await runSide(
-      "port",
+    const side = await runAdw(
       {
         name: "scout-fake-copilot-argv",
         script: "adw_prompt.ts",
@@ -131,8 +129,7 @@ describe("copilot via fake_copilot", () => {
   test("resume on a joined run", async () => {
     const argvLog = join(mkdtempSync(join(tmpdir(), "sssf-copilot-argv-")), "argv.jsonl");
     const env = fakeEnv({ FAKE_COPILOT_ARGV_LOG: argvLog });
-    const first = await runSide(
-      "port",
+    const first = await runAdw(
       {
         name: "scout-fake-copilot-join-1",
         script: "adw_prompt.ts",
@@ -146,8 +143,7 @@ describe("copilot via fake_copilot", () => {
     const sessionId = (JSON.parse(first.files["abcd1234/agent_map.json"]!) as {
       scout: { session_id: string };
     }).scout.session_id;
-    const second = await runSide(
-      "port",
+    const second = await runAdw(
       {
         name: "scout-fake-copilot-join-2",
         script: "adw_prompt.ts",
@@ -183,8 +179,7 @@ describe("copilot via fake_copilot", () => {
       FAKE_COPILOT_ARGV_LOG: argvLog,
     });
     delete env.FAKE_COPILOT_JSONL;
-    const side = await runSide(
-      "port",
+    const side = await runAdw(
       {
         name: "scout-fake-copilot-retry",
         script: "adw_prompt.ts",
@@ -215,8 +210,7 @@ describe("copilot via fake_copilot", () => {
 
   test("validation fails before any session when binary is missing", async () => {
     const env = fakeEnv({ COPILOT_PATH: "/nonexistent/copilot" });
-    const side = await runSide(
-      "port",
+    const side = await runAdw(
       {
         name: "scout-copilot-missing-binary",
         script: "adw_prompt.ts",
@@ -233,8 +227,7 @@ describe("copilot via fake_copilot", () => {
 
   test("validation fails for a pi extension on a copilot agent", async () => {
     const env = fakeEnv();
-    const side = await runSide(
-      "port",
+    const side = await runAdw(
       {
         name: "scout-copilot-pi-extension",
         script: "adw_prompt.ts",
@@ -267,8 +260,7 @@ describe("copilot via fake_copilot", () => {
       FAKE_COPILOT_JSONL: ERROR_JSONL,
       FAKE_COPILOT_EXIT: "1",
     });
-    const side = await runSide(
-      "port",
+    const side = await runAdw(
       {
         name: "scout-fake-copilot-error",
         script: "adw_prompt.ts",

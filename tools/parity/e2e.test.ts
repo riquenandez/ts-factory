@@ -1,6 +1,6 @@
-import { describe, expect, test } from "bun:test";
+import { describe, test } from "bun:test";
 import { join } from "node:path";
-import { runBoth } from "./runBoth.ts";
+import { snapshotAdw } from "./runAdw.ts";
 
 const FIXTURE = join(import.meta.dir, "fixtures/repo_clean");
 const AGENT_FIXTURE = join(import.meta.dir, "fixtures/repo_agent");
@@ -9,17 +9,16 @@ const MODELS = join(import.meta.dir, "fixtures/fake_pi/models.json");
 const CATALOG = join(import.meta.dir, "fixtures/fake_pi/catalog.txt");
 const JSONL = join(import.meta.dir, "fixtures/fake_pi/generic_ok.jsonl");
 
-describe("gold vs port", () => {
+describe("pinned ADW runs", () => {
   test("missing prompt is argparse exit 2", async () => {
-    const misses = await runBoth(
+    await snapshotAdw(
       { name: "quality-missing-prompt", script: "adw_quality.ts", args: [] },
       FIXTURE,
     );
-    expect(misses).toEqual([]);
   }, 60_000);
 
   test("placeholder quality blocks succeed with pinned adw-id", async () => {
-    const misses = await runBoth(
+    await snapshotAdw(
       {
         name: "quality-placeholders",
         script: "adw_quality.ts",
@@ -27,11 +26,10 @@ describe("gold vs port", () => {
       },
       FIXTURE,
     );
-    expect(misses).toEqual([]);
   }, 60_000);
 
   test("-- ends options so later flags become positionals", async () => {
-    const misses = await runBoth(
+    await snapshotAdw(
       {
         name: "quality-end-of-options",
         script: "adw_quality.ts",
@@ -39,11 +37,10 @@ describe("gold vs port", () => {
       },
       FIXTURE,
     );
-    expect(misses).toEqual([]);
   }, 60_000);
 
   test("unknown agent fails validation with no session", async () => {
-    const misses = await runBoth(
+    await snapshotAdw(
       {
         name: "prompt-unknown-agent",
         script: "adw_prompt.ts",
@@ -51,11 +48,10 @@ describe("gold vs port", () => {
       },
       FIXTURE,
     );
-    expect(misses).toEqual([]);
   }, 60_000);
 
   test("adw_prompt scout via fake_pi produces matching traces", async () => {
-    const misses = await runBoth(
+    await snapshotAdw(
       {
         name: "prompt-fake-pi",
         script: "adw_prompt.ts",
@@ -69,6 +65,5 @@ describe("gold vs port", () => {
       },
       AGENT_FIXTURE,
     );
-    expect(misses).toEqual([]);
   }, 60_000);
 });
