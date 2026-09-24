@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import { INTERFACES } from "../.claude/skills/sssf/factory/adws/adw_modules/runtimes/index.ts";
 import { labelFor } from "../.claude/skills/sssf/factory/adws/adw_modules/runtimes/toolCalls.ts";
 import { dumpInserts, UUID_RE } from "./harness.ts";
@@ -178,6 +178,49 @@ describe("agent registry", () => {
       expect(text, name).toContain("run.finish(");
       expect(text, name).toContain("Phases:");
     }
+  });
+
+  test("adw_modules has no runtime import cycles", () => {
+    const edges = new Map<string, string[]>();
+    for (const file of tsFiles(MODULES)) {
+      const from = relative(MODULES, file).split("\\").join("/");
+      const text = readFileSync(file, "utf8");
+      const tos: string[] = [];
+      for (const match of text.matchAll(/import\s+(type\s+)?[\s\S]*?from\s+"([^"]+)"/g)) {
+        if (match[1]) continue;
+        const spec = match[2]!;
+        if (!spec.startsWith(".") || !spec.endsWith(".ts")) continue;
+        const to = relative(MODULES, resolve(dirname(file), spec)).split("\\").join("/");
+        if (to.startsWith("..")) continue;
+        tos.push(to);
+      }
+      edges.set(from, tos);
+    }
+    const color = new Map<string, "visiting" | "done">();
+    const stack: string[] = [];
+    function visit(node: string): string | null {
+      color.set(node, "visiting");
+      stack.push(node);
+      for (const next of edges.get(node) ?? []) {
+        if (color.get(next) === "visiting") {
+          return stack.slice(stack.indexOf(next)).concat(next).join(" -> ");
+        }
+        if (color.get(next) !== "done") {
+          const found = visit(next);
+          if (found) return found;
+        }
+      }
+      stack.pop();
+      color.set(node, "done");
+      return null;
+    }
+    let cycle: string | null = null;
+    for (const node of edges.keys()) {
+      if (color.has(node)) continue;
+      cycle = visit(node);
+      if (cycle) break;
+    }
+    expect(cycle, cycle ?? "acyclic").toBeNull();
   });
 
   test("pi labels unchanged", () => {

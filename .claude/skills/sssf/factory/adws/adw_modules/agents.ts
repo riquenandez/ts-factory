@@ -1,8 +1,7 @@
 import { existsSync, readFileSync, statSync } from "node:fs";
-import { ExitError } from "./cli.ts";
 import { modelValidate, type Schema } from "./schema.ts";
 import { INTERFACES, unknownRuntime } from "./runtimes/index.ts";
-import { isDict } from "./utils.ts";
+import { ExitError, isDict } from "./utils.ts";
 
 export const DEFAULT_PROTECTED = ["adws/adw_modules/", "adws/adw_sssf_config/", "adws/adw_*.ts"];
 

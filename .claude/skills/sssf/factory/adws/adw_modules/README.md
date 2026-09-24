@@ -4,7 +4,7 @@ The engine an ADW script calls. A script names agents, sequences phases, and ret
 
 | File | Owns |
 |---|---|
-| `cli.ts` | `adw()`: parse args, resolve the prompt, load config, run, exit. `ExitError` |
+| `cli.ts` | `adw()`: parse args, resolve the prompt, load config, run, exit |
 | `agents.ts` | the roster: config types, schema, defaults, `loadConfig`, `resolve`, `validate` |
 | `session.ts` | `ensure()`: pin or mint `adw_id`, open the trace, install signal doors |
 | `runner.ts` | `Run`, `PhaseHandle`, `AgentPhaseHandle`, `phase()`, `request()`, `finish()`, phase records |
@@ -19,7 +19,7 @@ The engine an ADW script calls. A script names agents, sequences phases, and ret
 | `changes.ts` | git diff capture into `context_handoff/changes.diff`; `asEnvelope` |
 | `gitHelper.ts` | low-level git |
 | `shell.ts` | `spawnCaptured`, `spawnShell`, `spawnJsonl`, `shlexJoin`, `operatorEnv` |
-| `utils.ts` | ids, time, `isDict`, `resolvePrompt`, engineer name, cleanup hooks |
+| `utils.ts` | ids, time, `isDict`, `resolvePrompt`, engineer name, cleanup hooks, `ExitError` |
 | `runtimes/index.ts` | `INTERFACES`, `interfaceFor`, `unknownRuntime` |
 | `runtimes/types.ts` | `AgentRequest`, `AgentResult`, `AgentInterface`, tool-call records |
 | `runtimes/toolCalls.ts` | `labelFor`, `clip`, `textOf` |

@@ -1,15 +1,6 @@
 import { parseArgs as nodeParseArgs } from "node:util";
 import { loadConfig, type SSSFConfig } from "./agents.ts";
-import { resolvePrompt } from "./utils.ts";
-
-export class ExitError extends Error {
-  readonly code: number;
-  constructor(message: string, code = 1) {
-    super(message);
-    this.name = "ExitError";
-    this.code = code;
-  }
-}
+import { ExitError, resolvePrompt } from "./utils.ts";
 
 export interface ArgOption {
   name: string;

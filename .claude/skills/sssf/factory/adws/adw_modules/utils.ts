@@ -67,4 +67,11 @@ export function runCleanups(): void {
   }
 }
 
-
+export class ExitError extends Error {
+  readonly code: number;
+  constructor(message: string, code = 1) {
+    super(message);
+    this.name = "ExitError";
+    this.code = code;
+  }
+}

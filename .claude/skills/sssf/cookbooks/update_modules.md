@@ -18,8 +18,9 @@ Extend `adws/adw_modules/`. All low-level logic lives here; ADW scripts declare 
 | `quality.ts` | lint, typecheck, build, test blocks; `asEnvelope`; `QualityResult` |
 | `changes.ts` | git diff capture into `context_handoff/changes.diff`; `asEnvelope` |
 | `permissions.ts` | before/after repo fingerprint, rollback, `writes` and `protected_files` enforcement |
-| `session.ts`, `tracer.ts`, `console.ts`, `gitHelper.ts`, `utils.ts` | session dirs and `agent_map.json`, the trace, the narrative (markup included), git plumbing, ids and env |
-| `cli.ts` | CLI parsing on `node:util` `parseArgs`: help, `error:` lines, exit 2, `ExitError` |
+| `session.ts`, `tracer.ts`, `console.ts`, `gitHelper.ts` | session dirs and `agent_map.json`, the trace, the narrative (markup included), git plumbing |
+| `utils.ts` | ids, time, `isDict`, `resolvePrompt`, engineer name, cleanup hooks, `ExitError` |
+| `cli.ts` | CLI parsing on `node:util` `parseArgs`: help, `error:` lines, exit 2 |
 | `schema.ts` | declarative schemas: ordered fields, defaults, extra ignored, plain validation errors |
 | `shell.ts` | `spawnCaptured`, `spawnShell`, `spawnJsonl`, `shlexJoin`, `operatorEnv` |
 
